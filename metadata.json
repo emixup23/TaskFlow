@@ -1,0 +1,6 @@
+{
+  "name": "TaskFlow",
+  "description": "A collaborative task management platform with gamification, role-based access control, customizable workflows, activity audit logs, and administrator analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
