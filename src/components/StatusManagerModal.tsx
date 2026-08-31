@@ -149,6 +149,45 @@ export const StatusManagerModal: React.FC = () => {
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           
+          {/* Ticket System 5-Status Preset Quick Bar */}
+          <div className="p-3 bg-blue-950/20 border border-blue-500/30 rounded flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-blue-300">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+              <div>
+                <span className="font-bold text-white">Ticket System Standard:</span>
+                <span className="text-neutral-300 ml-1.5">
+                  Created assigned → In progress → On hold → Solved → Closed
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              id="btn-apply-ticket-preset"
+              onClick={async () => {
+                if (window.confirm('Reset workflow statuses to the 5 standard Ticket System statuses (Created assigned, In progress, On hold, Solved, Closed)?')) {
+                  const presetStatuses = [
+                    { id: 'status-created-assigned', name: 'Created assigned', color: '#3B82F6', isDone: false, description: 'Newly logged ticket assigned for triage' },
+                    { id: 'status-in-progress', name: 'In progress', color: '#F59E0B', isDone: false, description: 'Actively being investigated or worked on' },
+                    { id: 'status-on-hold', name: 'On hold', color: '#8B5CF6', isDone: false, description: 'Paused pending customer feedback or dependency' },
+                    { id: 'status-solved', name: 'Solved', color: '#10B981', isDone: true, description: 'Solution provided and verified' },
+                    { id: 'status-closed', name: 'Closed', color: '#64748B', isDone: true, description: 'Ticket finalized and closed' }
+                  ];
+                  for (const st of presetStatuses) {
+                    const existing = statuses.find((s) => s.id === st.id || s.name.toLowerCase() === st.name.toLowerCase());
+                    if (existing) {
+                      await updateStatus(existing.id, { name: st.name, color: st.color, isDone: st.isDone, description: st.description });
+                    } else {
+                      await createStatus(st);
+                    }
+                  }
+                }
+              }}
+              className="px-3 py-1 bg-blue-600/80 hover:bg-blue-600 text-white rounded text-[11px] font-semibold shrink-0 transition-colors cursor-pointer"
+            >
+              Verify / Enforce Ticket Presets
+            </button>
+          </div>
+
           {/* Create New Status Form */}
           <div className="p-4 bg-[#181818] rounded border border-[#262626] space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-200 flex items-center gap-1.5">

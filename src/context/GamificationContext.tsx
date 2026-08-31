@@ -340,6 +340,7 @@ const INITIAL_USER_GAMIFICATION: Record<string, UserGamification> = {
 
 interface GamificationContextType {
   userGamification: UserGamification;
+  getUserGamification: (userId: string) => UserGamification;
   leaderboard: LeaderboardUser[];
   quests: Quest[];
   recentXpEvents: XpEvent[];
@@ -699,10 +700,31 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       rank: index + 1
     }));
 
+  const getUserGamification = useCallback((userId: string): UserGamification => {
+    if (allUserData[userId]) {
+      return allUserData[userId];
+    }
+    return {
+      userId,
+      xp: 500,
+      level: 2,
+      levelTitle: 'Task Explorer',
+      currentStreak: 1,
+      bestStreak: 3,
+      lastActiveDate: new Date().toISOString().split('T')[0],
+      tasksCompleted: 3,
+      subtasksCompleted: 5,
+      commentsCount: 2,
+      attachmentsCount: 1,
+      achievements: DEFAULT_ACHIEVEMENTS.map((a) => ({ ...a, unlocked: a.id === 'first-blood' }))
+    };
+  }, [allUserData]);
+
   return (
     <GamificationContext.Provider
       value={{
         userGamification: currentUserStats,
+        getUserGamification,
         leaderboard,
         quests,
         recentXpEvents,

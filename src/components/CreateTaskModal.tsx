@@ -15,6 +15,7 @@ import { Priority } from '../types';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
 import { TagBadge } from './TagBadge';
+import { UserAvatar } from './UserAvatar';
 
 export const CreateTaskModal: React.FC = () => {
   const {
@@ -23,17 +24,21 @@ export const CreateTaskModal: React.FC = () => {
     statuses,
     projects,
     activeProjectId,
-    createTask
+    createTask,
+    addToast
   } = useTasks();
   const { users, currentUser, isAdmin } = useAuth();
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [statusId, setStatusId] = useState(statuses[0]?.id || 'status-todo');
+  const [statusId, setStatusId] = useState(statuses[0]?.id || 'status-created-assigned');
   const [projectId, setProjectId] = useState<string>('');
   const [priority, setPriority] = useState<Priority>('medium');
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState('');
+  const [dateError, setDateError] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(['Engineering']);
   const [subtaskInput, setSubtaskInput] = useState('');
@@ -92,6 +97,12 @@ export const CreateTaskModal: React.FC = () => {
     e.preventDefault();
     if (!title.trim()) return;
 
+    if (dueDate && dueDate < todayStr) {
+      setDateError('Due date cannot be in the past. Please select today or a future date.');
+      addToast('error', 'Due date cannot be in the past');
+      return;
+    }
+
     setIsSubmitting(true);
     const created = await createTask({
       title: title.trim(),
@@ -110,6 +121,8 @@ export const CreateTaskModal: React.FC = () => {
       // Reset form & close
       setTitle('');
       setDescription('');
+      setDueDate('');
+      setDateError('');
       setSubtasks([]);
       setTags(['Engineering']);
       setIsCreateModalOpen(false);
@@ -223,16 +236,37 @@ export const CreateTaskModal: React.FC = () => {
           {/* Due Date & Tags */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="block text-xs font-bold uppercase tracking-wider text-neutral-300">
-                Target Deadline
+              <label className="block text-xs font-bold uppercase tracking-wider text-neutral-300 flex items-center justify-between">
+                <span>Target Deadline</span>
+                <span className="text-[10px] text-neutral-500 font-normal">Today or later</span>
               </label>
               <input
                 type="date"
                 id="create-task-duedate"
+                min={todayStr}
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-[#1f1f1f] border border-[#333333] rounded focus:ring-1 focus:ring-blue-500 text-neutral-200 cursor-pointer"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val && val < todayStr) {
+                    setDateError('Selected date cannot be in the past');
+                    setDueDate(val);
+                  } else {
+                    setDateError('');
+                    setDueDate(val);
+                  }
+                }}
+                className={`w-full px-3 py-2 text-xs bg-[#1f1f1f] border rounded focus:ring-1 text-neutral-200 cursor-pointer ${
+                  dateError
+                    ? 'border-rose-600 focus:ring-rose-500 text-rose-300'
+                    : 'border-[#333333] focus:ring-blue-500'
+                }`}
               />
+              {dateError && (
+                <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1 mt-0.5">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>{dateError}</span>
+                </p>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -280,11 +314,7 @@ export const CreateTaskModal: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <img
-                        src={user.avatar}
-                        alt={user.name}
-                        className="w-6 h-6 rounded object-cover"
-                      />
+                      <UserAvatar user={user} size="sm" />
                       <div className="min-w-0">
                         <p className="text-xs truncate text-white">{user.name}</p>
                         <p className="text-[10px] text-neutral-400 truncate">{user.title}</p>

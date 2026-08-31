@@ -17,6 +17,13 @@ import {
   EyeOff,
   UserCheck,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Check,
+  Activity,
+  TrendingUp,
+  AlertCircle,
+  ListTodo,
   ExternalLink,
   Layers,
   Sparkles,
@@ -41,17 +48,26 @@ export const RelationshipGraphView: React.FC = () => {
     statuses,
     setSelectedTaskId,
     graphSelectedUserId,
-    setGraphSelectedUserId
+    setGraphSelectedUserId,
+    metricsVisibility,
+    setMetricsVisibility,
+    toggleMetric
   } = useTasks();
   const { users, currentUser, isAdmin, switchUser } = useAuth();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+  const metricsDropdownRef = useRef<HTMLDivElement>(null);
 
   // Focus and Filter states
   const [selectedUserFilter, setSelectedUserFilter] = useState<string>(
     graphSelectedUserId || 'all'
   );
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [isMetricsDropdownOpen, setIsMetricsDropdownOpen] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [isEgoView, setIsEgoView] = useState(false); // Only show direct connections of selected user
   const [showTags, setShowTags] = useState(true);
@@ -62,10 +78,78 @@ export const RelationshipGraphView: React.FC = () => {
   const [linkDistance, setLinkDistance] = useState<number>(90);
   const [isSimulating, setIsSimulating] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isLegendOpen, setIsLegendOpen] = useState(false); // Hidden by default
 
   // Inspector panel
   const [inspectedNode, setInspectedNode] = useState<GraphNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        userDropdownRef.current &&
+        !userDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsUserDropdownOpen(false);
+      }
+      if (
+        metricsDropdownRef.current &&
+        !metricsDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsMetricsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Filter users inside dropdown
+  const filteredDropdownUsers = useMemo(() => {
+    if (!userSearchQuery.trim()) return users;
+    const q = userSearchQuery.toLowerCase();
+    return users.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) ||
+        (u.title && u.title.toLowerCase().includes(q)) ||
+        (u.department && u.department.toLowerCase().includes(q)) ||
+        (u.role && u.role.toLowerCase().includes(q))
+    );
+  }, [users, userSearchQuery]);
+
+  // Compute live KPIs for the metrics dropdown
+  const totalTasksCount = tasks.length;
+  const doneStatusIds = useMemo(() => statuses.filter((s) => s.isDone).map((s) => s.id), [statuses]);
+  const completedTasksCount = useMemo(() => tasks.filter((t) => doneStatusIds.includes(t.statusId)).length, [tasks, doneStatusIds]);
+  const activeTasksCount = totalTasksCount - completedTasksCount;
+  const completionRateVal = totalTasksCount > 0 ? ((completedTasksCount / totalTasksCount) * 100).toFixed(1) : '0.0';
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const criticalBlockersCount = useMemo(
+    () =>
+      tasks.filter(
+        (t) =>
+          !doneStatusIds.includes(t.statusId) &&
+          (t.priority === 'urgent' || (t.dueDate && t.dueDate < todayStr))
+      ).length,
+    [tasks, doneStatusIds, todayStr]
+  );
+  const allSubtasksList = useMemo(() => tasks.flatMap((t) => t.subtasks || []), [tasks]);
+  const completedSubtasksList = useMemo(() => allSubtasksList.filter((s) => s.completed).length, [allSubtasksList]);
+  const teamCapacityVal =
+    allSubtasksList.length > 0
+      ? Math.round((completedSubtasksList / allSubtasksList.length) * 100)
+      : totalTasksCount > 0
+      ? Math.round((completedTasksCount / totalTasksCount) * 100)
+      : 72;
+
+  const activeMetricsCount = [
+    metricsVisibility.showActiveTasks,
+    metricsVisibility.showCompletionRate,
+    metricsVisibility.showCriticalBlockers,
+    metricsVisibility.showTeamCapacity
+  ].filter(Boolean).length;
 
   // Sync graphSelectedUserId from context if set externally (e.g. from User Management)
   useEffect(() => {
@@ -457,11 +541,11 @@ export const RelationshipGraphView: React.FC = () => {
       .enter()
       .append('line')
       .attr('stroke', (d) => d.color || '#475569')
-      .attr('stroke-width', (d) => (d.type === 'collaborator' ? 2 : d.value || 1.5))
+      .attr('stroke-width', (d) => (d.type === 'collaborator' ? 1 : d.value || 0.5))
       .attr('stroke-dasharray', (d) =>
         d.type === 'collaborator' ? '4,4' : d.type === 'created' ? '3,3' : 'none'
       )
-      .attr('stroke-opacity', (d) => (d.type === 'collaborator' ? 0.5 : 0.7));
+      .attr('stroke-opacity', (d) => (d.type === 'collaborator' ? 0.3 : 0.5));
 
     // Nodes container
     const nodeGroup = g.append('g').attr('class', 'nodes');
@@ -512,8 +596,8 @@ export const RelationshipGraphView: React.FC = () => {
           .attr('r', r + (isSelected ? 6 : 4))
           .attr('fill', 'none')
           .attr('stroke', d.color || '#3b82f6')
-          .attr('stroke-width', isSelected ? 3 : 2)
-          .attr('stroke-opacity', isSelected ? 0.9 : 0.4)
+          .attr('stroke-width', isSelected ? 1 : 0.5)
+          .attr('stroke-opacity', isSelected ? 0.7 : 0.4)
           .attr('stroke-dasharray', isCurrent ? '4,3' : 'none');
 
         // User Avatar Circle
@@ -521,7 +605,7 @@ export const RelationshipGraphView: React.FC = () => {
           .attr('r', r)
           .attr('fill', `url(#avatar-pattern-${d.data?.user?.id})`)
           .attr('stroke', '#1e293b')
-          .attr('stroke-width', 2);
+          .attr('stroke-width', 0.8);
 
         // Task count badge
         if (d.data?.assignedCount > 0) {
@@ -534,7 +618,7 @@ export const RelationshipGraphView: React.FC = () => {
             .attr('r', 9)
             .attr('fill', '#2563eb')
             .attr('stroke', '#0d0d0d')
-            .attr('stroke-width', 1.5);
+            .attr('stroke-width', 0.5);
 
           badgeG
             .append('text')
@@ -557,7 +641,7 @@ export const RelationshipGraphView: React.FC = () => {
           .attr('rx', 6)
           .attr('fill', '#141414')
           .attr('stroke', d.color || '#3b82f6')
-          .attr('stroke-width', 2)
+          .attr('stroke-width', 0.7)
           .attr('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))');
 
         // Priority dot
@@ -594,7 +678,7 @@ export const RelationshipGraphView: React.FC = () => {
           .attr('rx', 12)
           .attr('fill', '#1e1b4b')
           .attr('stroke', d.color || '#8b5cf6')
-          .attr('stroke-width', 1.5);
+          .attr('stroke-width', 0.5);
 
         el.append('text')
           .attr('text-anchor', 'middle')
@@ -715,7 +799,7 @@ export const RelationshipGraphView: React.FC = () => {
       el.transition()
         .duration(180)
         .attr('stroke-opacity', isConnectedLink ? 0.85 : 0.08)
-        .attr('stroke-width', isConnectedLink ? (l.type === 'collaborator' ? 2.5 : 2.5) : 1);
+        .attr('stroke-width', isConnectedLink ? (l.type === 'collaborator' ? 1 : 1) : 1);
     });
   }, [connectedNodeIds, searchQuery]);
 
@@ -835,88 +919,433 @@ export const RelationshipGraphView: React.FC = () => {
           ========================================================================= */}
       <div className="bg-[#121212] border-b border-[#262626] p-3 sm:px-6 flex flex-col gap-3 shrink-0">
         
-        {/* Row 1: User Pills & View Mode */}
+        {/* Row 1: Focus User Dropdown, Metrics Visibility & Live Stats */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           
-          {/* User Selector Rail */}
-          <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none max-w-full">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mr-1 flex items-center gap-1 shrink-0">
-              <Users className="w-3.5 h-3.5 text-blue-400" /> Focus User:
-            </span>
-
-            {/* All Team Members Pill */}
-            <button
-              type="button"
-              id="graph-user-all"
-              onClick={() => handleUserSelect('all')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border ${
-                selectedUserFilter === 'all'
-                  ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/30 font-bold'
-                  : 'bg-[#1a1a1a] text-neutral-300 border-[#2b2b2b] hover:bg-[#252525] hover:text-white'
-              }`}
-            >
-              <Network className="w-3.5 h-3.5" />
-              <span>All Team Network</span>
-              <span className="ml-1 px-1.5 py-0.2 text-[10px] rounded-full bg-black/30 font-mono">
-                {users.length}
-              </span>
-            </button>
-
-            {/* Individual User Pills */}
-            {users.map((u) => {
-              const isSelected = selectedUserFilter === u.id;
-              const isCurrent = currentUser?.id === u.id;
-              const taskCount = tasks.filter((t) => t.assigneeIds.includes(u.id)).length;
-
-              return (
-                <button
-                  key={u.id}
-                  id={`graph-user-${u.id}`}
-                  onClick={() => handleUserSelect(u.id)}
-                  className={`px-2.5 py-1.5 rounded-full text-xs flex items-center gap-2 transition-all cursor-pointer shrink-0 border ${
-                    isSelected
-                      ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/30 font-bold'
-                      : isCurrent
-                      ? 'bg-cyan-950/40 text-cyan-300 border-cyan-800/60 hover:bg-cyan-900/50'
-                      : 'bg-[#1a1a1a] text-neutral-300 border-[#2b2b2b] hover:bg-[#252525] hover:text-white'
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* User Selector Dropdown */}
+            <div className="relative" ref={userDropdownRef}>
+              <button
+                type="button"
+                id="btn-graph-user-dropdown"
+                onClick={() => {
+                  setIsUserDropdownOpen((prev) => !prev);
+                  setIsMetricsDropdownOpen(false);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer border shadow-sm ${
+                  selectedUserFilter !== 'all'
+                    ? 'bg-blue-600/20 text-blue-300 border-blue-500/40 hover:bg-blue-600/30'
+                    : 'bg-[#181818] text-neutral-200 border-[#2b2b2b] hover:bg-[#222222] hover:text-white'
+                }`}
+                title="Filter graph by team member"
+              >
+                {selectedUserFilter === 'all' ? (
+                  <>
+                    <Users className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                    <span>All Team Network</span>
+                    <span className="px-1.5 py-0.2 text-[10px] rounded bg-black/40 text-neutral-400 font-mono">
+                      {users.length}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    {currentFocusedUser ? (
+                      <>
+                        <img
+                          src={currentFocusedUser.avatar}
+                          alt={currentFocusedUser.name}
+                          className="w-4 h-4 rounded-full object-cover shrink-0 border border-white/20"
+                        />
+                        <span className="truncate max-w-[130px] text-white">
+                          {currentFocusedUser.name}
+                        </span>
+                        <span className="px-1.5 py-0.2 text-[10px] rounded bg-blue-900/60 text-blue-300 font-mono">
+                          {tasks.filter((t) => t.assigneeIds.includes(currentFocusedUser.id)).length} tasks
+                        </span>
+                      </>
+                    ) : (
+                      <span>Focus User</span>
+                    )}
+                  </>
+                )}
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-neutral-400 transition-transform duration-150 ${
+                    isUserDropdownOpen ? 'rotate-180 text-white' : ''
                   }`}
-                  title={`${u.name} (${u.title || u.role}) - ${taskCount} assigned tasks`}
+                />
+              </button>
+
+              {/* User Dropdown Menu */}
+              {isUserDropdownOpen && (
+                <div
+                  id="graph-user-dropdown-menu"
+                  className="absolute top-full left-0 mt-1.5 w-72 max-w-[90vw] bg-[#161616] border border-[#2b2b2b] rounded-lg shadow-2xl z-40 p-2 animate-in fade-in zoom-in-95 duration-150"
                 >
-                  <img
-                    src={u.avatar}
-                    alt={u.name}
-                    className="w-4 h-4 rounded-full object-cover shrink-0 border border-white/20"
-                  />
-                  <span className="truncate max-w-[110px]">
-                    {u.name} {isCurrent && '(You)'}
-                  </span>
-                  <span
-                    className={`px-1.5 py-0.2 text-[10px] rounded-full font-mono font-semibold ${
-                      isSelected ? 'bg-black/30 text-white' : 'bg-[#262626] text-neutral-400'
-                    }`}
-                  >
-                    {taskCount}
-                  </span>
-                </button>
-              );
-            })}
+                  {/* Search box inside dropdown */}
+                  <div className="relative mb-2">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+                    <input
+                      type="text"
+                      id="input-search-dropdown-user"
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      placeholder="Search member..."
+                      className="w-full pl-8 pr-2.5 py-1.5 bg-[#202020] border border-[#333333] rounded text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="max-h-64 overflow-y-auto space-y-1 scrollbar-none">
+                    {/* All Team Members Option */}
+                    <button
+                      type="button"
+                      id="graph-dropdown-all-users"
+                      onClick={() => {
+                        handleUserSelect('all');
+                        setIsUserDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between p-2 rounded text-xs transition-colors cursor-pointer ${
+                        selectedUserFilter === 'all'
+                          ? 'bg-blue-600/20 text-blue-300 font-semibold border border-blue-500/30'
+                          : 'text-neutral-300 hover:bg-[#222222] hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center shrink-0">
+                          <Network className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-semibold leading-tight">All Team Network</p>
+                          <span className="text-[10px] text-neutral-500">Show complete network</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-mono bg-[#242424] px-1.5 py-0.5 rounded text-neutral-400">
+                          {users.length}
+                        </span>
+                        {selectedUserFilter === 'all' && (
+                          <Check className="w-3.5 h-3.5 text-blue-400" />
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Individual Users List */}
+                    {filteredDropdownUsers.map((u) => {
+                      const isSelected = selectedUserFilter === u.id;
+                      const isCurrent = currentUser?.id === u.id;
+                      const taskCount = tasks.filter((t) => t.assigneeIds.includes(u.id)).length;
+
+                      return (
+                        <button
+                          key={u.id}
+                          type="button"
+                          id={`graph-dropdown-user-${u.id}`}
+                          onClick={() => {
+                            handleUserSelect(u.id);
+                            setIsUserDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between p-2 rounded text-xs transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-blue-600/20 text-blue-300 font-semibold border border-blue-500/30'
+                              : 'text-neutral-300 hover:bg-[#222222] hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <img
+                              src={u.avatar}
+                              alt={u.name}
+                              className="w-6 h-6 rounded-full object-cover shrink-0 border border-[#333333]"
+                            />
+                            <div className="text-left min-w-0">
+                              <p className="font-semibold truncate text-white">
+                                {u.name} {isCurrent && <span className="text-cyan-400 text-[10px] font-normal">(You)</span>}
+                              </p>
+                              <p className="text-[10px] text-neutral-500 truncate">
+                                {u.title || u.department || u.role}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            <span className="text-[10px] font-mono bg-[#242424] px-1.5 py-0.5 rounded text-neutral-400">
+                              {taskCount}
+                            </span>
+                            {isSelected && <Check className="w-3.5 h-3.5 text-blue-400" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Ego / Isolation Mode Toggle (when individual user selected) */}
+            {selectedUserFilter !== 'all' && (
+              <button
+                type="button"
+                id="graph-toggle-ego-view"
+                onClick={() => setIsEgoView(!isEgoView)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                  isEgoView
+                    ? 'bg-blue-600/20 text-blue-300 border-blue-500/40'
+                    : 'bg-[#181818] text-neutral-400 border-[#2b2b2b] hover:text-white'
+                }`}
+                title="Isolate only this user's direct tasks and connections"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>{isEgoView ? 'Isolated View' : 'Full Graph'}</span>
+              </button>
+            )}
+
+            {/* KPI Metrics Visibility Toggle Dropdown */}
+            <div className="relative" ref={metricsDropdownRef}>
+              <button
+                type="button"
+                id="btn-graph-metrics-toggle"
+                onClick={() => {
+                  setIsMetricsDropdownOpen((prev) => !prev);
+                  setIsUserDropdownOpen(false);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer border ${
+                  isMetricsDropdownOpen || metricsVisibility.showMetricsBar
+                    ? 'bg-[#181818] border-blue-500/40 text-blue-300 hover:bg-[#222222]'
+                    : 'bg-[#181818] border-[#2b2b2b] text-neutral-400 hover:text-white'
+                }`}
+                title="Toggle hide and show KPI metrics (Active Tasks, Completion Rate, Critical Blockers, Team Capacity)"
+              >
+                <Activity className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <span>Metrics</span>
+                <span className="px-1.5 py-0.2 text-[10px] rounded bg-blue-950/80 text-blue-300 font-mono border border-blue-800/60">
+                  {activeMetricsCount}/4
+                </span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-neutral-400 transition-transform duration-150 ${
+                    isMetricsDropdownOpen ? 'rotate-180 text-white' : ''
+                  }`}
+                />
+              </button>
+
+              {/* Metrics Dropdown Menu */}
+              {isMetricsDropdownOpen && (
+                <div
+                  id="graph-metrics-dropdown-menu"
+                  className="absolute top-full left-0 mt-1.5 w-80 max-w-[92vw] bg-[#161616] border border-[#2b2b2b] rounded-lg shadow-2xl z-40 p-3 animate-in fade-in zoom-in-95 duration-150 text-xs"
+                >
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#262626]">
+                    <div className="font-bold text-neutral-200 flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-blue-400" />
+                      <span>KPI Metrics Visibility</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        id="btn-metrics-show-all"
+                        onClick={() => {
+                          setMetricsVisibility({
+                            showMetricsBar: true,
+                            showActiveTasks: true,
+                            showCompletionRate: true,
+                            showCriticalBlockers: true,
+                            showTeamCapacity: true
+                          });
+                        }}
+                        className="text-[10px] text-blue-400 hover:text-blue-300 font-semibold cursor-pointer"
+                      >
+                        Show All
+                      </button>
+                      <span className="text-neutral-600">|</span>
+                      <button
+                        type="button"
+                        id="btn-metrics-hide-all"
+                        onClick={() => {
+                          setMetricsVisibility({
+                            showMetricsBar: false,
+                            showActiveTasks: false,
+                            showCompletionRate: false,
+                            showCriticalBlockers: false,
+                            showTeamCapacity: false
+                          });
+                        }}
+                        className="text-[10px] text-neutral-400 hover:text-white font-semibold cursor-pointer"
+                      >
+                        Hide All
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Master Strip Toggle */}
+                  <div className="p-2 mb-2 bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-white">Top Metrics Strip</p>
+                      <p className="text-[10px] text-neutral-400">Master header banner switch</p>
+                    </div>
+                    <button
+                      type="button"
+                      id="toggle-master-metrics-bar"
+                      onClick={() => toggleMetric('showMetricsBar')}
+                      className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${
+                        metricsVisibility.showMetricsBar ? 'bg-blue-600' : 'bg-[#333333]'
+                      }`}
+                      title={metricsVisibility.showMetricsBar ? 'Hide metrics banner' : 'Show metrics banner'}
+                    >
+                      <span
+                        className={`block w-4 h-4 bg-white rounded-full transition-transform absolute top-0.5 left-0.5 ${
+                          metricsVisibility.showMetricsBar ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="space-y-1.5 pt-0.5">
+                    {/* 1. Active Tasks Toggle */}
+                    <div
+                      id="toggle-metric-active-tasks"
+                      onClick={() => toggleMetric('showActiveTasks')}
+                      className={`p-2 rounded-lg flex items-center justify-between cursor-pointer border transition-colors ${
+                        metricsVisibility.showActiveTasks
+                          ? 'bg-blue-950/25 border-blue-900/50 text-neutral-200'
+                          : 'bg-[#181818] border-[#262626] text-neutral-400 hover:border-[#333333]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ListTodo className="w-4 h-4 text-blue-400 shrink-0" />
+                        <div>
+                          <span className="font-semibold block text-white">Active Tasks</span>
+                          <span className="text-[10px] text-neutral-500">{activeTasksCount} ongoing tasks</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-white">
+                          {activeTasksCount > 0 ? (activeTasksCount < 10 ? `0${activeTasksCount}` : activeTasksCount) : '00'}
+                        </span>
+                        <div
+                          className={`w-4 h-4 rounded flex items-center justify-center border ${
+                            metricsVisibility.showActiveTasks
+                              ? 'bg-blue-600 border-blue-500 text-white'
+                              : 'border-[#444444] bg-[#222222]'
+                          }`}
+                        >
+                          {metricsVisibility.showActiveTasks && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. Completion Rate Toggle */}
+                    <div
+                      id="toggle-metric-completion-rate"
+                      onClick={() => toggleMetric('showCompletionRate')}
+                      className={`p-2 rounded-lg flex items-center justify-between cursor-pointer border transition-colors ${
+                        metricsVisibility.showCompletionRate
+                          ? 'bg-emerald-950/25 border-emerald-900/50 text-neutral-200'
+                          : 'bg-[#181818] border-[#262626] text-neutral-400 hover:border-[#333333]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <div>
+                          <span className="font-semibold block text-white">Completion Rate</span>
+                          <span className="text-[10px] text-neutral-500">Overall progress</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-emerald-400">{completionRateVal}%</span>
+                        <div
+                          className={`w-4 h-4 rounded flex items-center justify-center border ${
+                            metricsVisibility.showCompletionRate
+                              ? 'bg-blue-600 border-blue-500 text-white'
+                              : 'border-[#444444] bg-[#222222]'
+                          }`}
+                        >
+                          {metricsVisibility.showCompletionRate && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 3. Critical Blockers Toggle */}
+                    <div
+                      id="toggle-metric-critical-blockers"
+                      onClick={() => toggleMetric('showCriticalBlockers')}
+                      className={`p-2 rounded-lg flex items-center justify-between cursor-pointer border transition-colors ${
+                        metricsVisibility.showCriticalBlockers
+                          ? 'bg-rose-950/25 border-rose-900/50 text-neutral-200'
+                          : 'bg-[#181818] border-[#262626] text-neutral-400 hover:border-[#333333]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                        <div>
+                          <span className="font-semibold block text-white">Critical Blockers</span>
+                          <span className="text-[10px] text-neutral-500">Urgent & Overdue</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-rose-400">
+                          {criticalBlockersCount < 10 ? `0${criticalBlockersCount}` : criticalBlockersCount}
+                        </span>
+                        <div
+                          className={`w-4 h-4 rounded flex items-center justify-center border ${
+                            metricsVisibility.showCriticalBlockers
+                              ? 'bg-blue-600 border-blue-500 text-white'
+                              : 'border-[#444444] bg-[#222222]'
+                          }`}
+                        >
+                          {metricsVisibility.showCriticalBlockers && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4. Team Capacity Toggle */}
+                    <div
+                      id="toggle-metric-team-capacity"
+                      onClick={() => toggleMetric('showTeamCapacity')}
+                      className={`p-2 rounded-lg flex items-center justify-between cursor-pointer border transition-colors ${
+                        metricsVisibility.showTeamCapacity
+                          ? 'bg-blue-950/25 border-blue-900/50 text-neutral-200'
+                          : 'bg-[#181818] border-[#262626] text-neutral-400 hover:border-[#333333]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-blue-400 shrink-0" />
+                        <div>
+                          <span className="font-semibold block text-white">Team Capacity</span>
+                          <span className="text-[10px] text-neutral-500">Workload velocity</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-blue-300">{teamCapacityVal}%</span>
+                        <div
+                          className={`w-4 h-4 rounded flex items-center justify-center border ${
+                            metricsVisibility.showTeamCapacity
+                              ? 'bg-blue-600 border-blue-500 text-white'
+                              : 'border-[#444444] bg-[#222222]'
+                          }`}
+                        >
+                          {metricsVisibility.showTeamCapacity && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Quick Metrics Bar */}
-          <div className="hidden xl:flex items-center gap-3 text-xs text-neutral-400 bg-[#171717] px-3 py-1.5 rounded border border-[#262626]">
+          {/* Quick Entities & Relationships Pill */}
+          <div className="hidden lg:flex items-center gap-3 text-xs text-neutral-400 bg-[#171717] px-3 py-1.5 rounded-lg border border-[#262626]">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              <strong className="text-white">{graphData.nodes.length}</strong> Entities
+              <strong className="text-white font-mono">{graphData.nodes.length}</strong> Entities
             </span>
             <span className="text-neutral-600">•</span>
             <span className="flex items-center gap-1.5">
-              <strong className="text-white">{graphData.links.length}</strong> Relationships
+              <strong className="text-white font-mono">{graphData.links.length}</strong> Links
             </span>
             {currentFocusedUser && (
               <>
                 <span className="text-neutral-600">•</span>
                 <span className="text-blue-400 font-medium truncate max-w-[150px]">
-                  Viewing: {currentFocusedUser.name}
+                  {currentFocusedUser.name}
                 </span>
               </>
             )}
@@ -1076,6 +1505,22 @@ export const RelationshipGraphView: React.FC = () => {
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
 
+            {/* Toggle Legend Button */}
+            <button
+              type="button"
+              id="graph-btn-legend-toggle"
+              onClick={() => setIsLegendOpen(!isLegendOpen)}
+              className={`p-1.5 rounded border transition-colors cursor-pointer flex items-center gap-1.5 text-xs ${
+                isLegendOpen
+                  ? 'bg-blue-600/30 text-blue-300 border-blue-500/50'
+                  : 'bg-[#1a1a1a] text-neutral-300 hover:text-white border-[#2b2b2b] hover:bg-[#252525]'
+              }`}
+              title={isLegendOpen ? 'Hide Visual Legend' : 'Show Visual Legend'}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-[11px] font-medium">Legend</span>
+            </button>
+
             {/* Export SVG */}
             <button
               type="button"
@@ -1113,43 +1558,70 @@ export const RelationshipGraphView: React.FC = () => {
           className="w-full h-full cursor-grab active:cursor-grabbing bg-[#0d0d0d]"
         />
 
-        {/* Floating Legend Overlay */}
-        <div className="absolute bottom-4 left-4 z-10 bg-[#121212]/90 backdrop-blur-md p-3 rounded-lg border border-[#262626] shadow-xl text-xs text-neutral-300 flex flex-col gap-2 max-w-xs pointer-events-none sm:pointer-events-auto">
-          <div className="font-bold text-[11px] uppercase tracking-wider text-neutral-400 flex items-center justify-between">
-            <span>Visual Legend</span>
-            <span className="text-[10px] text-neutral-500 font-normal">Interactive</span>
-          </div>
+        {/* Floating Legend Trigger (when collapsed) */}
+        {!isLegendOpen && (
+          <button
+            type="button"
+            id="graph-btn-legend-pill"
+            onClick={() => setIsLegendOpen(true)}
+            className="absolute bottom-4 left-4 z-10 px-2.5 py-1.5 rounded-lg bg-[#141414]/90 hover:bg-[#1f1f1f] text-neutral-400 hover:text-white border border-[#262626] backdrop-blur-md shadow-lg flex items-center gap-1.5 text-xs transition-all cursor-pointer group"
+            title="Open Visual Legend"
+          >
+            <Layers className="w-3.5 h-3.5 text-blue-400 group-hover:rotate-6 transition-transform" />
+            <span className="font-medium text-[11px]">Visual Legend</span>
+          </button>
+        )}
 
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-blue-500 ring-2 ring-blue-400/40" />
-              <span>User Node</span>
+        {/* Floating Legend Overlay (hidden by default) */}
+        {isLegendOpen && (
+          <div className="absolute bottom-4 left-4 z-10 bg-[#121212]/95 backdrop-blur-md p-3.5 rounded-lg border border-[#2e2e2e] shadow-2xl text-xs text-neutral-300 flex flex-col gap-2.5 max-w-xs animate-in fade-in zoom-in-95 duration-150">
+            <div className="font-bold text-[11px] uppercase tracking-wider text-neutral-300 flex items-center justify-between pb-1 border-b border-[#262626]">
+              <div className="flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-blue-400" />
+                <span>Visual Legend</span>
+              </div>
+              <button
+                type="button"
+                id="graph-btn-legend-close"
+                onClick={() => setIsLegendOpen(false)}
+                className="p-1 text-neutral-400 hover:text-white rounded hover:bg-[#222] transition-colors cursor-pointer"
+                title="Hide Legend"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-2.5 rounded bg-[#1e293b] border border-blue-400" />
-              <span>Task Card</span>
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px]">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-blue-500 ring-2 ring-blue-400/40 shrink-0" />
+                <span>User Node</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3.5 h-2.5 rounded bg-[#1e293b] border border-blue-400 shrink-0" />
+                <span>Task Card</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3.5 h-2 rounded-full bg-purple-900 border border-purple-400 shrink-0" />
+                <span>Tag Pill</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-0.5 bg-blue-500 inline-block shrink-0" />
+                <span>Assignment</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-0.5 bg-emerald-400 border-b border-dashed border-emerald-400 inline-block shrink-0" />
+                <span>Collaboration</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 h-0.5 bg-purple-400 border-b border-dotted border-purple-400 inline-block shrink-0" />
+                <span>Tag Link</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-2 rounded-full bg-purple-900 border border-purple-400" />
-              <span>Tag Pill</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-0.5 bg-blue-500 inline-block" />
-              <span>Assignment</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-0.5 bg-emerald-400 border-b border-dashed border-emerald-400 inline-block" />
-              <span>Collaboration</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-0.5 bg-purple-400 border-b border-dotted border-purple-400 inline-block" />
-              <span>Tag Link</span>
+            <div className="text-[10px] text-neutral-400 pt-1.5 border-t border-[#262626] leading-relaxed">
+              Drag nodes to rearrange • Double-click node to unpin • Click node to inspect details
             </div>
           </div>
-          <div className="text-[10px] text-neutral-500 pt-1 border-t border-[#262626]">
-            Drag nodes to rearrange • Double-click node to unpin • Click to inspect
-          </div>
-        </div>
+        )}
 
         {/* =========================================================================
             Right Node Inspector Panel

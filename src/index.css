@@ -4,15 +4,30 @@
 
 :root {
   --background: #0d0d0d;
+  --app-radius: 3px;
+  --app-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --app-primary: #3b82f6;
+  --app-primary-hover: #2563eb;
+  --app-primary-light: rgba(59, 130, 246, 0.15);
+  --app-bg: #0d0d0d;
+  --app-surface: #141414;
+  --app-surface-secondary: #1a1a1a;
+  --app-border: #262626;
+  --app-text: #f8fafc;
+  --app-text-muted: #94a3b8;
 }
 
 html, body, #root {
-  background-color: #0d0d0d;
+  background-color: var(--app-bg, #0d0d0d) !important;
+  color: var(--app-text, #f8fafc);
   min-height: 100%;
-  color-scheme: dark;
+  font-family: var(--app-font, inherit);
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-/* Force border-radius: 3px across all elements */
+/* =========================================================================
+   Universal Border Radius Adaptation
+   ========================================================================= */
 *,
 *::before,
 *::after,
@@ -22,10 +37,6 @@ select,
 textarea,
 dialog,
 table,
-th,
-td,
-tr,
-img,
 .rounded,
 .rounded-xs,
 .rounded-sm,
@@ -33,41 +44,296 @@ img,
 .rounded-lg,
 .rounded-xl,
 .rounded-2xl,
-.rounded-3xl,
-.rounded-full,
 [class*="rounded"] {
-  border-radius: 3px !important;
+  border-radius: var(--app-radius, 3px) !important;
 }
 
-/* Custom smooth scrollbars */
+/* Preserve pill shapes for avatars, circles, and full pills */
+.rounded-full,
+[class*="rounded-full"] {
+  border-radius: 9999px !important;
+}
+
+/* =========================================================================
+   Dynamic Canvas Backgrounds
+   ========================================================================= */
+.bg-\[\#0d0d0d\],
+.bg-\[\#0a0a0a\],
+.bg-\[\#0e0e0e\],
+.bg-\[\#000000\],
+.bg-\[\#090d16\],
+.bg-\[\#0c0714\],
+.bg-\[\#04100c\],
+.bg-\[\#120f0b\],
+.bg-\[\#12080d\] {
+  background-color: var(--app-bg) !important;
+}
+
+/* =========================================================================
+   Dynamic Primary Panel & Card Surfaces
+   ========================================================================= */
+.bg-\[\#141414\],
+.bg-\[\#161616\],
+.bg-\[\#121212\],
+.bg-\[\#151515\],
+.bg-\[\#181818\],
+.bg-\[\#101010\],
+.bg-\[\#111111\],
+.bg-\[\#131313\],
+.bg-\[\#171717\] {
+  background-color: var(--app-surface) !important;
+}
+
+/* =========================================================================
+   Dynamic Secondary Surfaces & Input Fields
+   ========================================================================= */
+.bg-\[\#1a1a1a\],
+.bg-\[\#1e1e1e\],
+.bg-\[\#1f1f1f\],
+.bg-\[\#202020\],
+.bg-\[\#222222\],
+.bg-\[\#242424\],
+.bg-\[\#252525\],
+.bg-\[\#262626\],
+.bg-\[\#282828\],
+.bg-\[\#2a2a2a\],
+.bg-\[\#2b2b2b\] {
+  background-color: var(--app-surface-secondary) !important;
+}
+
+/* =========================================================================
+   Dynamic Border Colors
+   ========================================================================= */
+.border-\[\#262626\],
+.border-\[\#333333\],
+.border-\[\#2b2b2b\],
+.border-\[\#282828\],
+.border-\[\#1e1e1e\],
+.border-\[\#202020\],
+.border-\[\#222222\],
+.border-\[\#383838\],
+.border-\[\#2e2e2e\],
+.border-\[\#303030\],
+.border-\[\#363636\],
+.border-\[\#404040\],
+.border-\[\#1f1f1f\] {
+  border-color: var(--app-border) !important;
+}
+
+.divide-\[\#262626\] > :not([hidden]) ~ :not([hidden]),
+.divide-\[\#333333\] > :not([hidden]) ~ :not([hidden]),
+.divide-\[\#2b2b2b\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--app-border) !important;
+}
+
+/* =========================================================================
+   Dynamic Primary Accent Color, Buttons & Badges
+   ========================================================================= */
+.bg-blue-600,
+.bg-blue-500 {
+  background-color: var(--app-primary) !important;
+}
+
+.hover\:bg-blue-700:hover,
+.hover\:bg-blue-600:hover,
+.bg-blue-700:hover,
+.bg-blue-600:hover {
+  background-color: var(--app-primary-hover, var(--app-primary)) !important;
+}
+
+.text-blue-500,
+.text-blue-400,
+.text-blue-600 {
+  color: var(--app-primary) !important;
+}
+
+.border-blue-500,
+.border-blue-600,
+.border-blue-400 {
+  border-color: var(--app-primary) !important;
+}
+
+.ring-blue-500,
+.ring-blue-600,
+.focus\:ring-blue-500:focus,
+.focus\:border-blue-500:focus {
+  --tw-ring-color: var(--app-primary) !important;
+  border-color: var(--app-primary) !important;
+}
+
+.bg-blue-500\/10,
+.bg-blue-500\/15,
+.bg-blue-500\/20,
+.bg-blue-600\/10,
+.bg-blue-600\/15,
+.bg-blue-600\/20,
+.bg-blue-600\/25,
+.bg-blue-50,
+.bg-blue-950\/30,
+.bg-blue-950\/40,
+.bg-blue-950\/50,
+.bg-blue-950\/60 {
+  background-color: var(--app-primary-light, rgba(59, 130, 246, 0.15)) !important;
+}
+
+.border-blue-500\/30,
+.border-blue-800,
+.border-blue-700 {
+  border-color: var(--app-primary) !important;
+}
+
+/* =========================================================================
+   Light Theme Mode Overrides & Typography Hierarchy
+   ========================================================================= */
+html.light,
+html:not(.dark),
+body.light,
+body:not(.dark),
+[data-theme-mode="light"] {
+  color-scheme: light;
+}
+
+html.light body,
+html:not(.dark) body,
+[data-theme-mode="light"] body {
+  background-color: var(--app-bg, #f8fafc) !important;
+  color: var(--app-text, #0f172a);
+}
+
+/* Light Mode Main Text Contrast */
+html.light .text-white,
+html.light .text-slate-100,
+html.light .text-neutral-100,
+html.light .text-neutral-200,
+html:not(.dark) .text-white:not(.keep-white),
+html:not(.dark) .text-slate-100,
+html:not(.dark) .text-neutral-100,
+html:not(.dark) .text-neutral-200,
+[data-theme-mode="light"] .text-white:not(.keep-white),
+[data-theme-mode="light"] .text-slate-100,
+[data-theme-mode="light"] .text-neutral-100,
+[data-theme-mode="light"] .text-neutral-200 {
+  color: var(--app-text, #0f172a) !important;
+}
+
+/* Light Mode Muted Text Contrast */
+html.light .text-neutral-300,
+html.light .text-neutral-400,
+html.light .text-slate-400,
+html:not(.dark) .text-neutral-300,
+html:not(.dark) .text-neutral-400,
+html:not(.dark) .text-slate-400,
+[data-theme-mode="light"] .text-neutral-300,
+[data-theme-mode="light"] .text-neutral-400,
+[data-theme-mode="light"] .text-slate-400 {
+  color: var(--app-text-muted, #64748b) !important;
+}
+
+html.light .text-neutral-500,
+html:not(.dark) .text-neutral-500,
+[data-theme-mode="light"] .text-neutral-500 {
+  color: #64748b !important;
+}
+
+/* Maintain crisp white text on solid colored buttons & badges in Light Mode */
+html.light button.bg-blue-600,
+html.light button.bg-blue-500,
+html.light .bg-blue-600.text-white,
+html.light .bg-blue-500.text-white,
+html.light .bg-rose-600,
+html.light .bg-emerald-600,
+html.light .bg-amber-600,
+html.light .bg-indigo-600,
+html:not(.dark) button.bg-blue-600,
+html:not(.dark) button.bg-blue-500,
+html:not(.dark) .bg-blue-600.text-white,
+html:not(.dark) .bg-blue-500.text-white,
+html:not(.dark) .bg-rose-600,
+html:not(.dark) .bg-emerald-600,
+html:not(.dark) .bg-amber-600,
+html:not(.dark) .bg-indigo-600,
+[data-theme-mode="light"] button.bg-blue-600,
+[data-theme-mode="light"] button.bg-blue-500,
+[data-theme-mode="light"] .bg-blue-600.text-white,
+[data-theme-mode="light"] .bg-blue-500.text-white,
+[data-theme-mode="light"] .bg-rose-600,
+[data-theme-mode="light"] .bg-emerald-600,
+[data-theme-mode="light"] .bg-amber-600,
+[data-theme-mode="light"] .bg-indigo-600 {
+  color: #ffffff !important;
+}
+
+/* Light mode hover states for dropdown items and list rows */
+html.light .hover\:bg-\[\#262626\]:hover,
+html.light .hover\:bg-\[\#242424\]:hover,
+html.light .hover\:bg-\[\#1f1f1f\]:hover,
+html.light .hover\:bg-\[\#222222\]:hover,
+html:not(.dark) .hover\:bg-\[\#262626\]:hover,
+html:not(.dark) .hover\:bg-\[\#242424\]:hover,
+html:not(.dark) .hover\:bg-\[\#1f1f1f\]:hover,
+html:not(.dark) .hover\:bg-\[\#222222\]:hover,
+[data-theme-mode="light"] .hover\:bg-\[\#262626\]:hover,
+[data-theme-mode="light"] .hover\:bg-\[\#242424\]:hover,
+[data-theme-mode="light"] .hover\:bg-\[\#1f1f1f\]:hover,
+[data-theme-mode="light"] .hover\:bg-\[\#222222\]:hover {
+  background-color: var(--app-surface-secondary, #f1f5f9) !important;
+}
+
+html.light .hover\:text-white:hover,
+html:not(.dark) .hover\:text-white:hover,
+[data-theme-mode="light"] .hover\:text-white:hover {
+  color: var(--app-text, #0f172a) !important;
+}
+
+/* Light Mode Input placeholders */
+html.light input::placeholder,
+html.light textarea::placeholder,
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder,
+[data-theme-mode="light"] input::placeholder,
+[data-theme-mode="light"] textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Light Mode Card Shadows */
+html.light .shadow-xs,
+html:not(.dark) .shadow-xs,
+[data-theme-mode="light"] .shadow-xs {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light .shadow-xl,
+html.light .shadow-2xl,
+html:not(.dark) .shadow-xl,
+html:not(.dark) .shadow-2xl,
+[data-theme-mode="light"] .shadow-xl,
+[data-theme-mode="light"] .shadow-2xl {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* =========================================================================
+   Custom Smooth Scrollbars
+   ========================================================================= */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0d0d0d;
+  background: var(--app-bg, #0d0d0d);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2b2b2b;
-  border-radius: 3px !important;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #2b2b2b;
+  background: var(--app-border, #2b2b2b);
+  border-radius: var(--app-radius, 3px) !important;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #404040;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #404040;
+  background: #52525b;
 }
 
 /* =========================================================================
-   High-Contrast Vibrant Prism Syntax Highlighting Theme (Dark Mode)
+   Syntax Highlighting Theme (for Markdown / Code Blocks)
    ========================================================================= */
 pre[class*="language-"],
 code[class*="language-"] {
@@ -83,7 +349,6 @@ code[class*="language-"] {
   hyphens: none;
 }
 
-/* Comments & Documentation */
 .token.comment,
 .token.prolog,
 .token.doctype,
@@ -92,12 +357,10 @@ code[class*="language-"] {
   font-style: italic;
 }
 
-/* Punctuation & Brackets */
 .token.punctuation {
   color: #94a3b8;
 }
 
-/* Tags & Tag Names */
 .token.tag,
 .token.namespace,
 .token.deleted {
@@ -105,12 +368,10 @@ code[class*="language-"] {
   font-weight: 600;
 }
 
-/* HTML / XML Tag brackets & Tag names */
 .token.tag .token.punctuation {
   color: #fb7185;
 }
 
-/* Properties & Object Keys */
 .token.property,
 .token.symbol,
 .token.constant {
@@ -118,14 +379,12 @@ code[class*="language-"] {
   font-weight: 500;
 }
 
-/* Numbers & Booleans */
 .token.number,
 .token.boolean {
   color: #fb923c;
   font-weight: 600;
 }
 
-/* Strings, Characters & Values */
 .token.string,
 .token.char,
 .token.attr-value,
@@ -134,35 +393,30 @@ code[class*="language-"] {
   color: #4ade80;
 }
 
-/* CSS Selectors & Attributes */
 .token.selector,
 .token.attr-name {
   color: #facc15;
   font-weight: 500;
 }
 
-/* Operators, Regex, URLs */
 .token.operator,
 .token.entity,
 .token.url {
   color: #22d3ee;
 }
 
-/* Keywords & Language Control */
 .token.atrule,
 .token.keyword {
   color: #c084fc;
   font-weight: 600;
 }
 
-/* Functions & Methods */
 .token.function,
 .token.class-name {
   color: #60a5fa;
   font-weight: 600;
 }
 
-/* Variables & Parameters */
 .token.variable,
 .token.regex,
 .token.important {
@@ -180,31 +434,4 @@ code[class*="language-"] {
 
 .token.entity {
   cursor: help;
-}
-
-/* Language specific highlights */
-.language-css .token.string,
-.style .token.string {
-  color: #4ade80;
-}
-
-.language-json .token.property {
-  color: #7dd3fc;
-}
-
-.language-sql .token.keyword {
-  color: #c084fc;
-  text-transform: uppercase;
-}
-
-.language-python .token.builtin {
-  color: #818cf8;
-}
-
-.language-html .token.attr-name {
-  color: #fde047;
-}
-
-.language-html .token.attr-value {
-  color: #86efac;
 }

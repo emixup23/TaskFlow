@@ -1,4 +1,17 @@
-import { Task, Status, User, ActivityLog, DashboardStats, Priority, TaskCodeSnippet, CodeLanguage, Project } from '../types';
+import {
+  Task,
+  Status,
+  User,
+  ActivityLog,
+  DashboardStats,
+  Priority,
+  TaskCodeSnippet,
+  CodeLanguage,
+  Project,
+  ChatMessage,
+  ChatChannel,
+  ChatMessageAttachment
+} from '../types';
 
 let currentUserId = localStorage.getItem('taskflow_user_id') || 'user-admin-1';
 
@@ -148,10 +161,19 @@ export const api = {
     }),
 
   // Comments
-  addComment: (taskId: string, content: string) =>
+  addComment: (taskId: string, content: string, mentions?: string[]) =>
     request<Task>(`/api/tasks/${taskId}/comments`, {
       method: 'POST',
-      body: JSON.stringify({ content })
+      body: JSON.stringify({ content, mentions })
+    }),
+  deleteComment: (taskId: string, commentId: string) =>
+    request<Task>(`/api/tasks/${taskId}/comments/${commentId}`, {
+      method: 'DELETE'
+    }),
+  toggleCommentReaction: (taskId: string, commentId: string, emoji: string) =>
+    request<Task>(`/api/tasks/${taskId}/comments/${commentId}/reactions`, {
+      method: 'POST',
+      body: JSON.stringify({ emoji })
     }),
 
   // Attachments
@@ -168,5 +190,72 @@ export const api = {
   // Activity logs & Stats
   getActivityLogs: () => request<ActivityLog[]>('/api/activity'),
   getStats: () => request<DashboardStats>('/api/stats'),
-  resetDemoData: () => request<{ success: boolean; message: string }>('/api/reset-data', { method: 'POST' })
+  resetDemoData: () => request<{ success: boolean; message: string }>('/api/reset-data', { method: 'POST' }),
+
+  // Chat & Chat Groups
+  getChatChannels: () => request<ChatChannel[]>('/api/chat/channels'),
+  createChatChannel: (data: {
+    name: string;
+    description?: string;
+    topic?: string;
+    type?: 'channel' | 'group_dm';
+    isPrivate?: boolean;
+    memberIds?: string[];
+    color?: string;
+  }) =>
+    request<ChatChannel>('/api/chat/channels', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  updateChatChannel: (id: string, data: Partial<ChatChannel>) =>
+    request<ChatChannel>(`/api/chat/channels/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  deleteChatChannel: (id: string) =>
+    request<{ success: boolean; message: string }>(`/api/chat/channels/${id}`, {
+      method: 'DELETE'
+    }),
+  startDirectChat: (targetUserId: string) =>
+    request<ChatChannel>('/api/chat/direct', {
+      method: 'POST',
+      body: JSON.stringify({ targetUserId })
+    }),
+  getChatMessages: (channelId: string) => request<ChatMessage[]>(`/api/chat/channels/${channelId}/messages`),
+  sendChatMessage: (
+    channelId: string,
+    data: {
+      content?: string;
+      replyToId?: string;
+      attachments?: ChatMessageAttachment[];
+      linkedTaskId?: string;
+      mentions?: string[];
+    }
+  ) =>
+    request<ChatMessage>(`/api/chat/channels/${channelId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  editChatMessage: (channelId: string, messageId: string, content: string) =>
+    request<ChatMessage>(`/api/chat/channels/${channelId}/messages/${messageId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content })
+    }),
+  deleteChatMessage: (channelId: string, messageId: string) =>
+    request<{ success: boolean; message: string }>(`/api/chat/channels/${channelId}/messages/${messageId}`, {
+      method: 'DELETE'
+    }),
+  toggleMessageReaction: (channelId: string, messageId: string, emoji: string) =>
+    request<ChatMessage>(`/api/chat/channels/${channelId}/messages/${messageId}/reactions`, {
+      method: 'POST',
+      body: JSON.stringify({ emoji })
+    }),
+  togglePinMessage: (channelId: string, messageId: string) =>
+    request<{ message: ChatMessage; pinnedMessageIds: string[] }>(`/api/chat/channels/${channelId}/messages/${messageId}/pin`, {
+      method: 'POST'
+    }),
+  markChannelAsRead: (channelId: string) =>
+    request<{ success: boolean; channelId: string; readAt: string }>(`/api/chat/channels/${channelId}/read`, {
+      method: 'POST'
+    })
 };

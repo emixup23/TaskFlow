@@ -33,6 +33,7 @@ import { User, UserRole, UserPrivileges } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
 import { api } from '../api/client';
+import { UserAvatar } from './UserAvatar';
 
 const PRIVILEGE_METADATA: {
   key: keyof UserPrivileges;
@@ -98,7 +99,7 @@ const PRIVILEGE_METADATA: {
 
 export const UserManagementView: React.FC = () => {
   const { currentUser, users, refreshUsers, switchUser, isAdmin } = useAuth();
-  const { tasks, navigateToGraph } = useTasks();
+  const { tasks, navigateToGraph, openUserProfile } = useTasks();
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -550,12 +551,16 @@ export const UserManagementView: React.FC = () => {
                     >
                       {/* User Info */}
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
+                        <div
+                          className="flex items-center gap-3 cursor-pointer group/userinfo"
+                          onClick={() => openUserProfile(user)}
+                          title={`Open ${user.name}'s Profile`}
+                        >
                           <div className="relative shrink-0">
-                            <img
-                              src={user.avatar}
-                              alt={user.name}
-                              className="w-10 h-10 rounded-full object-cover border border-[#333333]"
+                            <UserAvatar
+                              user={user}
+                              size="md"
+                              className="rounded-full border border-[#333333] group-hover/userinfo:ring-2 group-hover/userinfo:ring-blue-500 transition-all"
                             />
                             <span
                               className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-[#141414] ${
@@ -569,7 +574,9 @@ export const UserManagementView: React.FC = () => {
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <p className="font-bold text-neutral-100 text-sm">{user.name}</p>
+                              <p className="font-bold text-neutral-100 text-sm group-hover/userinfo:text-blue-300 transition-colors">
+                                {user.name}
+                              </p>
                               {isCurrent && (
                                 <span className="text-[10px] bg-blue-600/30 text-blue-300 border border-blue-500/40 px-1.5 py-0.2 rounded font-semibold">
                                   You
@@ -670,6 +677,16 @@ export const UserManagementView: React.FC = () => {
                       {/* Actions */}
                       <td className="px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* View Full User Profile & Avatar */}
+                          <button
+                            type="button"
+                            onClick={() => openUserProfile(user)}
+                            title={`View & Customize ${user.name}'s Profile`}
+                            className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-blue-950/40 rounded transition-colors cursor-pointer"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+
                           {/* View Relationship Graph */}
                           <button
                             type="button"
@@ -738,10 +755,10 @@ export const UserManagementView: React.FC = () => {
             {/* Header */}
             <div className="p-4 sm:p-5 border-b border-[#262626] bg-[#1a1a1a] flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img
-                  src={editingUser.avatar}
-                  alt={editingUser.name}
-                  className="w-10 h-10 rounded-full border border-[#333333] object-cover"
+                <UserAvatar
+                  user={editingUser}
+                  size="lg"
+                  className="rounded-full border border-[#333333]"
                 />
                 <div>
                   <h2 className="text-base font-bold text-white">

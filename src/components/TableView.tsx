@@ -7,7 +7,8 @@ import {
   MoreHorizontal,
   Clock,
   User as UserIcon,
-  CheckSquare
+  CheckSquare,
+  ExternalLink
 } from 'lucide-react';
 import { Task, Priority } from '../types';
 import { useTasks } from '../context/TaskContext';
@@ -228,9 +229,10 @@ export const TableView: React.FC = () => {
                           e.stopPropagation();
                           setSelectedTaskId(task.id);
                         }}
-                        className="text-xs font-semibold text-blue-400 hover:text-blue-300 px-2 py-1 rounded hover:bg-blue-950/40 transition-colors cursor-pointer"
+                        title="View & Edit Task Details"
+                        className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-[#262626] rounded transition-colors cursor-pointer inline-flex items-center justify-center"
                       >
-                        Inspect
+                        <ExternalLink className="w-3.5 h-3.5" />
                       </button>
                     </td>
                   </tr>

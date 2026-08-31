@@ -84,6 +84,8 @@ export interface Comment {
   userAvatar: string;
   content: string;
   createdAt: string;
+  reactions?: Record<string, string[]>;
+  mentions?: string[];
 }
 
 export interface Attachment {
@@ -148,6 +150,69 @@ export interface Task {
   updatedAt: string;
   createdBy: string;
   createdByName?: string;
+}
+
+export interface ChatMessageAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  downloadUrl?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  channelId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string;
+  senderRole?: 'admin' | 'basic';
+  senderTitle?: string;
+  content: string;
+  createdAt: string;
+  updatedAt?: string;
+  isEdited?: boolean;
+  isPinned?: boolean;
+  replyTo?: {
+    id: string;
+    senderName: string;
+    content: string;
+  };
+  mentions?: string[];
+  attachments?: ChatMessageAttachment[];
+  reactions?: Record<string, string[]>;
+  linkedTaskId?: string;
+  linkedTaskTitle?: string;
+  linkedTaskPriority?: 'urgent' | 'high' | 'medium' | 'low';
+  linkedTaskStatusId?: string;
+  linkedTaskStatusName?: string;
+  linkedTaskStatusColor?: string;
+}
+
+export interface ChatChannel {
+  id: string;
+  name: string;
+  type: 'channel' | 'group_dm' | 'direct';
+  description?: string;
+  topic?: string;
+  icon?: string;
+  color?: string;
+  isPrivate?: boolean;
+  isDefault?: boolean;
+  ownerId?: string;
+  memberIds: string[];
+  createdAt: string;
+  updatedAt: string;
+  lastMessage?: {
+    id: string;
+    senderName: string;
+    content: string;
+    createdAt: string;
+  };
+  unreadCount?: number;
+  pinnedMessageIds?: string[];
+  isMuted?: boolean;
 }
 
 const ADMIN_DEFAULT_PRIVILEGES: UserPrivileges = {
@@ -287,11 +352,11 @@ const DEFAULT_USERS: User[] = [
 ];
 
 const DEFAULT_STATUSES: Status[] = [
-  { id: 'status-undefined', name: 'Undefined', color: '#64748B', order: 0, description: 'Backlog or unclassified items awaiting triage' },
-  { id: 'status-todo', name: 'To Do', color: '#3B82F6', order: 1, description: 'Ready for implementation in the current sprint', isDefault: true },
-  { id: 'status-in-progress', name: 'In Progress', color: '#F59E0B', order: 2, description: 'Actively being developed or worked on' },
-  { id: 'status-in-review', name: 'In Review', color: '#8B5CF6', order: 3, description: 'Peer code review or design QA in progress' },
-  { id: 'status-done', name: 'Done', color: '#10B981', order: 4, description: 'Tested, verified, and shipped', isDone: true }
+  { id: 'status-created-assigned', name: 'Created assigned', color: '#3B82F6', order: 0, description: 'Newly logged ticket created and assigned for triage or handling', isDefault: true },
+  { id: 'status-in-progress', name: 'In progress', color: '#F59E0B', order: 1, description: 'Ticket is actively being investigated or worked on' },
+  { id: 'status-on-hold', name: 'On hold', color: '#8B5CF6', order: 2, description: 'Work paused waiting on customer feedback, third-party dependency, or blockers' },
+  { id: 'status-solved', name: 'Solved', color: '#10B981', order: 3, description: 'Resolution provided and verified with requester', isDone: true },
+  { id: 'status-closed', name: 'Closed', color: '#64748B', order: 4, description: 'Ticket confirmed resolved and permanently closed', isDone: true }
 ];
 
 const DEFAULT_PROJECTS: Project[] = [
@@ -343,6 +408,9 @@ let statuses: Status[] = [...DEFAULT_STATUSES];
 let projects: Project[] = [...DEFAULT_PROJECTS];
 let activityLogs: ActivityLog[] = [];
 let tasks: Task[] = [];
+let channels: ChatChannel[] = [];
+let chatMessages: ChatMessage[] = [];
+let channelReadState: Map<string, Map<string, string>> = new Map(); // channelId -> (userId -> isoString)
 
 function initializeSeedData() {
   users = [...DEFAULT_USERS];
@@ -368,10 +436,10 @@ function initializeSeedData() {
       userName: 'Alex Rivera',
       userAvatar: DEFAULT_USERS[2].avatar,
       action: 'Status Changed',
-      details: 'Changed status from To Do to In Progress',
+      details: 'Changed status from Created assigned to In progress',
       fieldChanged: 'status',
-      oldValue: 'To Do',
-      newValue: 'In Progress',
+      oldValue: 'Created assigned',
+      newValue: 'In progress',
       timestamp: new Date(Date.now() - 24 * 3600000).toISOString()
     },
     {
@@ -420,16 +488,26 @@ function initializeSeedData() {
           userId: 'user-admin-1',
           userName: 'Sarah Chen',
           userAvatar: DEFAULT_USERS[0].avatar,
-          content: 'Make sure basic users can never query tasks outside their assigned IDs, even if guessing UUIDs.',
-          createdAt: new Date(Date.now() - 36 * 3600000).toISOString()
+          content: 'Hey @Alex Rivera, please make sure basic users can never query tasks outside their assigned IDs, even if guessing UUIDs! 🔒🛡️',
+          createdAt: new Date(Date.now() - 36 * 3600000).toISOString(),
+          reactions: {
+            '👍': ['user-basic-1', 'user-admin-2'],
+            '🔥': ['user-basic-1']
+          },
+          mentions: ['user-basic-1']
         },
         {
           id: 'comm-2',
           userId: 'user-basic-1',
           userName: 'Alex Rivera',
           userAvatar: DEFAULT_USERS[2].avatar,
-          content: 'Confirmed! Backend route filters by req.user.id on all database queries and returns 403 Forbidden on direct ID access.',
-          createdAt: new Date(Date.now() - 20 * 3600000).toISOString()
+          content: 'Confirmed @Sarah Chen! Backend route strictly filters by req.user.id and returns 403 Forbidden on direct ID access. Ready for review! 🚀✨',
+          createdAt: new Date(Date.now() - 20 * 3600000).toISOString(),
+          reactions: {
+            '🚀': ['user-admin-1', 'user-basic-1'],
+            '❤️': ['user-admin-1']
+          },
+          mentions: ['user-admin-1']
         }
       ],
       attachments: [
@@ -574,8 +652,25 @@ if __name__ == "__main__":
           userId: 'user-basic-3',
           userName: 'Liam Taylor',
           userAvatar: DEFAULT_USERS[4].avatar,
-          content: 'I provided new color hex codes for the status column headers in the design specs attachment.',
-          createdAt: new Date(Date.now() - 15 * 3600000).toISOString()
+          content: 'Hey @Maria Garcia, I updated the color hex codes for the status column headers in the design specs attachment! 🎨✨',
+          createdAt: new Date(Date.now() - 15 * 3600000).toISOString(),
+          reactions: {
+            '🙌': ['user-basic-2'],
+            '💡': ['user-admin-1']
+          },
+          mentions: ['user-basic-2']
+        },
+        {
+          id: 'comm-2-2',
+          userId: 'user-basic-2',
+          userName: 'Maria Garcia',
+          userAvatar: DEFAULT_USERS[3].avatar,
+          content: 'Awesome work @Liam Taylor! Applying the changes now to the drag-and-drop animation handlers. 🚀🎉',
+          createdAt: new Date(Date.now() - 12 * 3600000).toISOString(),
+          reactions: {
+            '🔥': ['user-basic-3', 'user-admin-1']
+          },
+          mentions: ['user-basic-3']
         }
       ],
       attachments: [
@@ -652,7 +747,7 @@ if __name__ == "__main__":
       id: 'task-3',
       title: 'Design System & Component Tokens Update',
       description: 'Harmonize typography scale, badge color contrast, border radius calculations, and accessible focus states across desktop and mobile task views.',
-      statusId: 'status-in-review',
+      statusId: 'status-on-hold',
       priority: 'medium',
       assigneeIds: ['user-basic-3'],
       dueDate: formatDate(1),
@@ -668,7 +763,7 @@ if __name__ == "__main__":
           userId: 'user-basic-2',
           userName: 'Maria Garcia',
           userAvatar: DEFAULT_USERS[3].avatar,
-          content: 'Reviewed the tokens! Contrast looks crisp and clean on both light and dark backgrounds.',
+          content: 'Reviewed the tokens! Waiting on external design team signoff before moving to In progress.',
           createdAt: new Date(Date.now() - 4 * 3600000).toISOString()
         }
       ],
@@ -713,7 +808,7 @@ if __name__ == "__main__":
       id: 'task-4',
       title: 'Real-time Analytics Dashboard for Admins',
       description: 'Implement aggregation engine for task completion velocity, workload distribution per user, overdue task alerting, and priority distribution graphs.',
-      statusId: 'status-todo',
+      statusId: 'status-created-assigned',
       priority: 'high',
       assigneeIds: ['user-admin-1', 'user-basic-1'],
       dueDate: formatDate(5),
@@ -735,7 +830,7 @@ if __name__ == "__main__":
       id: 'task-5',
       title: 'Automated E2E Regression Testing Suite',
       description: 'Set up automated tests to verify permission isolation between Basic and Admin users, status reordering, subtask progress calculation, and activity log tracking.',
-      statusId: 'status-todo',
+      statusId: 'status-created-assigned',
       priority: 'medium',
       assigneeIds: ['user-basic-4'],
       dueDate: formatDate(6),
@@ -756,7 +851,7 @@ if __name__ == "__main__":
       id: 'task-6',
       title: 'Database Schema Optimization & Indexing',
       description: 'Index tasks by assignee ID, status ID, and updated timestamp to guarantee sub-50ms query latency under heavy concurrency.',
-      statusId: 'status-done',
+      statusId: 'status-solved',
       priority: 'low',
       assigneeIds: ['user-basic-1', 'user-admin-2'],
       dueDate: formatDate(-2),
@@ -771,7 +866,7 @@ if __name__ == "__main__":
           userId: 'user-admin-2',
           userName: 'Marcus Vance',
           userAvatar: DEFAULT_USERS[1].avatar,
-          content: 'Benchmark results show query times dropped from 140ms to 8ms. Deployed to production!',
+          content: 'Benchmark results show query times dropped from 140ms to 8ms. Solution verified and marked Solved!',
           createdAt: new Date(Date.now() - 48 * 3600000).toISOString()
         }
       ],
@@ -785,16 +880,25 @@ if __name__ == "__main__":
       id: 'task-7',
       title: 'Customer Feedback Triage for Sprint 14',
       description: 'Review incoming customer requests, categorize into feature requests or bugs, assign urgency and assignees.',
-      statusId: 'status-undefined',
+      statusId: 'status-closed',
       priority: 'low',
       assigneeIds: ['user-admin-1', 'user-basic-4'],
       dueDate: formatDate(7),
-      tags: ['Triage', 'Support'],
+      tags: ['Triage', 'Support', 'Tickets'],
       subtasks: [
-        { id: 'sub-7-1', title: 'Export Zendesk tickets', completed: false },
-        { id: 'sub-7-2', title: 'Tag recurring UX friction points', completed: false }
+        { id: 'sub-7-1', title: 'Export customer tickets', completed: true },
+        { id: 'sub-7-2', title: 'Tag recurring UX friction points', completed: true }
       ],
-      comments: [],
+      comments: [
+        {
+          id: 'comm-7-1',
+          userId: 'user-admin-1',
+          userName: 'Sarah Chen',
+          userAvatar: DEFAULT_USERS[0].avatar,
+          content: 'All feedback categorized and tickets closed for Sprint 14.',
+          createdAt: new Date(Date.now() - 10 * 3600000).toISOString()
+        }
+      ],
       attachments: [],
       createdAt: new Date(Date.now() - 10 * 3600000).toISOString(),
       updatedAt: new Date(Date.now() - 10 * 3600000).toISOString(),
@@ -830,8 +934,492 @@ if __name__ == "__main__":
       updatedAt: new Date(Date.now() - 2 * 3600000).toISOString(),
       createdBy: 'user-admin-1',
       createdByName: 'Sarah Chen'
+    },
+    {
+      id: 'task-9',
+      title: 'VPN Gateway SSL Handshake Latency Spike [TCK-109]',
+      description: 'Multiple remote engineers reported 3000ms+ timeout spikes when negotiating tunnel keys with the US-East VPN concentrator during morning peak hours.',
+      statusId: 'status-created-assigned',
+      priority: 'urgent',
+      assigneeIds: ['user-admin-1', 'user-basic-1'],
+      dueDate: formatDate(1),
+      tags: ['IT Support', 'Network', 'Infrastructure'],
+      subtasks: [
+        { id: 'sub-9-1', title: 'Inspect VPN gateway CPU thread exhaustion', completed: false },
+        { id: 'sub-9-2', title: 'Provision secondary standby VPN node in US-East', completed: false }
+      ],
+      comments: [
+        {
+          id: 'comm-9-1',
+          userId: 'user-basic-1',
+          userName: 'Alex Rivera',
+          userAvatar: DEFAULT_USERS[2].avatar,
+          content: 'Ticket created and assigned. Beginning log inspection now.',
+          createdAt: new Date(Date.now() - 1 * 3600000).toISOString()
+        }
+      ],
+      attachments: [],
+      createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 1 * 3600000).toISOString(),
+      createdBy: 'user-admin-1',
+      createdByName: 'Sarah Chen'
+    },
+    {
+      id: 'task-10',
+      title: 'SSO Integration with Okta & Azure AD [TCK-110]',
+      description: 'Configure SAML 2.0 and OIDC identity providers for enterprise single sign-on. Waiting on corporate IT for client secrets and metadata XML.',
+      statusId: 'status-on-hold',
+      priority: 'high',
+      assigneeIds: ['user-admin-2', 'user-basic-4'],
+      dueDate: formatDate(4),
+      tags: ['Security', 'SSO', 'Enterprise'],
+      subtasks: [
+        { id: 'sub-10-1', title: 'Draft SAML SP metadata XML document', completed: true },
+        { id: 'sub-10-2', title: 'Receive Azure AD tenant ID and certificate from client IT', completed: false },
+        { id: 'sub-10-3', title: 'Test user attribute mapping and SCIM provisioning', completed: false }
+      ],
+      comments: [
+        {
+          id: 'comm-10-1',
+          userId: 'user-admin-2',
+          userName: 'Marcus Vance',
+          userAvatar: DEFAULT_USERS[1].avatar,
+          content: 'Placed on hold pending reply from enterprise IT security officer.',
+          createdAt: new Date(Date.now() - 8 * 3600000).toISOString()
+        }
+      ],
+      attachments: [],
+      createdAt: new Date(Date.now() - 18 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 8 * 3600000).toISOString(),
+      createdBy: 'user-admin-2',
+      createdByName: 'Marcus Vance'
+    },
+    {
+      id: 'task-11',
+      title: 'Fix CSV Data Export Encoding for Non-ASCII Characters [TCK-111]',
+      description: 'UTF-8 BOM header missing in generated spreadsheet exports causing umlauts and accented characters to display as garbled symbols in Excel.',
+      statusId: 'status-solved',
+      priority: 'medium',
+      assigneeIds: ['user-basic-2'],
+      dueDate: formatDate(-1),
+      tags: ['Bug', 'Export', 'UI'],
+      subtasks: [
+        { id: 'sub-11-1', title: 'Prepend EF BB BF byte order mark to CSV buffer', completed: true },
+        { id: 'sub-11-2', title: 'Test with German, French, and Japanese test cases in MS Excel', completed: true }
+      ],
+      comments: [
+        {
+          id: 'comm-11-1',
+          userId: 'user-basic-2',
+          userName: 'Maria Garcia',
+          userAvatar: DEFAULT_USERS[3].avatar,
+          content: 'Fix deployed to staging and verified with Excel. Ticket solved!',
+          createdAt: new Date(Date.now() - 12 * 3600000).toISOString()
+        }
+      ],
+      attachments: [],
+      createdAt: new Date(Date.now() - 40 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 12 * 3600000).toISOString(),
+      createdBy: 'user-basic-2',
+      createdByName: 'Maria Garcia'
+    },
+    {
+      id: 'task-12',
+      title: 'Quarterly Infrastructure Capacity Planning [TCK-112]',
+      description: 'Audit monthly Cloud Run container compute usage and bandwidth trends. Archive previous quarter budget reconciliation report.',
+      statusId: 'status-closed',
+      priority: 'low',
+      assigneeIds: ['user-admin-1'],
+      dueDate: formatDate(-5),
+      tags: ['Operations', 'Finance', 'Reports'],
+      subtasks: [
+        { id: 'sub-12-1', title: 'Extract Cloud Billing cost breakdown by service', completed: true },
+        { id: 'sub-12-2', title: 'Present quarterly capacity forecast to leadership', completed: true }
+      ],
+      comments: [
+        {
+          id: 'comm-12-1',
+          userId: 'user-admin-1',
+          userName: 'Sarah Chen',
+          userAvatar: DEFAULT_USERS[0].avatar,
+          content: 'Presented to CTO and approved. Closing ticket.',
+          createdAt: new Date(Date.now() - 72 * 3600000).toISOString()
+        }
+      ],
+      attachments: [],
+      createdAt: new Date(Date.now() - 120 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 72 * 3600000).toISOString(),
+      createdBy: 'user-admin-1',
+      createdByName: 'Sarah Chen'
     }
   ];
+
+  channelReadState = new Map();
+
+  const allUserIds = DEFAULT_USERS.map((u) => u.id);
+
+  channels = [
+    {
+      id: 'chan-general',
+      name: 'general',
+      type: 'channel',
+      description: 'Company-wide announcements, team updates, sprint milestones, and cross-team discussions.',
+      topic: 'Welcome to TaskFlow! Share team wins and release announcements.',
+      color: '#3B82F6',
+      isPrivate: false,
+      isDefault: true,
+      ownerId: 'user-admin-1',
+      memberIds: [...allUserIds],
+      createdAt: new Date(Date.now() - 14 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 10 * 60000).toISOString(),
+      pinnedMessageIds: ['msg-gen-1']
+    },
+    {
+      id: 'chan-dev-eng',
+      name: 'dev-engineering',
+      type: 'channel',
+      description: 'Full-stack engineering discussions, API specs, PR reviews, CI/CD pipelines, and bug triage.',
+      topic: 'Sprint 14 Dev Focus: OAuth2 RBAC, D3 Graph optimizations, and real-time WebSockets.',
+      color: '#10B981',
+      isPrivate: false,
+      isDefault: true,
+      ownerId: 'user-admin-1',
+      memberIds: [...allUserIds],
+      createdAt: new Date(Date.now() - 14 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 5 * 60000).toISOString(),
+      pinnedMessageIds: ['msg-dev-2']
+    },
+    {
+      id: 'chan-design-system',
+      name: 'design-system',
+      type: 'channel',
+      description: 'Design tokens, theme studio customization, responsive layouts, and UI micro-interactions.',
+      topic: 'Dark minimalism palette, 4.5:1 WCAG contrast ratios, and clean layout hierarchy.',
+      color: '#8B5CF6',
+      isPrivate: false,
+      isDefault: true,
+      ownerId: 'user-basic-2',
+      memberIds: [...allUserIds],
+      createdAt: new Date(Date.now() - 14 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 25 * 60000).toISOString()
+    },
+    {
+      id: 'chan-security-ops',
+      name: 'security-ops',
+      type: 'channel',
+      description: 'Security audits, RBAC role permissions, token revocation, and attachment sanitization.',
+      topic: 'Private Security Ops • Zero Trust & Audit Compliance',
+      color: '#EF4444',
+      isPrivate: true,
+      ownerId: 'user-admin-1',
+      memberIds: ['user-admin-1', 'user-admin-2', 'user-basic-1', 'user-basic-4'],
+      createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 45 * 60000).toISOString()
+    },
+    {
+      id: 'group-sprint-core',
+      name: 'Sprint 14 Core Squad',
+      type: 'group_dm',
+      description: 'Core leads group coordinating blocking issues and production readiness.',
+      topic: 'Cross-functional sprint coordination',
+      color: '#F59E0B',
+      isPrivate: true,
+      ownerId: 'user-admin-1',
+      memberIds: ['user-admin-1', 'user-basic-1', 'user-basic-2', 'user-basic-3'],
+      createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 30 * 60000).toISOString()
+    },
+    {
+      id: 'dm-sarah-alex',
+      name: 'Alex Rivera',
+      type: 'direct',
+      description: 'Direct Message conversation with Alex Rivera',
+      topic: 'Direct Message',
+      color: '#3B82F6',
+      isPrivate: true,
+      ownerId: 'user-admin-1',
+      memberIds: ['user-admin-1', 'user-basic-1'],
+      createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 12 * 60000).toISOString()
+    },
+    {
+      id: 'dm-sarah-elena',
+      name: 'Elena Rostova',
+      type: 'direct',
+      description: 'Direct Message conversation with Elena Rostova',
+      topic: 'Direct Message',
+      color: '#EC4899',
+      isPrivate: true,
+      ownerId: 'user-admin-1',
+      memberIds: ['user-admin-1', 'user-basic-2'],
+      createdAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 35 * 60000).toISOString()
+    }
+  ];
+
+  chatMessages = [
+    // General Channel Messages
+    {
+      id: 'msg-gen-1',
+      channelId: 'chan-general',
+      senderId: 'user-admin-1',
+      senderName: 'Sarah Chen',
+      senderAvatar: DEFAULT_USERS[0].avatar,
+      senderRole: 'admin',
+      senderTitle: 'Lead Architect & Admin',
+      content: '🚀 Welcome to the TaskFlow real-time collaboration workspace! We have kicked off Sprint 14 with high priority goals on RBAC security, Relationship Graphs, and Team Chat.',
+      createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+      isPinned: true,
+      reactions: {
+        '🚀': ['user-basic-1', 'user-basic-2', 'user-basic-3', 'user-basic-4'],
+        '🔥': ['user-admin-2', 'user-basic-1']
+      }
+    },
+    {
+      id: 'msg-gen-2',
+      channelId: 'chan-general',
+      senderId: 'user-basic-1',
+      senderName: 'Alex Rivera',
+      senderAvatar: DEFAULT_USERS[2].avatar,
+      senderRole: 'basic',
+      senderTitle: 'Senior Frontend Engineer',
+      content: 'All systems are performing smoothly! Looking forward to delivering the new interactive features today.',
+      createdAt: new Date(Date.now() - 3 * 3600000).toISOString(),
+      reactions: {
+        '👍': ['user-admin-1', 'user-basic-2']
+      }
+    },
+    {
+      id: 'msg-gen-3',
+      channelId: 'chan-general',
+      senderId: 'user-basic-2',
+      senderName: 'Elena Rostova',
+      senderAvatar: DEFAULT_USERS[3].avatar,
+      senderRole: 'basic',
+      senderTitle: 'Product Designer',
+      content: 'The new theme studio palettes and graph visual nodes have been aligned with the 4.5:1 contrast standards. Let me know if you want any bespoke colorway presets!',
+      createdAt: new Date(Date.now() - 10 * 60000).toISOString(),
+      reactions: {
+        '❤️': ['user-admin-1', 'user-basic-1']
+      }
+    },
+
+    // Dev Engineering Channel Messages
+    {
+      id: 'msg-dev-1',
+      channelId: 'chan-dev-eng',
+      senderId: 'user-basic-1',
+      senderName: 'Alex Rivera',
+      senderAvatar: DEFAULT_USERS[2].avatar,
+      senderRole: 'basic',
+      senderTitle: 'Senior Frontend Engineer',
+      content: 'Hey @Sarah Chen, I have integrated the OAuth token verification middleware and updated the task permissions logic.',
+      createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+      mentions: ['user-admin-1'],
+      linkedTaskId: 'task-1',
+      linkedTaskTitle: 'Implement OAuth 2.0 and RBAC Middleware',
+      linkedTaskPriority: 'urgent',
+      linkedTaskStatusId: 'status-in-progress',
+      linkedTaskStatusName: 'In Progress',
+      linkedTaskStatusColor: '#3B82F6',
+      reactions: {
+        '👍': ['user-admin-1', 'user-basic-4']
+      }
+    },
+    {
+      id: 'msg-dev-2',
+      channelId: 'chan-dev-eng',
+      senderId: 'user-admin-1',
+      senderName: 'Sarah Chen',
+      senderAvatar: DEFAULT_USERS[0].avatar,
+      senderRole: 'admin',
+      senderTitle: 'Lead Architect & Admin',
+      content: 'Great work Alex! Make sure the SHA-256 checksum and executable file blacklist validation is covered in the unit tests before closing task-1.',
+      createdAt: new Date(Date.now() - 100 * 60000).toISOString(),
+      isPinned: true,
+      replyTo: {
+        id: 'msg-dev-1',
+        senderName: 'Alex Rivera',
+        content: 'Hey @Sarah Chen, I have integrated the OAuth token verification middleware...'
+      },
+      reactions: {
+        '✅': ['user-basic-1']
+      }
+    },
+    {
+      id: 'msg-dev-3',
+      channelId: 'chan-dev-eng',
+      senderId: 'user-basic-4',
+      senderName: 'Priyanshu Sharma',
+      senderAvatar: DEFAULT_USERS[5].avatar,
+      senderRole: 'basic',
+      senderTitle: 'QA & Automation Engineer',
+      content: 'Automated test suite `npm run test:e2e` passed all 42 test specs including attachment upload boundaries and permission gates! 💯',
+      createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
+      reactions: {
+        '🎉': ['user-admin-1', 'user-basic-1', 'user-basic-2']
+      }
+    },
+
+    // Design System Channel Messages
+    {
+      id: 'msg-des-1',
+      channelId: 'chan-design-system',
+      senderId: 'user-basic-2',
+      senderName: 'Elena Rostova',
+      senderAvatar: DEFAULT_USERS[3].avatar,
+      senderRole: 'basic',
+      senderTitle: 'Product Designer',
+      content: 'We updated the typography scale step ratio to 1.25 and streamlined the button text labels with tooltips for a cleaner view.',
+      createdAt: new Date(Date.now() - 180 * 60000).toISOString(),
+      reactions: {
+        '💡': ['user-admin-1', 'user-basic-3']
+      }
+    },
+    {
+      id: 'msg-des-2',
+      channelId: 'chan-design-system',
+      senderId: 'user-basic-3',
+      senderName: 'Marcus Vance',
+      senderAvatar: DEFAULT_USERS[4].avatar,
+      senderRole: 'basic',
+      senderTitle: 'DevOps & Cloud Engineer',
+      content: 'The relationship graph look is much sharper now with the toggleable metric cards and user dropdown filter. Great improvement!',
+      createdAt: new Date(Date.now() - 25 * 60000).toISOString(),
+      linkedTaskId: 'task-2',
+      linkedTaskTitle: 'Design Interactive Relationship & Dependency Graph',
+      linkedTaskPriority: 'high',
+      linkedTaskStatusId: 'status-review',
+      linkedTaskStatusName: 'In Review',
+      linkedTaskStatusColor: '#8B5CF6',
+      reactions: {
+        '🔥': ['user-basic-2']
+      }
+    },
+
+    // Security Ops Channel Messages
+    {
+      id: 'msg-sec-1',
+      channelId: 'chan-security-ops',
+      senderId: 'user-admin-2',
+      senderName: 'David Kim',
+      senderAvatar: DEFAULT_USERS[1].avatar,
+      senderRole: 'admin',
+      senderTitle: 'Engineering Manager & Admin',
+      content: 'Reminder: All production certificate renewals and key rotations are tracked in task-8. Please verify rolling restart window.',
+      createdAt: new Date(Date.now() - 120 * 60000).toISOString(),
+      linkedTaskId: 'task-8',
+      linkedTaskTitle: 'Rotate SSL Certificates & Update Secrets',
+      linkedTaskPriority: 'urgent',
+      linkedTaskStatusId: 'status-in-progress',
+      linkedTaskStatusName: 'In Progress',
+      linkedTaskStatusColor: '#3B82F6',
+      reactions: {
+        '👀': ['user-admin-1', 'user-basic-1']
+      }
+    },
+    {
+      id: 'msg-sec-2',
+      channelId: 'chan-security-ops',
+      senderId: 'user-admin-1',
+      senderName: 'Sarah Chen',
+      senderAvatar: DEFAULT_USERS[0].avatar,
+      senderRole: 'admin',
+      senderTitle: 'Lead Architect & Admin',
+      content: 'Audit trail logging has been validated. All permission overrides and status modifications are strictly timestamped.',
+      createdAt: new Date(Date.now() - 45 * 60000).toISOString(),
+      reactions: {
+        '🔒': ['user-admin-2', 'user-basic-4']
+      }
+    },
+
+    // Sprint Core Group DM
+    {
+      id: 'msg-core-1',
+      channelId: 'group-sprint-core',
+      senderId: 'user-admin-1',
+      senderName: 'Sarah Chen',
+      senderAvatar: DEFAULT_USERS[0].avatar,
+      senderRole: 'admin',
+      senderTitle: 'Lead Architect & Admin',
+      content: 'Team, let us sync on remaining blockers for Sprint 14 release candidate today at 3 PM.',
+      createdAt: new Date(Date.now() - 90 * 60000).toISOString(),
+      reactions: {
+        '👍': ['user-basic-1', 'user-basic-2', 'user-basic-3']
+      }
+    },
+    {
+      id: 'msg-core-2',
+      channelId: 'group-sprint-core',
+      senderId: 'user-basic-1',
+      senderName: 'Alex Rivera',
+      senderAvatar: DEFAULT_USERS[2].avatar,
+      senderRole: 'basic',
+      senderTitle: 'Senior Frontend Engineer',
+      content: 'I will have the chat and chat groups frontend fully wired and tested before the sync.',
+      createdAt: new Date(Date.now() - 30 * 60000).toISOString(),
+      reactions: {
+        '🚀': ['user-admin-1']
+      }
+    },
+
+    // Direct Message: Sarah & Alex
+    {
+      id: 'msg-dm-1',
+      channelId: 'dm-sarah-alex',
+      senderId: 'user-basic-1',
+      senderName: 'Alex Rivera',
+      senderAvatar: DEFAULT_USERS[2].avatar,
+      senderRole: 'basic',
+      senderTitle: 'Senior Frontend Engineer',
+      content: 'Hi Sarah, quick question on the audit log schema: should comment deletions log the snippet or just the ID?',
+      createdAt: new Date(Date.now() - 60 * 60000).toISOString(),
+      reactions: {}
+    },
+    {
+      id: 'msg-dm-2',
+      channelId: 'dm-sarah-alex',
+      senderId: 'user-admin-1',
+      senderName: 'Sarah Chen',
+      senderAvatar: DEFAULT_USERS[0].avatar,
+      senderRole: 'admin',
+      senderTitle: 'Lead Architect & Admin',
+      content: 'Just the task ID and author details is sufficient for privacy, but store the action as "Deleted Comment".',
+      createdAt: new Date(Date.now() - 40 * 60000).toISOString(),
+      reactions: {
+        '👍': ['user-basic-1']
+      }
+    },
+    {
+      id: 'msg-dm-3',
+      channelId: 'dm-sarah-alex',
+      senderId: 'user-basic-1',
+      senderName: 'Alex Rivera',
+      senderAvatar: DEFAULT_USERS[2].avatar,
+      senderRole: 'basic',
+      senderTitle: 'Senior Frontend Engineer',
+      content: 'Sounds good, implementing now!',
+      createdAt: new Date(Date.now() - 12 * 60000).toISOString(),
+      reactions: {
+        '🙌': ['user-admin-1']
+      }
+    }
+  ];
+
+  // Populate lastMessage for all channels
+  channels.forEach((chan) => {
+    const chanMsgs = chatMessages.filter((m) => m.channelId === chan.id);
+    if (chanMsgs.length > 0) {
+      const last = chanMsgs[chanMsgs.length - 1];
+      chan.lastMessage = {
+        id: last.id,
+        senderName: last.senderName,
+        content: last.content,
+        createdAt: last.createdAt
+      };
+      chan.updatedAt = last.createdAt;
+    }
+  });
 }
 
 initializeSeedData();
@@ -969,8 +1557,8 @@ async function startServer() {
     res.status(201).json(newUser);
   });
 
-  // PUT update user profile and privileges (Admin only)
-  app.put('/api/users/:id', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  // PUT update user profile and privileges (Admin or Self for profile fields)
+  app.put('/api/users/:id', (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     const { name, email, role, title, department, avatar, bio, phone, privileges, status } = req.body;
     const userIndex = users.findIndex((u) => u.id === id);
@@ -980,10 +1568,19 @@ async function startServer() {
       return;
     }
 
-    const existing = users[userIndex];
-    const isUserAdmin = (role ?? existing.role) === 'admin';
+    const isSelf = req.currentUser?.id === id;
+    const isCallerAdmin = req.currentUser?.role === 'admin';
 
-    const updatedPrivileges: UserPrivileges = privileges
+    if (!isSelf && !isCallerAdmin) {
+      res.status(403).json({ error: 'Forbidden: You can only edit your own profile' });
+      return;
+    }
+
+    const existing = users[userIndex];
+    const newRole = isCallerAdmin && role !== undefined ? (role === 'admin' ? 'admin' : 'basic') : existing.role;
+    const isUserAdmin = newRole === 'admin';
+
+    const updatedPrivileges: UserPrivileges = isCallerAdmin && privileges
       ? {
           canCreateTask: privileges.canCreateTask ?? existing.privileges?.canCreateTask ?? true,
           canEditAnyTask: privileges.canEditAnyTask ?? existing.privileges?.canEditAnyTask ?? isUserAdmin,
@@ -1001,13 +1598,13 @@ async function startServer() {
       ...existing,
       name: name !== undefined ? name.trim() : existing.name,
       email: email !== undefined ? email.trim().toLowerCase() : existing.email,
-      role: role !== undefined ? (role === 'admin' ? 'admin' : 'basic') : existing.role,
+      role: newRole,
       title: title !== undefined ? title.trim() : existing.title,
       department: department !== undefined ? department.trim() : existing.department,
       avatar: avatar !== undefined ? avatar : existing.avatar,
       bio: bio !== undefined ? bio.trim() : existing.bio,
       phone: phone !== undefined ? phone.trim() : existing.phone,
-      status: status !== undefined ? status : existing.status,
+      status: isCallerAdmin && status !== undefined ? status : existing.status,
       privileges: updatedPrivileges
     };
 
@@ -1015,8 +1612,10 @@ async function startServer() {
       req.currentUser!.id,
       req.currentUser!.name,
       req.currentUser!.avatar,
-      'Updated User Profile',
-      `Updated user profile & privileges for ${users[userIndex].name} (${users[userIndex].role.toUpperCase()})`
+      isSelf ? 'Updated Profile' : 'Updated User Profile',
+      isSelf
+        ? `${users[userIndex].name} updated their profile info & avatar.`
+        : `Updated user profile & privileges for ${users[userIndex].name} (${users[userIndex].role.toUpperCase()})`
     );
 
     res.json(users[userIndex]);
@@ -1327,7 +1926,7 @@ async function startServer() {
     const targetStatusId =
       (fallbackStatusId as string) ||
       statuses.find((s) => s.id !== id)?.id ||
-      'status-undefined';
+      'status-created-assigned';
 
     // Migrate tasks
     let migratedCount = 0;
@@ -1416,7 +2015,7 @@ async function startServer() {
     }
 
     // Determine target status
-    const targetStatusId = statusId || statuses[0]?.id || 'status-todo';
+    const targetStatusId = statusId || statuses[0]?.id || 'status-created-assigned';
     const finalAssignees = Array.isArray(assigneeIds) ? assigneeIds : [];
 
     // If Basic User creates a task, ensure they are in the assignees list so they can manage it
@@ -1832,13 +2431,17 @@ async function startServer() {
       return;
     }
 
+    const { mentions } = req.body;
+
     const newComment: Comment = {
       id: `comm-${Date.now()}`,
       userId: user.id,
       userName: user.name,
       userAvatar: user.avatar,
       content: content.trim(),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      reactions: {},
+      mentions: Array.isArray(mentions) ? mentions : []
     };
 
     task.comments.push(newComment);
@@ -1855,6 +2458,97 @@ async function startServer() {
     );
 
     res.status(201).json(task);
+  });
+
+  // DELETE /api/tasks/:id/comments/:commentId: Delete comment
+  app.delete('/api/tasks/:id/comments/:commentId', (req: AuthenticatedRequest, res: Response) => {
+    const { id, commentId } = req.params;
+    const user = req.currentUser!;
+    const task = tasks.find((t) => t.id === id);
+
+    if (!task) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    const commIdx = task.comments.findIndex((c) => c.id === commentId);
+    if (commIdx === -1) {
+      res.status(404).json({ error: 'Comment not found' });
+      return;
+    }
+
+    const comment = task.comments[commIdx];
+    // Only comment author or admin can delete comment
+    if (user.role !== 'admin' && comment.userId !== user.id) {
+      res.status(403).json({ error: 'Forbidden: You can only delete your own comments.' });
+      return;
+    }
+
+    task.comments.splice(commIdx, 1);
+    task.updatedAt = new Date().toISOString();
+
+    addActivityLog(
+      user.id,
+      user.name,
+      user.avatar,
+      'Deleted Comment',
+      `Deleted comment from task #${task.id}`,
+      task.id,
+      task.title
+    );
+
+    res.json(task);
+  });
+
+  // POST /api/tasks/:id/comments/:commentId/reactions: Toggle emoji reaction
+  app.post('/api/tasks/:id/comments/:commentId/reactions', (req: AuthenticatedRequest, res: Response) => {
+    const { id, commentId } = req.params;
+    const { emoji } = req.body;
+    const user = req.currentUser!;
+    const task = tasks.find((t) => t.id === id);
+
+    if (!task) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+    if (user.role !== 'admin' && !task.assigneeIds.includes(user.id)) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+    if (!emoji || typeof emoji !== 'string') {
+      res.status(400).json({ error: 'Emoji character is required' });
+      return;
+    }
+
+    const comment = task.comments.find((c) => c.id === commentId);
+    if (!comment) {
+      res.status(404).json({ error: 'Comment not found' });
+      return;
+    }
+
+    if (!comment.reactions) {
+      comment.reactions = {};
+    }
+
+    const userList = comment.reactions[emoji] || [];
+    const userIndex = userList.indexOf(user.id);
+
+    if (userIndex > -1) {
+      // Remove reaction
+      userList.splice(userIndex, 1);
+      if (userList.length === 0) {
+        delete comment.reactions[emoji];
+      } else {
+        comment.reactions[emoji] = userList;
+      }
+    } else {
+      // Add reaction
+      userList.push(user.id);
+      comment.reactions[emoji] = userList;
+    }
+
+    task.updatedAt = new Date().toISOString();
+    res.json(task);
   });
 
   // POST /api/tasks/:id/attachments: Upload file attachment with strict security verification
@@ -2151,6 +2845,585 @@ async function startServer() {
       userWorkload,
       recentActivity: activityLogs.slice(0, 15)
     });
+  });
+
+  // -------------------------------------------------------------
+  // Chat & Chat Groups REST APIs
+  // -------------------------------------------------------------
+
+  // Helper: Get user's last read timestamp for a channel
+  function getUserLastRead(channelId: string, userId: string): string {
+    const chanMap = channelReadState.get(channelId);
+    if (!chanMap) return new Date(0).toISOString();
+    return chanMap.get(userId) || new Date(0).toISOString();
+  }
+
+  // GET /api/chat/channels: List accessible channels & groups for current user
+  app.get('/api/chat/channels', (req: AuthenticatedRequest, res: Response) => {
+    const user = req.currentUser!;
+
+    // Return public channels + private channels/DMs where user is a member
+    const accessible = channels.filter((chan) => {
+      if (!chan.isPrivate && chan.type === 'channel') return true;
+      return chan.memberIds.includes(user.id) || user.role === 'admin';
+    });
+
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    const enriched = accessible.map((chan) => {
+      const lastRead = getUserLastRead(chan.id, user.id);
+      const chanMsgs = chatMessages.filter((m) => m.channelId === chan.id);
+
+      // Unread count: messages sent after lastRead by others
+      const unreadCount = chanMsgs.filter(
+        (m) => m.senderId !== user.id && new Date(m.createdAt) > new Date(lastRead)
+      ).length;
+
+      let displayName = chan.name;
+      let displayTopic = chan.topic;
+      let displayAvatar = chan.icon;
+
+      // For direct message channels, show the other user's name and status
+      if (chan.type === 'direct') {
+        const otherUserId = chan.memberIds.find((id) => id !== user.id) || chan.memberIds[0];
+        const otherUser = userMap.get(otherUserId);
+        if (otherUser) {
+          displayName = otherUser.name;
+          displayTopic = otherUser.title;
+          displayAvatar = otherUser.avatar;
+        }
+      }
+
+      return {
+        ...chan,
+        displayName,
+        displayTopic,
+        displayAvatar,
+        unreadCount,
+        memberCount: chan.memberIds.length
+      };
+    });
+
+    // Sort: General first, then channels, group DMs, and direct messages by latest activity
+    enriched.sort((a, b) => {
+      if (a.id === 'chan-general') return -1;
+      if (b.id === 'chan-general') return 1;
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+
+    res.json(enriched);
+  });
+
+  // POST /api/chat/channels: Create a new channel or group
+  app.post('/api/chat/channels', (req: AuthenticatedRequest, res: Response) => {
+    const user = req.currentUser!;
+    const { name, description, topic, type, isPrivate, memberIds, color } = req.body;
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      res.status(400).json({ error: 'Channel name is required.' });
+      return;
+    }
+
+    const cleanName = name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '');
+    const channelType = type === 'group_dm' ? 'group_dm' : 'channel';
+
+    // Ensure memberIds contains current user
+    const members = Array.isArray(memberIds) ? [...new Set([...memberIds, user.id])] : [user.id];
+
+    // Check duplicate channel name among public channels
+    if (!isPrivate && channels.some((c) => c.name === cleanName && !c.isPrivate && c.type === 'channel')) {
+      res.status(400).json({ error: `A public channel named #${cleanName} already exists.` });
+      return;
+    }
+
+    const newChannel: ChatChannel = {
+      id: `${channelType === 'group_dm' ? 'group' : 'chan'}-${Date.now()}`,
+      name: cleanName,
+      type: channelType,
+      description: description ? description.trim() : undefined,
+      topic: topic ? topic.trim() : undefined,
+      color: color || '#3B82F6',
+      isPrivate: Boolean(isPrivate),
+      isDefault: false,
+      ownerId: user.id,
+      memberIds: members,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      pinnedMessageIds: []
+    };
+
+    channels.push(newChannel);
+
+    // Add initial system intro message
+    const introMsg: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      channelId: newChannel.id,
+      senderId: user.id,
+      senderName: user.name,
+      senderAvatar: user.avatar,
+      senderRole: user.role,
+      senderTitle: user.title,
+      content: `🎉 Created new ${newChannel.isPrivate ? 'private ' : ''}${newChannel.type === 'group_dm' ? 'group' : 'channel'} #${newChannel.name}. Welcome!`,
+      createdAt: new Date().toISOString()
+    };
+    chatMessages.push(introMsg);
+    newChannel.lastMessage = {
+      id: introMsg.id,
+      senderName: user.name,
+      content: introMsg.content,
+      createdAt: introMsg.createdAt
+    };
+
+    // Mark as read for creator
+    if (!channelReadState.has(newChannel.id)) {
+      channelReadState.set(newChannel.id, new Map());
+    }
+    channelReadState.get(newChannel.id)!.set(user.id, new Date().toISOString());
+
+    addActivityLog(
+      user.id,
+      user.name,
+      user.avatar,
+      'Created Chat Channel',
+      `Created ${newChannel.isPrivate ? 'private ' : ''}chat ${newChannel.type === 'group_dm' ? 'group' : 'channel'} #${newChannel.name}`
+    );
+
+    res.status(201).json(newChannel);
+  });
+
+  // PUT /api/chat/channels/:id: Update channel details / topic / members
+  app.put('/api/chat/channels/:id', (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const user = req.currentUser!;
+    const chanIndex = channels.findIndex((c) => c.id === id);
+
+    if (chanIndex === -1) {
+      res.status(404).json({ error: 'Channel not found' });
+      return;
+    }
+
+    const channel = channels[chanIndex];
+    const isOwnerOrAdmin = user.role === 'admin' || channel.ownerId === user.id;
+
+    const { name, description, topic, color, isPrivate, memberIds } = req.body;
+
+    if (name !== undefined && isOwnerOrAdmin && name.trim()) {
+      channel.name = name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '');
+    }
+    if (description !== undefined) channel.description = description;
+    if (topic !== undefined) channel.topic = topic;
+    if (color !== undefined) channel.color = color;
+    if (isPrivate !== undefined && isOwnerOrAdmin) channel.isPrivate = Boolean(isPrivate);
+    if (Array.isArray(memberIds) && isOwnerOrAdmin) {
+      channel.memberIds = [...new Set([...memberIds, user.id])];
+    }
+
+    channel.updatedAt = new Date().toISOString();
+    res.json(channel);
+  });
+
+  // DELETE /api/chat/channels/:id: Delete channel
+  app.delete('/api/chat/channels/:id', (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const user = req.currentUser!;
+    const chanIndex = channels.findIndex((c) => c.id === id);
+
+    if (chanIndex === -1) {
+      res.status(404).json({ error: 'Channel not found' });
+      return;
+    }
+
+    const channel = channels[chanIndex];
+    if (channel.id === 'chan-general') {
+      res.status(400).json({ error: 'The #general company channel cannot be deleted.' });
+      return;
+    }
+
+    if (user.role !== 'admin' && channel.ownerId !== user.id) {
+      res.status(403).json({ error: 'Forbidden: Only the channel owner or an Administrator can delete this channel.' });
+      return;
+    }
+
+    channels.splice(chanIndex, 1);
+    // Remove all associated messages
+    chatMessages = chatMessages.filter((m) => m.channelId !== id);
+    channelReadState.delete(id);
+
+    addActivityLog(
+      user.id,
+      user.name,
+      user.avatar,
+      'Deleted Chat Channel',
+      `Deleted chat channel #${channel.name}`
+    );
+
+    res.json({ success: true, message: `Channel #${channel.name} deleted.` });
+  });
+
+  // POST /api/chat/direct: Start or retrieve 1-on-1 direct message channel
+  app.post('/api/chat/direct', (req: AuthenticatedRequest, res: Response) => {
+    const user = req.currentUser!;
+    const { targetUserId } = req.body;
+
+    if (!targetUserId) {
+      res.status(400).json({ error: 'Target user ID is required for direct messaging.' });
+      return;
+    }
+
+    const targetUser = users.find((u) => u.id === targetUserId);
+    if (!targetUser) {
+      res.status(404).json({ error: 'Target user not found.' });
+      return;
+    }
+
+    // Check if DM channel already exists between these 2 users
+    const existingDm = channels.find(
+      (c) =>
+        c.type === 'direct' &&
+        c.memberIds.length === 2 &&
+        c.memberIds.includes(user.id) &&
+        c.memberIds.includes(targetUserId)
+    );
+
+    if (existingDm) {
+      res.json(existingDm);
+      return;
+    }
+
+    // Create new DM channel
+    const newDm: ChatChannel = {
+      id: `dm-${Date.now()}`,
+      name: targetUser.name,
+      type: 'direct',
+      description: `Direct conversation between ${user.name} and ${targetUser.name}`,
+      topic: 'Direct Message',
+      color: '#3B82F6',
+      isPrivate: true,
+      ownerId: user.id,
+      memberIds: [user.id, targetUserId],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      pinnedMessageIds: []
+    };
+
+    channels.push(newDm);
+
+    res.status(201).json(newDm);
+  });
+
+  // GET /api/chat/channels/:channelId/messages: Fetch messages in channel
+  app.get('/api/chat/channels/:channelId/messages', (req: AuthenticatedRequest, res: Response) => {
+    const { channelId } = req.params;
+    const user = req.currentUser!;
+    const channel = channels.find((c) => c.id === channelId);
+
+    if (!channel) {
+      res.status(404).json({ error: 'Channel not found' });
+      return;
+    }
+
+    // Access check: public channel or member or admin
+    if (channel.isPrivate && !channel.memberIds.includes(user.id) && user.role !== 'admin') {
+      res.status(403).json({ error: 'Forbidden: You are not a member of this private channel.' });
+      return;
+    }
+
+    const userMap = new Map(users.map((u) => [u.id, u]));
+    const taskMap = new Map(tasks.map((t) => [t.id, t]));
+    const statusMap = new Map(statuses.map((s) => [s.id, s]));
+
+    const msgs = chatMessages
+      .filter((m) => m.channelId === channelId)
+      .map((m) => {
+        // Keep sender info fresh
+        const sender = userMap.get(m.senderId);
+        let linkedTaskStatusName = m.linkedTaskStatusName;
+        let linkedTaskStatusColor = m.linkedTaskStatusColor;
+        let linkedTaskPriority = m.linkedTaskPriority;
+        let linkedTaskTitle = m.linkedTaskTitle;
+
+        if (m.linkedTaskId && taskMap.has(m.linkedTaskId)) {
+          const t = taskMap.get(m.linkedTaskId)!;
+          linkedTaskTitle = t.title;
+          linkedTaskPriority = t.priority;
+          const s = statusMap.get(t.statusId);
+          if (s) {
+            linkedTaskStatusName = s.name;
+            linkedTaskStatusColor = s.color;
+          }
+        }
+
+        return {
+          ...m,
+          senderName: sender ? sender.name : m.senderName,
+          senderAvatar: sender ? sender.avatar : m.senderAvatar,
+          senderRole: sender ? sender.role : m.senderRole,
+          senderTitle: sender ? sender.title : m.senderTitle,
+          linkedTaskTitle,
+          linkedTaskPriority,
+          linkedTaskStatusName,
+          linkedTaskStatusColor
+        };
+      });
+
+    res.json(msgs);
+  });
+
+  // POST /api/chat/channels/:channelId/messages: Post new message
+  app.post('/api/chat/channels/:channelId/messages', (req: AuthenticatedRequest, res: Response) => {
+    const { channelId } = req.params;
+    const user = req.currentUser!;
+    const channel = channels.find((c) => c.id === channelId);
+
+    if (!channel) {
+      res.status(404).json({ error: 'Channel not found' });
+      return;
+    }
+
+    // If channel is private, ensure membership
+    if (channel.isPrivate && !channel.memberIds.includes(user.id) && user.role !== 'admin') {
+      res.status(403).json({ error: 'Forbidden: You must be a member of this channel to post messages.' });
+      return;
+    }
+
+    // If public channel and user not listed in members, automatically join them
+    if (!channel.memberIds.includes(user.id)) {
+      channel.memberIds.push(user.id);
+    }
+
+    const { content, replyToId, attachments, linkedTaskId, mentions } = req.body;
+
+    if ((!content || !content.trim()) && (!attachments || attachments.length === 0) && !linkedTaskId) {
+      res.status(400).json({ error: 'Message cannot be empty.' });
+      return;
+    }
+
+    let replyTo: ChatMessage['replyTo'] = undefined;
+    if (replyToId) {
+      const parentMsg = chatMessages.find((m) => m.id === replyToId);
+      if (parentMsg) {
+        replyTo = {
+          id: parentMsg.id,
+          senderName: parentMsg.senderName,
+          content:
+            parentMsg.content.length > 80 ? parentMsg.content.substring(0, 80) + '...' : parentMsg.content
+        };
+      }
+    }
+
+    let linkedTaskTitle: string | undefined = undefined;
+    let linkedTaskPriority: 'low' | 'medium' | 'high' | 'urgent' | undefined = undefined;
+    let linkedTaskStatusId: string | undefined = undefined;
+    let linkedTaskStatusName: string | undefined = undefined;
+    let linkedTaskStatusColor: string | undefined = undefined;
+
+    if (linkedTaskId) {
+      const task = tasks.find((t) => t.id === linkedTaskId);
+      if (task) {
+        linkedTaskTitle = task.title;
+        linkedTaskPriority = task.priority;
+        linkedTaskStatusId = task.statusId;
+        const status = statuses.find((s) => s.id === task.statusId);
+        if (status) {
+          linkedTaskStatusName = status.name;
+          linkedTaskStatusColor = status.color;
+        }
+      }
+    }
+
+    const newMsg: ChatMessage = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      channelId,
+      senderId: user.id,
+      senderName: user.name,
+      senderAvatar: user.avatar,
+      senderRole: user.role,
+      senderTitle: user.title,
+      content: content ? content.trim() : '',
+      createdAt: new Date().toISOString(),
+      replyTo,
+      mentions: Array.isArray(mentions) ? mentions : [],
+      attachments: Array.isArray(attachments) ? attachments : [],
+      reactions: {},
+      linkedTaskId,
+      linkedTaskTitle,
+      linkedTaskPriority,
+      linkedTaskStatusId,
+      linkedTaskStatusName,
+      linkedTaskStatusColor
+    };
+
+    chatMessages.push(newMsg);
+
+    // Update channel metadata
+    channel.updatedAt = newMsg.createdAt;
+    channel.lastMessage = {
+      id: newMsg.id,
+      senderName: newMsg.senderName,
+      content: newMsg.content || (newMsg.attachments?.length ? '📎 Attached files' : 'Linked a task'),
+      createdAt: newMsg.createdAt
+    };
+
+    // Mark as read for sender
+    if (!channelReadState.has(channelId)) {
+      channelReadState.set(channelId, new Map());
+    }
+    channelReadState.get(channelId)!.set(user.id, newMsg.createdAt);
+
+    res.status(201).json(newMsg);
+  });
+
+  // PUT /api/chat/channels/:channelId/messages/:messageId: Edit message
+  app.put('/api/chat/channels/:channelId/messages/:messageId', (req: AuthenticatedRequest, res: Response) => {
+    const { channelId, messageId } = req.params;
+    const user = req.currentUser!;
+    const msgIndex = chatMessages.findIndex((m) => m.id === messageId && m.channelId === channelId);
+
+    if (msgIndex === -1) {
+      res.status(404).json({ error: 'Message not found' });
+      return;
+    }
+
+    const msg = chatMessages[msgIndex];
+    if (user.role !== 'admin' && msg.senderId !== user.id) {
+      res.status(403).json({ error: 'Forbidden: You can only edit your own messages.' });
+      return;
+    }
+
+    const { content } = req.body;
+    if (!content || !content.trim()) {
+      res.status(400).json({ error: 'Message content cannot be empty.' });
+      return;
+    }
+
+    msg.content = content.trim();
+    msg.isEdited = true;
+    msg.updatedAt = new Date().toISOString();
+
+    res.json(msg);
+  });
+
+  // DELETE /api/chat/channels/:channelId/messages/:messageId: Delete message
+  app.delete('/api/chat/channels/:channelId/messages/:messageId', (req: AuthenticatedRequest, res: Response) => {
+    const { channelId, messageId } = req.params;
+    const user = req.currentUser!;
+    const msgIndex = chatMessages.findIndex((m) => m.id === messageId && m.channelId === channelId);
+
+    if (msgIndex === -1) {
+      res.status(404).json({ error: 'Message not found' });
+      return;
+    }
+
+    const msg = chatMessages[msgIndex];
+    if (user.role !== 'admin' && msg.senderId !== user.id) {
+      res.status(403).json({ error: 'Forbidden: You can only delete your own messages.' });
+      return;
+    }
+
+    chatMessages.splice(msgIndex, 1);
+
+    // Update channel lastMessage if needed
+    const channel = channels.find((c) => c.id === channelId);
+    if (channel) {
+      const remaining = chatMessages.filter((m) => m.channelId === channelId);
+      if (remaining.length > 0) {
+        const last = remaining[remaining.length - 1];
+        channel.lastMessage = {
+          id: last.id,
+          senderName: last.senderName,
+          content: last.content,
+          createdAt: last.createdAt
+        };
+      } else {
+        channel.lastMessage = undefined;
+      }
+    }
+
+    res.json({ success: true, message: 'Message deleted.' });
+  });
+
+  // POST /api/chat/channels/:channelId/messages/:messageId/reactions: Toggle emoji reaction
+  app.post('/api/chat/channels/:channelId/messages/:messageId/reactions', (req: AuthenticatedRequest, res: Response) => {
+    const { channelId, messageId } = req.params;
+    const user = req.currentUser!;
+    const { emoji } = req.body;
+
+    if (!emoji || typeof emoji !== 'string') {
+      res.status(400).json({ error: 'Emoji character is required.' });
+      return;
+    }
+
+    const msg = chatMessages.find((m) => m.id === messageId && m.channelId === channelId);
+    if (!msg) {
+      res.status(404).json({ error: 'Message not found' });
+      return;
+    }
+
+    if (!msg.reactions) {
+      msg.reactions = {};
+    }
+
+    const userList = msg.reactions[emoji] || [];
+    const idx = userList.indexOf(user.id);
+
+    if (idx > -1) {
+      // Remove reaction
+      userList.splice(idx, 1);
+      if (userList.length === 0) {
+        delete msg.reactions[emoji];
+      } else {
+        msg.reactions[emoji] = userList;
+      }
+    } else {
+      // Add reaction
+      userList.push(user.id);
+      msg.reactions[emoji] = userList;
+    }
+
+    res.json(msg);
+  });
+
+  // POST /api/chat/channels/:channelId/messages/:messageId/pin: Toggle pin status
+  app.post('/api/chat/channels/:channelId/messages/:messageId/pin', (req: AuthenticatedRequest, res: Response) => {
+    const { channelId, messageId } = req.params;
+    const msg = chatMessages.find((m) => m.id === messageId && m.channelId === channelId);
+    const channel = channels.find((c) => c.id === channelId);
+
+    if (!msg || !channel) {
+      res.status(404).json({ error: 'Message or channel not found.' });
+      return;
+    }
+
+    msg.isPinned = !msg.isPinned;
+
+    if (!channel.pinnedMessageIds) {
+      channel.pinnedMessageIds = [];
+    }
+
+    if (msg.isPinned) {
+      if (!channel.pinnedMessageIds.includes(msg.id)) {
+        channel.pinnedMessageIds.push(msg.id);
+      }
+    } else {
+      channel.pinnedMessageIds = channel.pinnedMessageIds.filter((id) => id !== msg.id);
+    }
+
+    res.json({ message: msg, pinnedMessageIds: channel.pinnedMessageIds });
+  });
+
+  // POST /api/chat/channels/:channelId/read: Mark channel as read
+  app.post('/api/chat/channels/:channelId/read', (req: AuthenticatedRequest, res: Response) => {
+    const { channelId } = req.params;
+    const user = req.currentUser!;
+
+    if (!channelReadState.has(channelId)) {
+      channelReadState.set(channelId, new Map());
+    }
+
+    const nowIso = new Date().toISOString();
+    channelReadState.get(channelId)!.set(user.id, nowIso);
+
+    res.json({ success: true, channelId, readAt: nowIso });
   });
 
   // POST /api/reset-data: Reset data for testing demo

@@ -25,13 +25,19 @@ import {
   Lock,
   FileCheck,
   AlertTriangle,
-  Briefcase
+  Briefcase,
+  Link2,
+  Check,
+  Share2
 } from 'lucide-react';
 import { Task, Status, Priority, User, CodeLanguage } from '../types';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
+import { useChat } from '../context/ChatContext';
 import { TagBadge } from './TagBadge';
 import { CodeEditorTab } from './CodeEditorTab';
+import { UserAvatar } from './UserAvatar';
+import { MessengerComments } from './MessengerComments';
 
 export const TaskDetailModal: React.FC = () => {
   const {
@@ -40,6 +46,7 @@ export const TaskDetailModal: React.FC = () => {
     projects,
     selectedTaskId,
     setSelectedTaskId,
+    generateTaskLink,
     updateTask,
     deleteTask,
     updateTaskCode,
@@ -50,10 +57,13 @@ export const TaskDetailModal: React.FC = () => {
     addAttachment,
     deleteAttachment,
     activityLogs,
-    addToast
+    addToast,
+    setViewMode
   } = useTasks();
 
   const { currentUser, users, isAdmin } = useAuth();
+  const { setPendingTaskShare } = useChat();
+  const todayStr = new Date().toISOString().split('T')[0];
 
   const task = tasks.find((t) => t.id === selectedTaskId);
 
@@ -61,12 +71,12 @@ export const TaskDetailModal: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
-  const [commentText, setCommentText] = useState('');
   const [newTag, setNewTag] = useState('');
   const [activeTab, setActiveTab] = useState<'details' | 'code' | 'comments' | 'attachments' | 'activity'>('details');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -107,6 +117,14 @@ export const TaskDetailModal: React.FC = () => {
     }
   };
 
+  const handleCopyLink = () => {
+    const link = generateTaskLink(task.id);
+    navigator.clipboard.writeText(link);
+    setCopiedLink(true);
+    addToast('success', `Task deep-link copied to clipboard`);
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
+
   const handleTitleBlur = () => {
     if (title.trim() && title !== task.title && canEdit) {
       updateTask(task.id, { title: title.trim() });
@@ -124,13 +142,6 @@ export const TaskDetailModal: React.FC = () => {
     if (!newSubtaskTitle.trim() || !canEdit) return;
     addSubtask(task.id, newSubtaskTitle.trim());
     setNewSubtaskTitle('');
-  };
-
-  const handleAddComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!commentText.trim() || !canEdit) return;
-    addComment(task.id, commentText.trim());
-    setCommentText('');
   };
 
   // Secure File Validation & Upload
@@ -319,14 +330,22 @@ export const TaskDetailModal: React.FC = () => {
               </select>
 
               {/* Due Date Picker */}
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-[#1f1f1f] border border-[#333333] shadow-xs text-neutral-200">
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-[#1f1f1f] border border-[#333333] shadow-xs text-neutral-200" title="Target completion date (today or later)">
                 <Calendar className="w-3.5 h-3.5 text-neutral-400" />
                 <input
                   type="date"
                   id="task-due-date-input"
+                  min={todayStr}
                   value={task.dueDate || ''}
                   disabled={!canEdit}
-                  onChange={(e) => updateTask(task.id, { dueDate: e.target.value || undefined })}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val && val < todayStr) {
+                      addToast('error', 'Due date cannot be in the past. Please select today or a future date.');
+                      return;
+                    }
+                    updateTask(task.id, { dueDate: val || undefined });
+                  }}
                   className="bg-transparent text-xs text-white focus:outline-none cursor-pointer disabled:cursor-not-allowed"
                 />
               </div>
@@ -352,8 +371,45 @@ export const TaskDetailModal: React.FC = () => {
             />
           </div>
 
-          {/* Close & Privilege-gated Delete Action */}
+          {/* Close & Privilege-gated Actions */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Share / Copy Task Link */}
+            <button
+              type="button"
+              id="btn-copy-task-link"
+              onClick={handleCopyLink}
+              title={copiedLink ? 'Link copied to clipboard!' : 'Copy deep-link to this task'}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold bg-[#222222] hover:bg-[#2c2c2c] border border-[#333333] text-neutral-200 hover:text-white transition-colors cursor-pointer"
+            >
+              {copiedLink ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-emerald-400">Copied</span>
+                </>
+              ) : (
+                <>
+                  <Link2 className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Share</span>
+                </>
+              )}
+            </button>
+
+            {/* Discuss in Chat */}
+            <button
+              type="button"
+              id="btn-discuss-in-chat"
+              onClick={() => {
+                setPendingTaskShare(task);
+                setSelectedTaskId(null);
+                setViewMode('chat');
+              }}
+              title="Discuss this task in Team Chat"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold bg-[#222222] hover:bg-[#2c2c2c] border border-[#333333] text-neutral-200 hover:text-white transition-colors cursor-pointer"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Chat</span>
+            </button>
+
             {canDelete && (
               <button
                 type="button"
@@ -386,6 +442,7 @@ export const TaskDetailModal: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('details')}
+            title="Task Details & Checklist"
             className={`flex items-center gap-1.5 py-3 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'details'
                 ? 'border-blue-500 text-blue-400'
@@ -393,7 +450,7 @@ export const TaskDetailModal: React.FC = () => {
             }`}
           >
             <FileText className="w-4 h-4" />
-            <span>Task Details & Checklist</span>
+            <span>Details</span>
             {totalSubtasks > 0 && (
               <span className="text-[10px] bg-[#222222] text-neutral-300 px-1.5 py-0.2 rounded font-medium ml-1">
                 {completedSubtasks}/{totalSubtasks}
@@ -406,6 +463,7 @@ export const TaskDetailModal: React.FC = () => {
             type="button"
             id="tab-code-snippets"
             onClick={() => setActiveTab('code')}
+            title="Code Snippets & Multi-Language Editor"
             className={`flex items-center gap-1.5 py-3 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'code'
                 ? 'border-blue-500 text-blue-400'
@@ -413,7 +471,7 @@ export const TaskDetailModal: React.FC = () => {
             }`}
           >
             <Code className="w-4 h-4" />
-            <span>Code Snippets</span>
+            <span>Code</span>
             {totalSnippets > 0 && (
               <span className="text-[10px] bg-blue-950 text-blue-300 border border-blue-800 px-1.5 py-0.2 rounded font-medium ml-1">
                 {totalSnippets}
@@ -424,6 +482,7 @@ export const TaskDetailModal: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('comments')}
+            title="Team Discussion & Comments"
             className={`flex items-center gap-1.5 py-3 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'comments'
                 ? 'border-blue-500 text-blue-400'
@@ -442,6 +501,7 @@ export const TaskDetailModal: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('attachments')}
+            title="Attachments & Uploaded Documents"
             className={`flex items-center gap-1.5 py-3 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'attachments'
                 ? 'border-blue-500 text-blue-400'
@@ -449,7 +509,7 @@ export const TaskDetailModal: React.FC = () => {
             }`}
           >
             <Paperclip className="w-4 h-4" />
-            <span>Attachments</span>
+            <span>Files</span>
             {task.attachments?.length > 0 && (
               <span className="text-[10px] bg-[#222222] text-neutral-300 px-1.5 py-0.2 rounded font-medium ml-1">
                 {task.attachments.length}
@@ -460,6 +520,7 @@ export const TaskDetailModal: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('activity')}
+            title="Audit Trail & Modification History"
             className={`flex items-center gap-1.5 py-3 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'activity'
                 ? 'border-blue-500 text-blue-400'
@@ -467,7 +528,7 @@ export const TaskDetailModal: React.FC = () => {
             }`}
           >
             <History className="w-4 h-4" />
-            <span>Activity Audit Log</span>
+            <span>Activity</span>
             {taskLogs.length > 0 && (
               <span className="text-[10px] bg-[#222222] text-neutral-300 px-1.5 py-0.2 rounded font-medium ml-1">
                 {taskLogs.length}
@@ -617,67 +678,7 @@ export const TaskDetailModal: React.FC = () => {
 
             {/* Comments Tab */}
             {activeTab === 'comments' && (
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  {task.comments?.length > 0 ? (
-                    task.comments.map((comment) => (
-                      <div
-                        key={comment.id}
-                        className="p-3 bg-[#181818] border border-[#262626] rounded space-y-1.5"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={comment.userAvatar}
-                              alt={comment.userName}
-                              className="w-5 h-5 rounded object-cover"
-                            />
-                            <span className="text-xs font-bold text-neutral-200">{comment.userName}</span>
-                          </div>
-                          <span className="text-[10px] text-neutral-500">
-                            {new Date(comment.createdAt).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              month: 'short',
-                              day: 'numeric'
-                            })}
-                          </span>
-                        </div>
-                        <p className="text-xs text-neutral-300 whitespace-pre-wrap pl-7 leading-relaxed">
-                          {comment.content}
-                        </p>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="py-8 text-center text-neutral-500 text-xs">
-                      No comments yet. Start a discussion below.
-                    </div>
-                  )}
-                </div>
-
-                {/* Add comment box */}
-                {canEdit && (
-                  <form onSubmit={handleAddComment} className="space-y-2 pt-2">
-                    <textarea
-                      rows={3}
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      placeholder="Write a comment or mention updates..."
-                      className="w-full p-3 text-xs text-neutral-200 bg-[#1f1f1f] border border-[#333333] rounded focus:ring-1 focus:ring-blue-500"
-                    />
-                    <div className="flex justify-end">
-                      <button
-                        type="submit"
-                        disabled={!commentText.trim()}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded shadow-xs disabled:opacity-40 transition-colors cursor-pointer"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>Post Comment</span>
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
+              <MessengerComments task={task} canEdit={canEdit} />
             )}
 
             {/* Attachments Tab */}
@@ -976,11 +977,7 @@ export const TaskDetailModal: React.FC = () => {
                       } disabled:cursor-not-allowed`}
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <img
-                          src={user.avatar}
-                          alt={user.name}
-                          className="w-6 h-6 rounded object-cover"
-                        />
+                        <UserAvatar user={user} size="sm" />
                         <div className="min-w-0">
                           <p className="text-xs truncate text-white">{user.name}</p>
                           <p className="text-[10px] text-neutral-500 truncate">{user.title}</p>
@@ -1023,8 +1020,42 @@ export const TaskDetailModal: React.FC = () => {
               )}
             </div>
 
+            {/* Direct Deep Link Widget */}
+            <div className="space-y-1.5 pt-2 border-t border-[#262626]">
+              <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Link2 className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Task Share Link</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="text-[11px] text-blue-400 hover:text-blue-300 font-semibold cursor-pointer"
+                >
+                  {copiedLink ? 'Copied!' : 'Copy'}
+                </button>
+              </label>
+              <div className="flex items-center gap-1.5 p-1.5 bg-[#181818] border border-[#2d2d2d] rounded">
+                <input
+                  type="text"
+                  readOnly
+                  value={generateTaskLink(task.id)}
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                  className="w-full bg-transparent text-[11px] font-mono text-neutral-300 select-all outline-none truncate"
+                />
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  title="Copy Task URL"
+                  className="p-1 text-neutral-400 hover:text-white rounded hover:bg-[#262626] transition-colors cursor-pointer shrink-0"
+                >
+                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Link2 className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+
             {/* Creation & Update Metadata */}
-            <div className="pt-3 border-t border-[#222222] space-y-2 text-[11px] text-neutral-400">
+            <div className="pt-2 border-t border-[#222222] space-y-2 text-[11px] text-neutral-400">
               <div className="flex items-center justify-between">
                 <span>Created by:</span>
                 <span className="font-semibold text-neutral-300">{task.createdByName || 'Admin'}</span>

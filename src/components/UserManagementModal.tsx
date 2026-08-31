@@ -14,9 +14,10 @@ import { UserRole, User } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
 import { api } from '../api/client';
+import { UserAvatar } from './UserAvatar';
 
 export const UserManagementModal: React.FC = () => {
-  const { isUserModalOpen, setIsUserModalOpen, tasks } = useTasks();
+  const { isUserModalOpen, setIsUserModalOpen, tasks, openUserProfile } = useTasks();
   const { users, refreshUsers, isAdmin } = useAuth();
 
   const [name, setName] = useState('');
@@ -220,10 +221,10 @@ export const UserManagementModal: React.FC = () => {
                     className="p-3 bg-[#181818] rounded border border-[#262626] flex items-center justify-between gap-3 shadow-xs"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <img
-                        src={u.avatar}
-                        alt={u.name}
-                        className="w-9 h-9 rounded object-cover ring-1 ring-[#333333] shrink-0"
+                      <UserAvatar
+                        user={u}
+                        size="md"
+                        className="ring-1 ring-[#333333] shrink-0"
                       />
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
@@ -244,9 +245,21 @@ export const UserManagementModal: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <span className="text-xs font-bold text-neutral-200">{assignedCount}</span>
-                      <span className="text-[11px] text-neutral-500 ml-1">tasks assigned</span>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="text-right hidden sm:block">
+                        <span className="text-xs font-bold text-neutral-200">{assignedCount}</span>
+                        <span className="text-[11px] text-neutral-500 ml-1">tasks</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          openUserProfile(u);
+                          setIsUserModalOpen(false);
+                        }}
+                        className="px-2.5 py-1 bg-[#222222] hover:bg-blue-600/30 text-neutral-300 hover:text-blue-300 text-xs rounded border border-[#333333] hover:border-blue-500/50 transition-colors cursor-pointer"
+                      >
+                        Profile & Avatar
+                      </button>
                     </div>
                   </div>
                 );

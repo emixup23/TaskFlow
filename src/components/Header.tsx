@@ -9,13 +9,17 @@ import {
   Laptop,
   Check,
   PanelLeft,
-  PanelLeftClose
+  PanelLeftClose,
+  Palette,
+  Sliders,
+  BarChart3
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
 import { useTheme } from '../context/ThemeContext';
 import { GamificationHeaderPill } from './GamificationHeaderPill';
 import { Logo } from './Logo';
+import { UserAvatar } from './UserAvatar';
 
 interface HeaderProps {
   isSidebarOpen?: boolean;
@@ -27,10 +31,13 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
   const {
     viewMode,
     setIsCreateModalOpen,
+    openUserProfile,
     filters,
-    setFilters
+    setFilters,
+    metricsVisibility,
+    toggleMetric
   } = useTasks();
-  const { theme, isDark, setTheme, toggleDarkMode } = useTheme();
+  const { theme, isDark, setTheme, toggleDarkMode, setIsThemeEditorOpen, themeConfig } = useTheme();
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
@@ -54,13 +61,17 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
   const getViewTitle = () => {
     switch (viewMode) {
       case 'kanban':
-        return 'Team Workflow Board';
+        return 'Team Workflow';
+      case 'tickets':
+        return 'Ticket System & Helpdesk Queue';
       case 'list':
         return 'Task Inventory & Table';
       case 'timeline':
         return 'Milestones & Timeline';
       case 'graph':
         return 'Team Relationship & Dependency Graph';
+      case 'chat':
+        return 'Team Chat & Collaboration';
       case 'dashboard':
         return 'Executive Analytics';
       case 'users':
@@ -70,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
       case 'rewards':
         return 'Gamification & Rewards Hub';
       default:
-        return 'Team Workflow Board';
+        return 'Team Workflow';
     }
   };
 
@@ -78,12 +89,16 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
     switch (viewMode) {
       case 'kanban':
         return 'Workflow Board';
+      case 'tickets':
+        return 'Incident & Request Tracking';
       case 'list':
         return 'Table View';
       case 'timeline':
         return 'Deadlines';
       case 'graph':
         return 'Tasks, Tags & User Relationships';
+      case 'chat':
+        return 'Channels, Groups & Direct Messages';
       case 'dashboard':
         return 'Admin Only';
       case 'users':
@@ -161,13 +176,43 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
           )}
         </div>
 
+        {/* KPI Metrics Strip Toggle Button */}
+        <button
+          type="button"
+          id="btn-toggle-metrics-strip"
+          onClick={() => toggleMetric('showMetricsBar')}
+          title={metricsVisibility.showMetricsBar ? 'Hide KPI Metrics Strip' : 'Show KPI Metrics Strip'}
+          className={`w-8 h-8 rounded flex items-center justify-center border transition-all cursor-pointer shadow-xs ${
+            metricsVisibility.showMetricsBar
+              ? 'bg-blue-600/20 border-blue-500/40 text-blue-400 hover:bg-blue-600/30'
+              : 'bg-[#1a1a1a] border-[#333333] text-neutral-400 hover:text-white hover:bg-[#262626]'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+        </button>
+
+        {/* Theme Studio & Palette Button */}
+        <button
+          type="button"
+          id="btn-open-theme-studio"
+          onClick={() => setIsThemeEditorOpen(true)}
+          title={`Theme Studio (Current: ${themeConfig.name || 'Custom'})`}
+          className="w-8 h-8 rounded bg-[#1a1a1a] flex items-center justify-center text-neutral-300 hover:text-white border border-[#333333] hover:bg-[#262626] transition-all cursor-pointer shadow-xs relative group"
+        >
+          <Palette className="w-4 h-4 text-neutral-300 group-hover:text-blue-400 transition-colors" />
+          <span
+            className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ring-1 ring-[#121212]"
+            style={{ backgroundColor: themeConfig.primaryColor }}
+          />
+        </button>
+
         {/* Dark Mode / Theme Selector Button */}
         <div className="relative" ref={themeMenuRef}>
           <button
             type="button"
             id="btn-theme-toggle"
             onClick={() => setShowThemeMenu(!showThemeMenu)}
-            title={`Current theme: ${theme} (click to change)`}
+            title={`Current mode: ${theme} (click to switch)`}
             className="w-8 h-8 rounded bg-[#1a1a1a] flex items-center justify-center text-neutral-300 hover:text-white border border-[#333333] hover:bg-[#262626] transition-all cursor-pointer shadow-xs"
           >
             {isDark ? (
@@ -178,7 +223,7 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
           </button>
 
           {showThemeMenu && (
-            <div className="absolute right-0 mt-2 w-44 bg-[#181818] rounded shadow-xl border border-[#333333] py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
+            <div className="absolute right-0 mt-2 w-52 bg-[#181818] rounded shadow-xl border border-[#333333] py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
               <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
                 Theme Preference
               </div>
@@ -239,6 +284,22 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
                 </div>
                 {theme === 'system' && <Check className="w-3.5 h-3.5" />}
               </button>
+
+              <div className="my-1 border-t border-[#262626]" />
+
+              {/* Open Theme Editor from Menu */}
+              <button
+                type="button"
+                id="btn-menu-open-theme-editor"
+                onClick={() => {
+                  setShowThemeMenu(false);
+                  setIsThemeEditorOpen(true);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-[#262626] text-blue-400 font-medium transition-colors cursor-pointer"
+              >
+                <Palette className="w-3.5 h-3.5 text-blue-400" />
+                <span>Open Theme Studio...</span>
+              </button>
             </div>
           )}
         </div>
@@ -285,10 +346,29 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
             type="button"
             id="btn-create-task"
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3.5 sm:px-4 py-1.5 rounded transition-all shadow-md shadow-blue-600/20 flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
+            title="Create new task (N)"
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3 sm:px-3.5 py-1.5 rounded transition-all shadow-md shadow-blue-600/20 flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Create Task</span>
+            <span className="hidden sm:inline"></span>
+          </button>
+        )}
+
+        {/* User Profile Avatar Quick Button */}
+        {currentUser && (
+          <button
+            type="button"
+            id="header-user-profile-btn"
+            onClick={() => openUserProfile(currentUser)}
+            className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-[#1f1f1f] border border-transparent hover:border-[#333] transition-all cursor-pointer group"
+            title={`View Profile (${currentUser.name})`}
+          >
+            <UserAvatar
+              user={currentUser}
+              size="sm"
+              showStatusIndicator
+              className="ring-1 ring-blue-500/50 group-hover:ring-blue-400 shrink-0"
+            />
           </button>
         )}
 

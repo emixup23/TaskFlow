@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TaskProvider, useTasks } from './context/TaskContext';
 import { GamificationProvider } from './context/GamificationContext';
-import { ThemeProvider } from './context/ThemeContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { ChatProvider } from './context/ChatContext';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { MetricsStrip } from './components/MetricsStrip';
 import { FilterBar } from './components/FilterBar';
 import { KanbanBoard } from './components/KanbanBoard';
+import { TicketSystemView } from './components/TicketSystemView';
 import { TableView } from './components/TableView';
 import { TimelineView } from './components/TimelineView';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -15,13 +17,16 @@ import { AuditLogView } from './components/AuditLogView';
 import { GamificationView } from './components/GamificationView';
 import { UserManagementView } from './components/UserManagementView';
 import { RelationshipGraphView } from './components/RelationshipGraphView';
+import { ChatView } from './components/ChatView';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { CreateTaskModal } from './components/CreateTaskModal';
 import { StatusManagerModal } from './components/StatusManagerModal';
 import { UserManagementModal } from './components/UserManagementModal';
+import { UserProfileModal } from './components/UserProfileModal';
 import { ProjectModal } from './components/ProjectModal';
 import { RewardsModal } from './components/RewardsModal';
 import { LevelUpModal } from './components/LevelUpModal';
+import { ThemeEditorModal } from './components/ThemeEditorModal';
 import { FloatingXpToast } from './components/FloatingXpToast';
 import { ToastContainer } from './components/ToastContainer';
 import { Loader2 } from 'lucide-react';
@@ -29,6 +34,7 @@ import { Loader2 } from 'lucide-react';
 const WorkspaceContent: React.FC = () => {
   const { viewMode, isLoading } = useTasks();
   const { isLoading: isAuthLoading } = useAuth();
+  const { setIsThemeEditorOpen } = useTheme();
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
     // Default open on desktop (>=1024px), closed on mobile
     if (typeof window !== 'undefined') {
@@ -49,21 +55,27 @@ const WorkspaceContent: React.FC = () => {
     });
   };
 
-  // Keyboard shortcut Ctrl+B or Cmd+B to toggle sidebar
+  // Keyboard shortcuts (Ctrl+B / Cmd+B for Sidebar, Ctrl+Shift+T / Cmd+Shift+T for Theme Studio)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
-        const target = e.target as HTMLElement;
-        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
-          return;
-        }
         e.preventDefault();
         toggleSidebar();
+      }
+
+      if ((e.ctrlKey || e.metaKey) && (e.shiftKey || e.altKey) && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        setIsThemeEditorOpen((prev) => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [setIsThemeEditorOpen]);
 
   if (isAuthLoading || isLoading) {
     return (
@@ -93,7 +105,7 @@ const WorkspaceContent: React.FC = () => {
         />
 
         {/* Top KPI Metrics Strip */}
-        <MetricsStrip />
+        {viewMode !== 'chat' && <MetricsStrip />}
 
         {/* Contextual Filter Bar */}
         {showFilterBar && <FilterBar />}
@@ -101,9 +113,11 @@ const WorkspaceContent: React.FC = () => {
         {/* View Surface with smooth scrolling */}
         <div className="flex-1 flex flex-col overflow-hidden bg-[#0d0d0d]">
           {viewMode === 'kanban' && <KanbanBoard />}
+          {viewMode === 'tickets' && <TicketSystemView />}
           {viewMode === 'list' && <TableView />}
           {viewMode === 'timeline' && <TimelineView />}
           {viewMode === 'graph' && <RelationshipGraphView />}
+          {viewMode === 'chat' && <ChatView />}
           {viewMode === 'dashboard' && <AdminDashboard />}
           {viewMode === 'users' && <UserManagementView />}
           {viewMode === 'audit' && <AuditLogView />}
@@ -117,8 +131,10 @@ const WorkspaceContent: React.FC = () => {
       <ProjectModal />
       <StatusManagerModal />
       <UserManagementModal />
+      <UserProfileModal />
       <RewardsModal />
       <LevelUpModal />
+      <ThemeEditorModal />
       <FloatingXpToast />
       <ToastContainer />
     </div>
@@ -131,7 +147,9 @@ export default function App() {
       <AuthProvider>
         <GamificationProvider>
           <TaskProvider>
-            <WorkspaceContent />
+            <ChatProvider>
+              <WorkspaceContent />
+            </ChatProvider>
           </TaskProvider>
         </GamificationProvider>
       </AuthProvider>

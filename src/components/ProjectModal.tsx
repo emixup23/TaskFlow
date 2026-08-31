@@ -433,10 +433,11 @@ export const ProjectModal: React.FC = () => {
                 id="btn-delete-project"
                 onClick={handleDelete}
                 disabled={isSubmitting}
+                title="Delete this project"
                 className="px-3 py-2 rounded text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-950/50 border border-red-800/40 transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete Project</span>
+                <span>Delete</span>
               </button>
             ) : (
               <div />
@@ -446,7 +447,7 @@ export const ProjectModal: React.FC = () => {
               <button
                 type="button"
                 onClick={handleClose}
-                className="px-4 py-2 bg-[#222222] hover:bg-[#2b2b2b] text-neutral-300 hover:text-white rounded text-xs font-semibold transition-colors cursor-pointer"
+                className="px-3.5 py-2 bg-[#222222] hover:bg-[#2b2b2b] text-neutral-300 hover:text-white rounded text-xs font-semibold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -455,9 +456,9 @@ export const ProjectModal: React.FC = () => {
                 type="submit"
                 id="btn-submit-project"
                 disabled={isSubmitting || !name.trim()}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded text-xs font-bold transition-all shadow-md shadow-blue-600/30 cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded text-xs font-bold transition-all shadow-md shadow-blue-600/30 cursor-pointer flex items-center gap-1.5"
               >
-                {editingProject ? 'Save Project Changes' : 'Create Project'}
+                {editingProject ? 'Save Changes' : 'Create'}
               </button>
             </div>
           </div>

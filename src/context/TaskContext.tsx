@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import {
   Task,
   Status,
+  User,
   ActivityLog,
   DashboardStats,
   FilterState,
@@ -9,7 +10,8 @@ import {
   Priority,
   TaskCodeSnippet,
   CodeLanguage,
-  Project
+  Project,
+  MetricsVisibility
 } from '../types';
 import { api } from '../api/client';
 import { useAuth } from './AuthContext';
@@ -53,14 +55,24 @@ interface TaskContextType {
   graphSelectedUserId: string | null;
   setGraphSelectedUserId: (id: string | null) => void;
   navigateToGraph: (userId?: string) => void;
+  metricsVisibility: MetricsVisibility;
+  setMetricsVisibility: React.Dispatch<React.SetStateAction<MetricsVisibility>>;
+  toggleMetric: (key: keyof MetricsVisibility) => void;
   selectedTaskId: string | null;
   setSelectedTaskId: (id: string | null) => void;
+  generateTaskLink: (taskId: string) => string;
   isCreateModalOpen: boolean;
   setIsCreateModalOpen: (open: boolean) => void;
   isStatusManagerOpen: boolean;
   setIsStatusManagerOpen: (open: boolean) => void;
   isUserModalOpen: boolean;
   setIsUserModalOpen: (open: boolean) => void;
+  selectedProfileUser: User | null;
+  setSelectedProfileUser: (user: User | null) => void;
+  openUserProfile: (userOrId: string | User, isEdit?: boolean) => void;
+  closeUserProfile: () => void;
+  isProfileEditMode: boolean;
+  setIsProfileEditMode: (edit: boolean) => void;
   toasts: Toast[];
   addToast: (type: 'success' | 'error' | 'info', message: string) => void;
   removeToast: (id: string) => void;
@@ -83,7 +95,9 @@ interface TaskContextType {
   addSubtask: (taskId: string, title: string) => Promise<void>;
   updateSubtask: (taskId: string, subtaskId: string, data: { completed?: boolean; title?: string }) => Promise<void>;
   deleteSubtask: (taskId: string, subtaskId: string) => Promise<void>;
-  addComment: (taskId: string, content: string) => Promise<void>;
+  addComment: (taskId: string, content: string, mentions?: string[]) => Promise<void>;
+  deleteComment: (taskId: string, commentId: string) => Promise<void>;
+  toggleCommentReaction: (taskId: string, commentId: string, emoji: string) => Promise<void>;
   addAttachment: (taskId: string, data: { name: string; size: number; type: string; url?: string }) => Promise<void>;
   deleteAttachment: (taskId: string, attachmentId: string) => Promise<void>;
   createStatus: (data: { name: string; color: string; description?: string; isDone?: boolean }) => Promise<boolean>;
@@ -105,7 +119,7 @@ const initialFilters: FilterState = {
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
 export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser, users, isAdmin } = useAuth();
   const {
     awardTaskCompleted,
     awardSubtaskCompleted,
@@ -125,7 +139,128 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [filters, setFilters] = useState<FilterState>(initialFilters);
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [graphSelectedUserId, setGraphSelectedUserId] = useState<string | null>(null);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskIdState] = useState<string | null>(null);
+
+  // User Profile Modal State
+  const [selectedProfileUser, setSelectedProfileUser] = useState<User | null>(null);
+  const [isProfileEditMode, setIsProfileEditMode] = useState<boolean>(false);
+
+  const openUserProfile = useCallback((userOrId: string | User, isEdit?: boolean) => {
+    if (typeof userOrId === 'object' && userOrId !== null) {
+      setSelectedProfileUser(userOrId);
+    } else if (typeof userOrId === 'string') {
+      const found = users.find((u) => u.id === userOrId) || (currentUser?.id === userOrId ? currentUser : null);
+      if (found) {
+        setSelectedProfileUser(found);
+      } else {
+        setSelectedProfileUser({
+          id: userOrId,
+          name: userOrId,
+          email: `${userOrId}@taskflow.io`,
+          role: 'basic',
+          status: 'active'
+        });
+      }
+    }
+    setIsProfileEditMode(Boolean(isEdit));
+  }, [users, currentUser]);
+
+  const closeUserProfile = useCallback(() => {
+    setSelectedProfileUser(null);
+    setIsProfileEditMode(false);
+  }, []);
+
+  // Keep selectedProfileUser in sync when users or currentUser changes
+  useEffect(() => {
+    if (selectedProfileUser) {
+      const updated = users.find((u) => u.id === selectedProfileUser.id) ||
+        (currentUser?.id === selectedProfileUser.id ? currentUser : null);
+      if (updated) {
+        setSelectedProfileUser((prev) => (prev ? { ...prev, ...updated } : updated));
+      }
+    }
+  }, [users, currentUser]);
+
+  // Set selected task and sync URL search params
+  const setSelectedTaskId = useCallback((id: string | null) => {
+    setSelectedTaskIdState(id);
+    try {
+      const url = new URL(window.location.href);
+      if (id) {
+        url.searchParams.set('taskId', id);
+      } else {
+        url.searchParams.delete('taskId');
+        url.searchParams.delete('task');
+      }
+      window.history.replaceState(null, '', url.toString());
+    } catch (e) {
+      // Ignore in sandbox environments
+    }
+  }, []);
+
+  // Helper to generate a direct shareable deep-link for any task
+  const generateTaskLink = useCallback((taskId: string) => {
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('taskId', taskId);
+      return url.toString();
+    } catch (e) {
+      return `${window.location.origin}${window.location.pathname}?taskId=${taskId}`;
+    }
+  }, []);
+
+  // Check URL on initial mount for deep-linked task
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const taskIdFromUrl = params.get('taskId') || params.get('task');
+      if (taskIdFromUrl) {
+        setSelectedTaskIdState(taskIdFromUrl);
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }, []);
+
+  const defaultMetricsVisibility: MetricsVisibility = {
+    showMetricsBar: false,
+    showActiveTasks: true,
+    showCompletionRate: true,
+    showCriticalBlockers: true,
+    showTeamCapacity: true
+  };
+
+  const [metricsVisibility, setMetricsVisibility] = useState<MetricsVisibility>(() => {
+    try {
+      // Clear legacy storage key if present from previous sessions
+      if (localStorage.getItem('taskflow_metrics_visibility')) {
+        localStorage.removeItem('taskflow_metrics_visibility');
+      }
+
+      const saved = localStorage.getItem('taskflow_metrics_visibility_v2');
+      if (saved) {
+        return { ...defaultMetricsVisibility, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+      // Ignore
+    }
+    return defaultMetricsVisibility;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('taskflow_metrics_visibility_v2', JSON.stringify(metricsVisibility));
+    } catch (e) {
+      // Ignore
+    }
+  }, [metricsVisibility]);
+
+  const toggleMetric = useCallback((key: keyof MetricsVisibility) => {
+    setMetricsVisibility((prev) => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  }, []);
 
   const navigateToGraph = useCallback((userId?: string) => {
     if (userId) {
@@ -455,15 +590,63 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const addComment = async (taskId: string, content: string) => {
+  const addComment = async (taskId: string, content: string, mentions?: string[]) => {
     try {
-      const updated = await api.addComment(taskId, content);
+      const updated = await api.addComment(taskId, content, mentions);
       setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
       addToast('success', 'Comment posted');
       awardCommentPosted();
       refreshData();
     } catch (err: any) {
       addToast('error', err.message || 'Failed to add comment');
+    }
+  };
+
+  const deleteComment = async (taskId: string, commentId: string) => {
+    try {
+      const updated = await api.deleteComment(taskId, commentId);
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+      addToast('info', 'Comment removed');
+      refreshData();
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to delete comment');
+    }
+  };
+
+  const toggleCommentReaction = async (taskId: string, commentId: string, emoji: string) => {
+    // Optimistic reaction update
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        const updatedComments = t.comments.map((c) => {
+          if (c.id !== commentId) return c;
+          const currentReactions = { ...(c.reactions || {}) };
+          const userList = [...(currentReactions[emoji] || [])];
+          const uid = currentUser?.id || 'user-admin-1';
+          const idx = userList.indexOf(uid);
+          if (idx > -1) {
+            userList.splice(idx, 1);
+            if (userList.length === 0) {
+              delete currentReactions[emoji];
+            } else {
+              currentReactions[emoji] = userList;
+            }
+          } else {
+            userList.push(uid);
+            currentReactions[emoji] = userList;
+          }
+          return { ...c, reactions: currentReactions };
+        });
+        return { ...t, comments: updatedComments };
+      })
+    );
+
+    try {
+      const updated = await api.toggleCommentReaction(taskId, commentId, emoji);
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+    } catch (err: any) {
+      refreshData();
+      addToast('error', err.message || 'Failed to update reaction');
     }
   };
 
@@ -545,6 +728,11 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const resetDemoData = async () => {
     try {
       await api.resetDemoData();
+      setMetricsVisibility(defaultMetricsVisibility);
+      try {
+        localStorage.removeItem('taskflow_metrics_visibility');
+        localStorage.setItem('taskflow_metrics_visibility_v2', JSON.stringify(defaultMetricsVisibility));
+      } catch (e) {}
       addToast('info', 'Platform reset to initial seed state');
       await refreshData();
     } catch (err: any) {
@@ -579,14 +767,24 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         graphSelectedUserId,
         setGraphSelectedUserId,
         navigateToGraph,
+        metricsVisibility,
+        setMetricsVisibility,
+        toggleMetric,
         selectedTaskId,
         setSelectedTaskId,
+        generateTaskLink,
         isCreateModalOpen,
         setIsCreateModalOpen,
         isStatusManagerOpen,
         setIsStatusManagerOpen,
         isUserModalOpen,
         setIsUserModalOpen,
+        selectedProfileUser,
+        setSelectedProfileUser,
+        openUserProfile,
+        closeUserProfile,
+        isProfileEditMode,
+        setIsProfileEditMode,
         toasts,
         addToast,
         removeToast,
@@ -600,6 +798,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateSubtask,
         deleteSubtask,
         addComment,
+        deleteComment,
+        toggleCommentReaction,
         addAttachment,
         deleteAttachment,
         createStatus,

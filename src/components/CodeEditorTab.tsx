@@ -453,7 +453,7 @@ export const CodeEditorTab: React.FC<CodeEditorTabProps> = ({
               title="Syntax Highlighted Colored View"
             >
               <Sparkles className="w-3.5 h-3.5 text-blue-300" />
-              <span className="hidden sm:inline">Syntax Highlighting</span>
+              <span className="hidden sm:inline">Syntax</span>
             </button>
 
             {(currentSnippet.language === 'html' || currentSnippet.language === 'css') && (
@@ -467,7 +467,7 @@ export const CodeEditorTab: React.FC<CodeEditorTabProps> = ({
                 title="Live Rendered HTML/CSS Preview"
               >
                 <Maximize2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Live Preview</span>
+                <span className="hidden sm:inline">Preview</span>
               </button>
             )}
           </div>
@@ -491,7 +491,8 @@ export const CodeEditorTab: React.FC<CodeEditorTabProps> = ({
             type="button"
             id="btn-copy-code"
             onClick={handleCopyCode}
-            className={`px-3 py-1.5 text-xs font-semibold rounded border transition-colors flex items-center gap-1.5 cursor-pointer ${
+            title={isCopied ? 'Code copied!' : 'Copy code to clipboard'}
+            className={`px-2.5 py-1.5 text-xs font-semibold rounded border transition-colors flex items-center gap-1.5 cursor-pointer ${
               isCopied
                 ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
                 : 'bg-[#222222] hover:bg-[#2c2c2c] text-white border-[#383838]'
@@ -500,12 +501,12 @@ export const CodeEditorTab: React.FC<CodeEditorTabProps> = ({
             {isCopied ? (
               <>
                 <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Copied!</span>
+                <span>Copied</span>
               </>
             ) : (
               <>
                 <Copy className="w-3.5 h-3.5 text-neutral-400" />
-                <span>Copy Code</span>
+                <span>Copy</span>
               </>
             )}
           </button>

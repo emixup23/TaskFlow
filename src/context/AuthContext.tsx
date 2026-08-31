@@ -9,6 +9,7 @@ interface AuthContextType {
   isLoading: boolean;
   switchUser: (userId: string) => Promise<void>;
   refreshUsers: () => Promise<void>;
+  updateUserProfile: (userId: string, data: Partial<User>) => Promise<User>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -54,6 +55,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUserProfile = async (userId: string, data: Partial<User>): Promise<User> => {
+    const updated = await api.updateUser(userId, data);
+    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, ...updated } : u)));
+    if (currentUser?.id === userId) {
+      setCurrentUser((prev) => (prev ? { ...prev, ...updated } : updated));
+    }
+    return updated;
+  };
+
   const isAdmin = currentUser?.role === 'admin';
 
   return (
@@ -64,7 +74,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin,
         isLoading,
         switchUser,
-        refreshUsers
+        refreshUsers,
+        updateUserProfile
       }}
     >
       {children}

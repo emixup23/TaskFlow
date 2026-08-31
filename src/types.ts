@@ -84,6 +84,8 @@ export interface Comment {
   userAvatar: string;
   content: string;
   createdAt: string;
+  reactions?: Record<string, string[]>; // emoji char -> array of userIds
+  mentions?: string[]; // array of mentioned userIds or names
 }
 
 export interface Attachment {
@@ -159,7 +161,100 @@ export interface FilterState {
   tag: string;
 }
 
-export type ViewMode = 'kanban' | 'list' | 'timeline' | 'dashboard' | 'audit' | 'rewards' | 'users' | 'graph';
+export type ViewMode = 'kanban' | 'tickets' | 'list' | 'timeline' | 'dashboard' | 'audit' | 'rewards' | 'users' | 'graph' | 'chat';
+
+export interface ChatMessageAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  downloadUrl?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  channelId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string;
+  senderRole?: 'admin' | 'basic';
+  senderTitle?: string;
+  content: string;
+  createdAt: string;
+  updatedAt?: string;
+  isEdited?: boolean;
+  isPinned?: boolean;
+  replyTo?: {
+    id: string;
+    senderName: string;
+    content: string;
+  };
+  mentions?: string[];
+  attachments?: ChatMessageAttachment[];
+  reactions?: Record<string, string[]>; // emoji -> array of userIds
+  linkedTaskId?: string;
+  linkedTaskTitle?: string;
+  linkedTaskPriority?: Priority;
+  linkedTaskStatusId?: string;
+  linkedTaskStatusName?: string;
+  linkedTaskStatusColor?: string;
+}
+
+export interface ChatChannel {
+  id: string;
+  name: string;
+  type: 'channel' | 'group_dm' | 'direct';
+  displayName?: string;
+  displayTopic?: string;
+  displayAvatar?: string;
+  description?: string;
+  topic?: string;
+  icon?: string;
+  color?: string;
+  isPrivate?: boolean;
+  isDefault?: boolean;
+  ownerId?: string;
+  memberIds: string[];
+  createdAt: string;
+  updatedAt: string;
+  lastMessage?: {
+    id: string;
+    senderName: string;
+    content: string;
+    createdAt: string;
+  };
+  unreadCount?: number;
+  memberCount?: number;
+  pinnedMessageIds?: string[];
+  isMuted?: boolean;
+}
+
+export type NotificationType =
+  | 'chat_dm'
+  | 'chat_channel'
+  | 'mention'
+  | 'task_assign'
+  | 'task_comment'
+  | 'status_change';
+
+export interface NotificationItem {
+  id: string;
+  userId: string; // recipient
+  type: NotificationType;
+  title: string;
+  message: string;
+  senderId?: string;
+  senderName?: string;
+  senderAvatar?: string;
+  channelId?: string;
+  channelName?: string;
+  taskId?: string;
+  taskTitle?: string;
+  isRead: boolean;
+  createdAt: string;
+  actionUrl?: string;
+}
 
 export type GraphNodeType = 'user' | 'task' | 'tag';
 
@@ -255,6 +350,14 @@ export interface XpEvent {
   timestamp: number;
 }
 
+export interface MetricsVisibility {
+  showMetricsBar: boolean;
+  showActiveTasks: boolean;
+  showCompletionRate: boolean;
+  showCriticalBlockers: boolean;
+  showTeamCapacity: boolean;
+}
+
 
 export interface DashboardStats {
   totalTasks: number;
@@ -267,3 +370,42 @@ export interface DashboardStats {
   userWorkload: { userId: string; userName: string; avatar: string; assignedCount: number; completedCount: number }[];
   recentActivity: ActivityLog[];
 }
+
+export type ThemeMode = 'light' | 'dark' | 'system';
+
+export type FontFamilyOption = 'system' | 'inter' | 'jakarta' | 'mono' | 'space' | 'fira';
+
+export type RadiusOption = 'sharp' | 'precision' | 'modern' | 'soft' | 'round';
+
+export type DensityOption = 'compact' | 'standard' | 'relaxed';
+
+export interface CustomThemeConfig {
+  id: string;
+  name: string;
+  mode: 'dark' | 'light';
+  primaryColor: string; // Hex color code (e.g. #3b82f6)
+  primaryHoverColor?: string;
+  primaryLightColor?: string; // Tint for background badges (e.g. rgba(59, 130, 246, 0.15))
+  backgroundColor: string; // Main canvas background (e.g. #0d0d0d or #f8fafc)
+  surfaceColor: string; // Card/sidebar/modal surface (e.g. #141414 or #ffffff)
+  surfaceSecondaryColor: string; // Inner container/table header (e.g. #1a1a1a or #f1f5f9)
+  borderColor: string; // Border lines (e.g. #262626 or #e2e8f0)
+  textColor: string; // Primary text (e.g. #f8fafc or #0f172a)
+  textMutedColor: string; // Secondary text (e.g. #a1a1aa or #64748b)
+  radius: RadiusOption; // Radius preset
+  radiusPx: string; // CSS radius value like '0px', '3px', '6px', '10px', '14px'
+  fontFamily: FontFamilyOption;
+  density: DensityOption;
+  highContrast: boolean;
+  isCustom?: boolean;
+}
+
+export interface ThemePreset {
+  id: string;
+  name: string;
+  description: string;
+  mode: 'dark' | 'light';
+  badge: string;
+  config: CustomThemeConfig;
+}
+

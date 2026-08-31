@@ -8,12 +8,14 @@ import {
   AlertCircle,
   MoreVertical,
   ChevronRight,
-  Check
+  Check,
+  Link2
 } from 'lucide-react';
 import { Task, Status, Priority } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
 import { TagBadge } from './TagBadge';
+import { UserAvatar } from './UserAvatar';
 
 interface TaskCardProps {
   task: Task;
@@ -21,8 +23,21 @@ interface TaskCardProps {
 
 export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const { users } = useAuth();
-  const { statuses, setSelectedTaskId, moveTaskStatus } = useTasks();
+  const { statuses, setSelectedTaskId, moveTaskStatus, generateTaskLink, addToast } = useTasks();
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const link = generateTaskLink(task.id);
+    navigator.clipboard.writeText(link);
+    setCopied(true);
+    addToast('success', `Copied link for #${hashNumber}`);
+    setTimeout(() => {
+      setCopied(false);
+      setShowStatusMenu(false);
+    }, 1200);
+  };
 
   const currentStatus = statuses.find((s) => s.id === task.statusId);
   const isDone = Boolean(currentStatus?.isDone);
@@ -130,6 +145,24 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
 
             {showStatusMenu && (
               <div className="absolute right-0 mt-1 w-44 bg-[#1a1a1a] rounded shadow-xl border border-[#333333] py-1.5 z-40 text-xs">
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-left hover:bg-[#262626] text-neutral-200 border-b border-[#2d2d2d] mb-1 font-medium cursor-pointer"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-400">Link Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Link2 className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Copy Task Link</span>
+                    </>
+                  )}
+                </button>
+
                 <div className="px-2.5 py-1 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
                   Move to:
                 </div>
@@ -183,13 +216,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
         <div className="flex -space-x-1.5 overflow-hidden">
           {assignedUsers.length > 0 ? (
             assignedUsers.map((u) => (
-              <img
-                key={u.id}
-                src={u.avatar}
-                alt={u.name}
-                title={u.name}
-                className="w-6 h-6 rounded border-2 border-[#181818] object-cover ring-1 ring-[#333333] shrink-0"
-              />
+              <div key={u.id} className="ring-1 ring-[#333333] rounded shrink-0" title={u.name}>
+                <UserAvatar
+                  user={u}
+                  size="sm"
+                  className="w-6 h-6 border-2 border-[#181818]"
+                />
+              </div>
             ))
           ) : (
             <div className="w-6 h-6 rounded bg-[#262626] border-2 border-[#181818] flex items-center justify-center text-[9px] text-neutral-400 font-bold">
