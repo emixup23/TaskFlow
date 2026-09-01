@@ -18,8 +18,11 @@ import { GamificationView } from './components/GamificationView';
 import { UserManagementView } from './components/UserManagementView';
 import { RelationshipGraphView } from './components/RelationshipGraphView';
 import { ChatView } from './components/ChatView';
+import { MeetingsView } from './components/MeetingsView';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { CreateTaskModal } from './components/CreateTaskModal';
+import { CreateMeetingModal } from './components/CreateMeetingModal';
+import { MeetingDetailModal } from './components/MeetingDetailModal';
 import { StatusManagerModal } from './components/StatusManagerModal';
 import { UserManagementModal } from './components/UserManagementModal';
 import { UserProfileModal } from './components/UserProfileModal';
@@ -32,28 +35,9 @@ import { ToastContainer } from './components/ToastContainer';
 import { Loader2 } from 'lucide-react';
 
 const WorkspaceContent: React.FC = () => {
-  const { viewMode, isLoading } = useTasks();
+  const { viewMode, isLoading, isSidebarOpen, setIsSidebarOpen, toggleSidebar } = useTasks();
   const { isLoading: isAuthLoading } = useAuth();
   const { setIsThemeEditorOpen } = useTheme();
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
-    // Default open on desktop (>=1024px), closed on mobile
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('taskflow_sidebar_open');
-      if (saved !== null) {
-        return saved === 'true';
-      }
-      return window.innerWidth >= 1024;
-    }
-    return true;
-  });
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen((prev) => {
-      const next = !prev;
-      localStorage.setItem('taskflow_sidebar_open', String(next));
-      return next;
-    });
-  };
 
   // Keyboard shortcuts (Ctrl+B / Cmd+B for Sidebar, Ctrl+Shift+T / Cmd+Shift+T for Theme Studio)
   useEffect(() => {
@@ -75,7 +59,7 @@ const WorkspaceContent: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setIsThemeEditorOpen]);
+  }, [toggleSidebar, setIsThemeEditorOpen]);
 
   if (isAuthLoading || isLoading) {
     return (
@@ -91,10 +75,7 @@ const WorkspaceContent: React.FC = () => {
   return (
     <div className="flex h-screen w-full bg-[#0d0d0d] text-slate-100 font-sans overflow-hidden antialiased selection:bg-blue-500 selection:text-white transition-colors duration-200">
       {/* Sleek Dark Sidebar */}
-      <Sidebar isOpen={isSidebarOpen} onClose={() => {
-        setIsSidebarOpen(false);
-        localStorage.setItem('taskflow_sidebar_open', 'false');
-      }} />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       {/* Main Workspace Column */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#0d0d0d]">
@@ -118,6 +99,7 @@ const WorkspaceContent: React.FC = () => {
           {viewMode === 'timeline' && <TimelineView />}
           {viewMode === 'graph' && <RelationshipGraphView />}
           {viewMode === 'chat' && <ChatView />}
+          {viewMode === 'meetings' && <MeetingsView />}
           {viewMode === 'dashboard' && <AdminDashboard />}
           {viewMode === 'users' && <UserManagementView />}
           {viewMode === 'audit' && <AuditLogView />}
@@ -128,6 +110,8 @@ const WorkspaceContent: React.FC = () => {
       {/* Global Modals & Notifications */}
       <TaskDetailModal />
       <CreateTaskModal />
+      <CreateMeetingModal />
+      <MeetingDetailModal />
       <ProjectModal />
       <StatusManagerModal />
       <UserManagementModal />

@@ -33,7 +33,9 @@ export const AuditLogView: React.FC = () => {
     'Updated Status',
     'Reordered Workflow',
     'Created Status',
-    'Deleted Status'
+    'Deleted Status',
+    'Created Meeting',
+    'Meeting Log Entry'
   ];
 
   const filteredLogs = activityLogs.filter((log) => {
@@ -54,7 +56,9 @@ export const AuditLogView: React.FC = () => {
   });
 
   const getActionBadge = (action: string) => {
-    if (action.includes('Created')) {
+    if (action.includes('Meeting')) {
+      return 'bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200/50 dark:border-violet-800/50';
+    } else if (action.includes('Created')) {
       return 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/50';
     } else if (action.includes('Status') || action.includes('Moved')) {
       return 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/50';

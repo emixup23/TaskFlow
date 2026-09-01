@@ -130,6 +130,20 @@ export interface Project {
   updatedAt: string;
 }
 
+export interface TaskTimeLog {
+  id: string;
+  taskId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  startTime: string;
+  endTime?: string;
+  durationSeconds: number;
+  description?: string;
+  isBillable?: boolean;
+  createdAt: string;
+}
+
 export interface Task {
   id: string;
   projectId?: string;
@@ -146,10 +160,90 @@ export interface Task {
   codeSnippets?: TaskCodeSnippet[];
   codeSnippet?: string;
   codeLanguage?: CodeLanguage;
+  timeSpentSeconds?: number;
+  estimatedHours?: number;
+  timeLogs?: TaskTimeLog[];
+  isTimerRunning?: boolean;
+  activeTimerStartedAt?: string;
   createdAt: string;
   updatedAt: string;
   createdBy: string;
   createdByName?: string;
+}
+
+export interface MeetingTopic {
+  id: string;
+  title: string;
+  durationMinutes?: number;
+  presenterId?: string;
+  presenterName?: string;
+  notes?: string;
+  completed?: boolean;
+}
+
+export interface MeetingAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  downloadUrl?: string;
+  uploadedBy: string;
+  uploadedByName: string;
+  uploadedAt: string;
+  extension: 'pdf' | 'txt' | 'csv' | 'docx' | 'mp3' | string;
+}
+
+export interface MeetingLog {
+  id: string;
+  meetingId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  action:
+    | 'created'
+    | 'status_changed'
+    | 'notes_updated'
+    | 'topic_added'
+    | 'topic_completed'
+    | 'topic_reopened'
+    | 'topic_removed'
+    | 'member_added'
+    | 'member_removed'
+    | 'member_role_changed'
+    | 'attachment_uploaded'
+    | 'attachment_removed'
+    | 'details_updated'
+    | 'decision'
+    | 'action_item'
+    | 'note'
+    | 'log_entry_added'
+    | string;
+  details: string;
+  timestamp: string;
+}
+
+export interface Meeting {
+  id: string;
+  title: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  durationMinutes: number;
+  location?: string;
+  meetingUrl?: string;
+  memberIds: string[];
+  topics: MeetingTopic[];
+  notes: string;
+  attachments: MeetingAttachment[];
+  logs?: MeetingLog[];
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  createdBy: string;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+  linkedProjectIds?: string[];
+  linkedTaskIds?: string[];
 }
 
 export interface ChatMessageAttachment {
@@ -408,6 +502,7 @@ let statuses: Status[] = [...DEFAULT_STATUSES];
 let projects: Project[] = [...DEFAULT_PROJECTS];
 let activityLogs: ActivityLog[] = [];
 let tasks: Task[] = [];
+let meetings: Meeting[] = [];
 let channels: ChatChannel[] = [];
 let chatMessages: ChatMessage[] = [];
 let channelReadState: Map<string, Map<string, string>> = new Map(); // channelId -> (userId -> isoString)
@@ -1420,6 +1515,415 @@ if __name__ == "__main__":
       chan.updatedAt = last.createdAt;
     }
   });
+
+  // Seed Meetings & Minutes with Topics, Members, Audio, and Document Attachments
+  meetings = [
+    {
+      id: 'meet-1',
+      title: 'Sprint 14 Planning & Architecture Review',
+      description: 'Cross-functional engineering and product alignment for Sprint 14 delivery milestones, RBAC security gates, Task Time Tracker, and Meetings system.',
+      startTime: new Date(Date.now() + 2 * 3600000).toISOString(),
+      endTime: new Date(Date.now() + 3 * 3600000).toISOString(),
+      durationMinutes: 60,
+      location: 'Conference Room 4B & Google Meet',
+      meetingUrl: 'https://meet.google.com/ais-taskflow-sync',
+      memberIds: ['user-admin-1', 'user-basic-1', 'user-basic-2', 'user-admin-2', 'user-basic-3'],
+      status: 'scheduled',
+      topics: [
+        {
+          id: 'top-1',
+          title: 'Review RBAC Middleware & Token Verification',
+          durationMinutes: 20,
+          presenterId: 'user-basic-1',
+          presenterName: 'Alex Rivera',
+          completed: false,
+          notes: 'Ensure all API routes validate user credentials and prevent unauthorized ID escalation.'
+        },
+        {
+          id: 'top-2',
+          title: 'Task Time Tracking & Live Stopwatch Module',
+          durationMinutes: 15,
+          presenterId: 'user-admin-1',
+          presenterName: 'Sarah Chen',
+          completed: false,
+          notes: 'Demonstrate live timer widget, manual log entry, billable calculations, and task dot badges.'
+        },
+        {
+          id: 'top-3',
+          title: 'Interactive Meetings Hub with MP3 audio playback & file attachments',
+          durationMinutes: 25,
+          presenterId: 'user-basic-2',
+          presenterName: 'Maria Garcia',
+          completed: false,
+          notes: 'Support for PDF, TXT, CSV, DOCX, and MP3 voice notes with in-browser preview.'
+        }
+      ],
+      notes: `### Sprint 14 Architecture Sync Notes
+**Objectives:**
+- Finalize the **Time Tracker** on all tasks with active timer and manual logging.
+- Ship the comprehensive **Meetings** system with full attachment support for \`.pdf\`, \`.txt\`, \`.csv\`, \`.docx\`, and \`.mp3\`.
+- Enforce the **Task Dot representation** standard across all views.
+
+**Decisions:**
+1. Default task cards and rows should display interactive status dots.
+2. Meeting files should support audio player for MP3 recordings and direct text/table inspection.
+3. Every task tracks cumulative time spent in seconds with breakdown history.`,
+      attachments: [
+        {
+          id: 'matt-1',
+          name: 'Sprint_14_Architectural_Spec.pdf',
+          size: 524288,
+          type: 'application/pdf',
+          url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+          extension: 'pdf',
+          uploadedBy: 'user-admin-1',
+          uploadedByName: 'Sarah Chen',
+          uploadedAt: new Date(Date.now() - 3600000).toISOString()
+        },
+        {
+          id: 'matt-2',
+          name: 'kickoff_voice_memo.mp3',
+          size: 1048576,
+          type: 'audio/mpeg',
+          url: 'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
+          extension: 'mp3',
+          uploadedBy: 'user-admin-1',
+          uploadedByName: 'Sarah Chen',
+          uploadedAt: new Date(Date.now() - 3600000).toISOString()
+        },
+        {
+          id: 'matt-3',
+          name: 'sprint_capacity_matrix.csv',
+          size: 14200,
+          type: 'text/csv',
+          url: '',
+          extension: 'csv',
+          uploadedBy: 'user-admin-2',
+          uploadedByName: 'David Kim',
+          uploadedAt: new Date(Date.now() - 7200000).toISOString()
+        },
+        {
+          id: 'matt-4',
+          name: 'design_guidelines.docx',
+          size: 284000,
+          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          url: '',
+          extension: 'docx',
+          uploadedBy: 'user-basic-3',
+          uploadedByName: 'Liam Taylor',
+          uploadedAt: new Date(Date.now() - 7200000).toISOString()
+        },
+        {
+          id: 'matt-5',
+          name: 'release_checklist.txt',
+          size: 4800,
+          type: 'text/plain',
+          url: '',
+          extension: 'txt',
+          uploadedBy: 'user-basic-1',
+          uploadedByName: 'Alex Rivera',
+          uploadedAt: new Date(Date.now() - 7200000).toISOString()
+        }
+      ],
+      createdBy: 'user-admin-1',
+      createdByName: 'Sarah Chen',
+      createdAt: new Date(Date.now() - 24 * 3600000).toISOString(),
+      updatedAt: new Date().toISOString(),
+      linkedProjectIds: ['proj-1'],
+      linkedTaskIds: ['task-1', 'task-2'],
+      logs: [
+        {
+          id: 'mlog-1-1',
+          meetingId: 'meet-1',
+          userId: 'user-admin-1',
+          userName: 'Sarah Chen',
+          userAvatar: DEFAULT_USERS[0].avatar,
+          action: 'created',
+          details: 'Scheduled meeting "Sprint 14 Planning & Architecture Review" (60 mins)',
+          timestamp: new Date(Date.now() - 24 * 3600000).toISOString()
+        },
+        {
+          id: 'mlog-1-2',
+          meetingId: 'meet-1',
+          userId: 'user-admin-1',
+          userName: 'Sarah Chen',
+          userAvatar: DEFAULT_USERS[0].avatar,
+          action: 'attachment_uploaded',
+          details: 'Attached document "Sprint_14_Architectural_Spec.pdf" (512 KB)',
+          timestamp: new Date(Date.now() - 20 * 3600000).toISOString()
+        },
+        {
+          id: 'mlog-1-3',
+          meetingId: 'meet-1',
+          userId: 'user-basic-1',
+          userName: 'Alex Rivera',
+          userAvatar: DEFAULT_USERS[2].avatar,
+          action: 'topic_added',
+          details: 'Added discussion topic "Review RBAC Middleware & Token Verification" (20 mins)',
+          timestamp: new Date(Date.now() - 14 * 3600000).toISOString()
+        },
+        {
+          id: 'mlog-1-4',
+          meetingId: 'meet-1',
+          userId: 'user-admin-1',
+          userName: 'Sarah Chen',
+          userAvatar: DEFAULT_USERS[0].avatar,
+          action: 'notes_updated',
+          details: 'Drafted Sprint 14 Architecture Sync minutes and objectives',
+          timestamp: new Date(Date.now() - 5 * 3600000).toISOString()
+        }
+      ]
+    },
+    {
+      id: 'meet-2',
+      title: 'Daily Engineering Standup & Blocker Triage',
+      description: '15-minute quick sync to review active tasks, time logs, and open pull requests.',
+      startTime: new Date(Date.now() - 1 * 3600000).toISOString(),
+      endTime: new Date(Date.now() - 0.75 * 3600000).toISOString(),
+      durationMinutes: 15,
+      location: 'Huddle Room Alpha',
+      memberIds: ['user-admin-1', 'user-basic-1', 'user-basic-2', 'user-basic-4'],
+      status: 'completed',
+      topics: [
+        { id: 'top-201', title: 'Ticket backlog clearance', durationMinutes: 5, presenterId: 'user-basic-4', presenterName: 'Marcus Vance', completed: true },
+        { id: 'top-202', title: 'Time tracker stopwatch accuracy verification', durationMinutes: 10, presenterId: 'user-basic-1', presenterName: 'Alex Rivera', completed: true }
+      ],
+      notes: `**Standup Summary:**
+- Alex Rivera logged 2h 45m on OAuth middleware testing.
+- Maria Garcia completed drag & drop UI tests.
+- Marcus Vance verified zero regressions in ticket queue.`,
+      attachments: [
+        {
+          id: 'matt-201',
+          name: 'standup_summary.txt',
+          size: 2400,
+          type: 'text/plain',
+          url: '',
+          extension: 'txt',
+          uploadedBy: 'user-basic-4',
+          uploadedByName: 'Marcus Vance',
+          uploadedAt: new Date(Date.now() - 3600000).toISOString()
+        }
+      ],
+      createdBy: 'user-admin-1',
+      createdByName: 'Sarah Chen',
+      createdAt: new Date(Date.now() - 48 * 3600000).toISOString(),
+      updatedAt: new Date().toISOString(),
+      linkedProjectIds: ['proj-1', 'proj-3'],
+      logs: [
+        {
+          id: 'mlog-2-1',
+          meetingId: 'meet-2',
+          userId: 'user-admin-1',
+          userName: 'Sarah Chen',
+          userAvatar: DEFAULT_USERS[0].avatar,
+          action: 'created',
+          details: 'Scheduled daily standup (15 mins) with 4 engineers',
+          timestamp: new Date(Date.now() - 48 * 3600000).toISOString()
+        },
+        {
+          id: 'mlog-2-2',
+          meetingId: 'meet-2',
+          userId: 'user-basic-4',
+          userName: 'Marcus Vance',
+          userAvatar: DEFAULT_USERS[3]?.avatar || DEFAULT_USERS[1].avatar,
+          action: 'topic_completed',
+          details: 'Marked topic "Ticket backlog clearance" as concluded',
+          timestamp: new Date(Date.now() - 0.9 * 3600000).toISOString()
+        },
+        {
+          id: 'mlog-2-3',
+          meetingId: 'meet-2',
+          userId: 'user-basic-1',
+          userName: 'Alex Rivera',
+          userAvatar: DEFAULT_USERS[2].avatar,
+          action: 'topic_completed',
+          details: 'Concluded "Time tracker stopwatch accuracy verification"',
+          timestamp: new Date(Date.now() - 0.8 * 3600000).toISOString()
+        },
+        {
+          id: 'mlog-2-4',
+          meetingId: 'meet-2',
+          userId: 'user-admin-1',
+          userName: 'Sarah Chen',
+          userAvatar: DEFAULT_USERS[0].avatar,
+          action: 'status_changed',
+          details: 'Transitioned meeting status from scheduled to completed',
+          timestamp: new Date(Date.now() - 0.75 * 3600000).toISOString()
+        }
+      ]
+    },
+    {
+      id: 'meet-3',
+      title: 'UI/UX Design System & Micro-Interactions Review',
+      description: 'Deep-dive into component states, status dots, interactive stopwatch widget, and high contrast accessibility.',
+      startTime: new Date(Date.now() + 26 * 3600000).toISOString(),
+      endTime: new Date(Date.now() + 27 * 3600000).toISOString(),
+      durationMinutes: 45,
+      location: 'Design Studio & Figma Live',
+      memberIds: ['user-basic-3', 'user-basic-2', 'user-admin-1'],
+      status: 'scheduled',
+      topics: [
+        { id: 'top-301', title: 'Color-coded task dot system & pulsating states', durationMinutes: 15, presenterId: 'user-basic-3', presenterName: 'Liam Taylor', completed: false },
+        { id: 'top-302', title: 'Attachment file cards with audio waveform player', durationMinutes: 15, presenterId: 'user-basic-2', presenterName: 'Maria Garcia', completed: false },
+        { id: 'top-303', title: 'Mobile responsiveness for meeting agenda checklists', durationMinutes: 15, presenterId: 'user-admin-1', presenterName: 'Sarah Chen', completed: false }
+      ],
+      notes: `### Agenda & Requirements:
+- Validate that all task cards use luminous dots for status identification.
+- Ensure audio attachments play seamlessly within the meeting modal without external plugins.`,
+      attachments: [
+        {
+          id: 'matt-301',
+          name: 'design_tokens_v2.csv',
+          size: 18200,
+          type: 'text/csv',
+          url: '',
+          extension: 'csv',
+          uploadedBy: 'user-basic-3',
+          uploadedByName: 'Liam Taylor',
+          uploadedAt: new Date(Date.now() - 12 * 3600000).toISOString()
+        },
+        {
+          id: 'matt-302',
+          name: 'audio_briefing.mp3',
+          size: 2097152,
+          type: 'audio/mpeg',
+          url: 'https://actions.google.com/sounds/v1/ambiences/office_room.ogg',
+          extension: 'mp3',
+          uploadedBy: 'user-basic-3',
+          uploadedByName: 'Liam Taylor',
+          uploadedAt: new Date(Date.now() - 12 * 3600000).toISOString()
+        }
+      ],
+      createdBy: 'user-basic-3',
+      createdByName: 'Liam Taylor',
+      createdAt: new Date(Date.now() - 12 * 3600000).toISOString(),
+      updatedAt: new Date().toISOString(),
+      linkedProjectIds: ['proj-2'],
+      logs: [
+        {
+          id: 'mlog-3-1',
+          meetingId: 'meet-3',
+          userId: 'user-basic-3',
+          userName: 'Liam Taylor',
+          userAvatar: DEFAULT_USERS[4]?.avatar || DEFAULT_USERS[0].avatar,
+          action: 'created',
+          details: 'Created meeting for UI/UX Design System review',
+          timestamp: new Date(Date.now() - 12 * 3600000).toISOString()
+        },
+        {
+          id: 'mlog-3-2',
+          meetingId: 'meet-3',
+          userId: 'user-basic-3',
+          userName: 'Liam Taylor',
+          userAvatar: DEFAULT_USERS[4]?.avatar || DEFAULT_USERS[0].avatar,
+          action: 'attachment_uploaded',
+          details: 'Uploaded audio recording "audio_briefing.mp3" (2.0 MB)',
+          timestamp: new Date(Date.now() - 10 * 3600000).toISOString()
+        }
+      ]
+    }
+  ];
+
+  // Populate seed time logs on tasks
+  if (tasks.length > 0) {
+    tasks[0].timeSpentSeconds = 14400; // 4 hours
+    tasks[0].estimatedHours = 8;
+    tasks[0].timeLogs = [
+      {
+        id: 'tlog-1',
+        taskId: tasks[0].id,
+        userId: 'user-basic-1',
+        userName: 'Alex Rivera',
+        userAvatar: DEFAULT_USERS[2].avatar,
+        startTime: new Date(Date.now() - 28 * 3600000).toISOString(),
+        endTime: new Date(Date.now() - 26 * 3600000).toISOString(),
+        durationSeconds: 7200,
+        description: 'Wrote OAuth authentication middleware and token verification logic',
+        isBillable: true,
+        createdAt: new Date(Date.now() - 26 * 3600000).toISOString()
+      },
+      {
+        id: 'tlog-2',
+        taskId: tasks[0].id,
+        userId: 'user-admin-1',
+        userName: 'Sarah Chen',
+        userAvatar: DEFAULT_USERS[0].avatar,
+        startTime: new Date(Date.now() - 20 * 3600000).toISOString(),
+        endTime: new Date(Date.now() - 19 * 3600000).toISOString(),
+        durationSeconds: 3600,
+        description: 'Reviewed RBAC security policy and role checker implementation',
+        isBillable: true,
+        createdAt: new Date(Date.now() - 19 * 3600000).toISOString()
+      },
+      {
+        id: 'tlog-3',
+        taskId: tasks[0].id,
+        userId: 'user-basic-1',
+        userName: 'Alex Rivera',
+        userAvatar: DEFAULT_USERS[2].avatar,
+        startTime: new Date(Date.now() - 6 * 3600000).toISOString(),
+        endTime: new Date(Date.now() - 5 * 3600000).toISOString(),
+        durationSeconds: 3600,
+        description: 'Unit tested endpoint authorization handlers and mock token cases',
+        isBillable: true,
+        createdAt: new Date(Date.now() - 5 * 3600000).toISOString()
+      }
+    ];
+
+    if (tasks.length > 1) {
+      tasks[1].timeSpentSeconds = 9000; // 2.5 hours
+      tasks[1].estimatedHours = 6;
+      tasks[1].timeLogs = [
+        {
+          id: 'tlog-4',
+          taskId: tasks[1].id,
+          userId: 'user-basic-2',
+          userName: 'Maria Garcia',
+          userAvatar: DEFAULT_USERS[3].avatar,
+          startTime: new Date(Date.now() - 18 * 3600000).toISOString(),
+          endTime: new Date(Date.now() - 16.5 * 3600000).toISOString(),
+          durationSeconds: 5400,
+          description: 'Built Kanban board drag & drop column handlers and card states',
+          isBillable: true,
+          createdAt: new Date(Date.now() - 16.5 * 3600000).toISOString()
+        },
+        {
+          id: 'tlog-5',
+          taskId: tasks[1].id,
+          userId: 'user-basic-2',
+          userName: 'Maria Garcia',
+          userAvatar: DEFAULT_USERS[3].avatar,
+          startTime: new Date(Date.now() - 8 * 3600000).toISOString(),
+          endTime: new Date(Date.now() - 7 * 3600000).toISOString(),
+          durationSeconds: 3600,
+          description: 'Added mobile touch listeners and responsive viewport layout',
+          isBillable: true,
+          createdAt: new Date(Date.now() - 7 * 3600000).toISOString()
+        }
+      ];
+    }
+
+    if (tasks.length > 2) {
+      tasks[2].timeSpentSeconds = 7200; // 2 hours
+      tasks[2].estimatedHours = 4;
+      tasks[2].timeLogs = [
+        {
+          id: 'tlog-6',
+          taskId: tasks[2].id,
+          userId: 'user-basic-3',
+          userName: 'Liam Taylor',
+          userAvatar: DEFAULT_USERS[4].avatar,
+          startTime: new Date(Date.now() - 14 * 3600000).toISOString(),
+          endTime: new Date(Date.now() - 12 * 3600000).toISOString(),
+          durationSeconds: 7200,
+          description: 'Updated design tokens, contrast tokens, and Tailwind theme variables',
+          isBillable: true,
+          createdAt: new Date(Date.now() - 12 * 3600000).toISOString()
+        }
+      ];
+    }
+  }
 }
 
 initializeSeedData();
@@ -2768,6 +3272,764 @@ async function startServer() {
     );
 
     res.json(task);
+  });
+
+  // =========================================================================
+  // TASK TIME TRACKER API
+  // =========================================================================
+
+  // POST /api/tasks/:id/time-logs: Add a time log entry
+  app.post('/api/tasks/:id/time-logs', (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const { durationSeconds, startTime, endTime, description, isBillable } = req.body;
+    const user = req.currentUser!;
+    const task = tasks.find((t) => t.id === id);
+
+    if (!task) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    if (user.role !== 'admin' && !task.assigneeIds.includes(user.id)) {
+      res.status(403).json({ error: 'Forbidden: You must be assigned to this task to log time.' });
+      return;
+    }
+
+    const duration = typeof durationSeconds === 'number' && durationSeconds > 0 ? durationSeconds : 0;
+    if (duration <= 0) {
+      res.status(400).json({ error: 'Duration must be greater than 0 seconds.' });
+      return;
+    }
+
+    const newLog: TaskTimeLog = {
+      id: `tlog-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      taskId: task.id,
+      userId: user.id,
+      userName: user.name,
+      userAvatar: user.avatar,
+      startTime: startTime || new Date(Date.now() - duration * 1000).toISOString(),
+      endTime: endTime || new Date().toISOString(),
+      durationSeconds: duration,
+      description: description?.trim() || 'Work session logged',
+      isBillable: isBillable !== undefined ? Boolean(isBillable) : true,
+      createdAt: new Date().toISOString()
+    };
+
+    if (!task.timeLogs) {
+      task.timeLogs = [];
+    }
+    task.timeLogs.unshift(newLog);
+    task.timeSpentSeconds = (task.timeSpentSeconds || 0) + duration;
+    task.updatedAt = new Date().toISOString();
+
+    const formattedDuration = `${Math.floor(duration / 3600)}h ${Math.floor((duration % 3600) / 60)}m`;
+
+    addActivityLog(
+      user.id,
+      user.name,
+      user.avatar,
+      'Logged Time',
+      `Logged ${formattedDuration} on task: "${newLog.description}"`,
+      task.id,
+      task.title
+    );
+
+    res.status(201).json(task);
+  });
+
+  // DELETE /api/tasks/:id/time-logs/:logId: Remove a time log
+  app.delete('/api/tasks/:id/time-logs/:logId', (req: AuthenticatedRequest, res: Response) => {
+    const { id, logId } = req.params;
+    const user = req.currentUser!;
+    const task = tasks.find((t) => t.id === id);
+
+    if (!task) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    if (!task.timeLogs) {
+      res.status(404).json({ error: 'Time log not found' });
+      return;
+    }
+
+    const logIndex = task.timeLogs.findIndex((l) => l.id === logId);
+    if (logIndex === -1) {
+      res.status(404).json({ error: 'Time log not found' });
+      return;
+    }
+
+    const log = task.timeLogs[logIndex];
+    if (user.role !== 'admin' && log.userId !== user.id) {
+      res.status(403).json({ error: 'Forbidden: You can only delete your own time logs.' });
+      return;
+    }
+
+    const removedLog = task.timeLogs.splice(logIndex, 1)[0];
+    task.timeSpentSeconds = Math.max(0, (task.timeSpentSeconds || 0) - removedLog.durationSeconds);
+    task.updatedAt = new Date().toISOString();
+
+    addActivityLog(
+      user.id,
+      user.name,
+      user.avatar,
+      'Deleted Time Log',
+      `Removed time entry (${Math.floor(removedLog.durationSeconds / 60)} mins) from task #${task.id}`,
+      task.id,
+      task.title
+    );
+
+    res.json(task);
+  });
+
+  // POST /api/tasks/:id/timer: Start or stop live stopwatch timer
+  app.post('/api/tasks/:id/timer', (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const { action, description, isBillable } = req.body;
+    const user = req.currentUser!;
+    const task = tasks.find((t) => t.id === id);
+
+    if (!task) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    if (user.role !== 'admin' && !task.assigneeIds.includes(user.id)) {
+      res.status(403).json({ error: 'Forbidden: You must be assigned to this task to track timer.' });
+      return;
+    }
+
+    if (action === 'start') {
+      // Stop timers on other tasks if any
+      tasks.forEach((t) => {
+        if (t.id !== task.id && t.isTimerRunning) {
+          t.isTimerRunning = false;
+        }
+      });
+
+      task.isTimerRunning = true;
+      task.activeTimerStartedAt = new Date().toISOString();
+      task.updatedAt = new Date().toISOString();
+
+      addActivityLog(
+        user.id,
+        user.name,
+        user.avatar,
+        'Started Timer',
+        `Started live stopwatch timer on task #${task.id}`,
+        task.id,
+        task.title
+      );
+
+      res.json(task);
+    } else if (action === 'stop') {
+      if (!task.isTimerRunning || !task.activeTimerStartedAt) {
+        task.isTimerRunning = false;
+        res.json(task);
+        return;
+      }
+
+      const startTime = new Date(task.activeTimerStartedAt).getTime();
+      const endTime = Date.now();
+      const elapsedSeconds = Math.max(1, Math.round((endTime - startTime) / 1000));
+
+      const newLog: TaskTimeLog = {
+        id: `tlog-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        taskId: task.id,
+        userId: user.id,
+        userName: user.name,
+        userAvatar: user.avatar,
+        startTime: task.activeTimerStartedAt,
+        endTime: new Date(endTime).toISOString(),
+        durationSeconds: elapsedSeconds,
+        description: description?.trim() || 'Stopwatch tracked session',
+        isBillable: isBillable !== undefined ? Boolean(isBillable) : true,
+        createdAt: new Date().toISOString()
+      };
+
+      if (!task.timeLogs) {
+        task.timeLogs = [];
+      }
+      task.timeLogs.unshift(newLog);
+      task.timeSpentSeconds = (task.timeSpentSeconds || 0) + elapsedSeconds;
+      task.isTimerRunning = false;
+      task.activeTimerStartedAt = undefined;
+      task.updatedAt = new Date().toISOString();
+
+      const formatted = `${Math.floor(elapsedSeconds / 60)}m ${elapsedSeconds % 60}s`;
+
+      addActivityLog(
+        user.id,
+        user.name,
+        user.avatar,
+        'Stopped Timer',
+        `Stopped timer and saved ${formatted} work session on task #${task.id}`,
+        task.id,
+        task.title
+      );
+
+      res.json(task);
+    } else {
+      res.status(400).json({ error: 'Action must be "start" or "stop"' });
+    }
+  });
+
+  // =========================================================================
+  // MEETINGS API
+  // =========================================================================
+
+  // GET /api/meetings: List all accessible meetings
+  app.get('/api/meetings', (req: AuthenticatedRequest, res: Response) => {
+    const user = req.currentUser!;
+    const { projectId } = req.query;
+
+    let result = [...meetings];
+
+    if (projectId && typeof projectId === 'string') {
+      result = result.filter((m) => m.linkedProjectIds?.includes(projectId));
+    }
+
+    // Sort by startTime ascending for upcoming / scheduled
+    result.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    res.json(result);
+  });
+
+  // GET /api/meetings/:id: Get meeting by ID
+  app.get('/api/meetings/:id', (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const meeting = meetings.find((m) => m.id === id);
+    if (!meeting) {
+      res.status(404).json({ error: 'Meeting not found' });
+      return;
+    }
+    res.json(meeting);
+  });
+
+  // POST /api/meetings: Create a new meeting
+  app.post('/api/meetings', (req: AuthenticatedRequest, res: Response) => {
+    const user = req.currentUser!;
+    const {
+      title,
+      description,
+      startTime,
+      endTime,
+      durationMinutes,
+      location,
+      meetingUrl,
+      memberIds,
+      topics,
+      notes,
+      attachments,
+      linkedProjectIds,
+      linkedTaskIds,
+      status
+    } = req.body;
+
+    if (!title || !title.trim()) {
+      res.status(400).json({ error: 'Meeting title is required' });
+      return;
+    }
+
+    const start = startTime || new Date().toISOString();
+    const duration = typeof durationMinutes === 'number' && durationMinutes > 0 ? durationMinutes : 30;
+    const end = endTime || new Date(new Date(start).getTime() + duration * 60000).toISOString();
+
+    const members = Array.isArray(memberIds) && memberIds.length > 0 ? memberIds : [user.id];
+    if (!members.includes(user.id)) {
+      members.push(user.id);
+    }
+
+    const processedTopics: MeetingTopic[] = Array.isArray(topics)
+      ? topics.map((t: any, i: number) => ({
+          id: t.id || `top-${Date.now()}-${i}`,
+          title: t.title || 'Discussion Topic',
+          durationMinutes: typeof t.durationMinutes === 'number' ? t.durationMinutes : 15,
+          presenterId: t.presenterId || user.id,
+          presenterName: t.presenterName || user.name,
+          notes: t.notes || '',
+          completed: Boolean(t.completed)
+        }))
+      : [
+          {
+            id: `top-${Date.now()}-0`,
+            title: 'General Discussion & Agenda Alignment',
+            durationMinutes: duration,
+            presenterId: user.id,
+            presenterName: user.name,
+            notes: '',
+            completed: false
+          }
+        ];
+
+    const newMeeting: Meeting = {
+      id: `meet-${Date.now()}`,
+      title: title.trim(),
+      description: description?.trim() || '',
+      startTime: start,
+      endTime: end,
+      durationMinutes: duration,
+      location: location?.trim() || 'Google Meet / Online',
+      meetingUrl: meetingUrl?.trim() || 'https://meet.google.com/new',
+      memberIds: members,
+      topics: processedTopics,
+      notes: notes?.trim() || '### Meeting Minutes\n- Add notes and key takeaways here...',
+      attachments: Array.isArray(attachments) ? attachments : [],
+      status: status || 'scheduled',
+      createdBy: user.id,
+      createdByName: user.name,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      linkedProjectIds: Array.isArray(linkedProjectIds) ? linkedProjectIds : [],
+      linkedTaskIds: Array.isArray(linkedTaskIds) ? linkedTaskIds : [],
+      logs: [
+        {
+          id: `mlog-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          meetingId: `meet-${Date.now()}`,
+          userId: user.id,
+          userName: user.name,
+          userAvatar: user.avatar,
+          action: 'created',
+          details: `Scheduled meeting "${title.trim()}" (${duration} mins) with ${members.length} attendee(s)`,
+          timestamp: new Date().toISOString()
+        }
+      ]
+    };
+
+    meetings.unshift(newMeeting);
+
+    addActivityLog(
+      user.id,
+      user.name,
+      user.avatar,
+      'Created Meeting',
+      `Scheduled meeting "${newMeeting.title}" (${newMeeting.durationMinutes} mins) with ${newMeeting.memberIds.length} attendee(s)`
+    );
+
+    res.status(201).json(newMeeting);
+  });
+
+  // PUT /api/meetings/:id: Update meeting details, topics, notes, status
+  app.put('/api/meetings/:id', (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const user = req.currentUser!;
+    const meetingIndex = meetings.findIndex((m) => m.id === id);
+
+    if (meetingIndex === -1) {
+      res.status(404).json({ error: 'Meeting not found' });
+      return;
+    }
+
+    const meeting = meetings[meetingIndex];
+    if (!meeting.logs) {
+      meeting.logs = [];
+    }
+
+    const {
+      title,
+      description,
+      startTime,
+      endTime,
+      durationMinutes,
+      location,
+      meetingUrl,
+      memberIds,
+      topics,
+      notes,
+      status,
+      linkedProjectIds,
+      linkedTaskIds
+    } = req.body;
+
+    const oldStatus = meeting.status;
+    const oldNotes = meeting.notes;
+    const oldTitle = meeting.title;
+    const oldTopicsCount = meeting.topics?.length || 0;
+
+    if (status !== undefined && status !== oldStatus) {
+      meeting.status = status;
+      meeting.logs.unshift({
+        id: `mlog-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        meetingId: meeting.id,
+        userId: user.id,
+        userName: user.name,
+        userAvatar: user.avatar,
+        action: 'status_changed',
+        details: `Updated meeting status from ${oldStatus.replace('_', ' ').toUpperCase()} to ${status.replace('_', ' ').toUpperCase()}`,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (notes !== undefined && notes !== oldNotes) {
+      meeting.notes = notes;
+      meeting.logs.unshift({
+        id: `mlog-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        meetingId: meeting.id,
+        userId: user.id,
+        userName: user.name,
+        userAvatar: user.avatar,
+        action: 'notes_updated',
+        details: `Updated meeting minutes and discussion notes`,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (title !== undefined && title.trim() !== oldTitle) {
+      meeting.title = title.trim();
+      meeting.logs.unshift({
+        id: `mlog-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        meetingId: meeting.id,
+        userId: user.id,
+        userName: user.name,
+        userAvatar: user.avatar,
+        action: 'details_updated',
+        details: `Renamed meeting to "${title.trim()}"`,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (description !== undefined) meeting.description = description.trim();
+    if (startTime !== undefined) meeting.startTime = startTime;
+    if (endTime !== undefined) meeting.endTime = endTime;
+    if (durationMinutes !== undefined) meeting.durationMinutes = durationMinutes;
+    if (location !== undefined) meeting.location = location;
+    if (meetingUrl !== undefined) meeting.meetingUrl = meetingUrl;
+    
+    if (Array.isArray(memberIds)) {
+      const addedMembers = memberIds.filter((m) => !(meeting.memberIds || []).includes(m));
+      if (addedMembers.length > 0) {
+        meeting.logs.unshift({
+          id: `mlog-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          meetingId: meeting.id,
+          userId: user.id,
+          userName: user.name,
+          userAvatar: user.avatar,
+          action: 'member_added',
+          details: `Added ${addedMembers.length} attendee(s) to the meeting`,
+          timestamp: new Date().toISOString()
+        });
+      }
+      meeting.memberIds = memberIds;
+    }
+
+    if (Array.isArray(topics)) {
+      if (topics.length > oldTopicsCount) {
+        const addedTopic = topics[topics.length - 1];
+        meeting.logs.unshift({
+          id: `mlog-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          meetingId: meeting.id,
+          userId: user.id,
+          userName: user.name,
+          userAvatar: user.avatar,
+          action: 'topic_added',
+          details: `Added agenda topic "${addedTopic?.title || 'New Topic'}"`,
+          timestamp: new Date().toISOString()
+        });
+      }
+      meeting.topics = topics;
+    }
+
+    if (Array.isArray(linkedProjectIds)) meeting.linkedProjectIds = linkedProjectIds;
+    if (Array.isArray(linkedTaskIds)) meeting.linkedTaskIds = linkedTaskIds;
+
+    meeting.updatedAt = new Date().toISOString();
+
+    addActivityLog(
+      user.id,
+      user.name,
+      user.avatar,
+      'Updated Meeting',
+      `Updated meeting details & minutes for "${meeting.title}"`
+    );
+
+    res.json(meeting);
+  });
+
+  // POST /api/meetings/:id/logs: Add custom activity log / decision / takeaway to a meeting
+  app.post('/api/meetings/:id/logs', (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const { action, details } = req.body;
+    const user = req.currentUser!;
+    const meeting = meetings.find((m) => m.id === id);
+
+    if (!meeting) {
+      res.status(404).json({ error: 'Meeting not found' });
+      return;
+    }
+
+    if (!details || !details.trim()) {
+      res.status(400).json({ error: 'Log details are required.' });
+      return;
+    }
+
+    if (!meeting.logs) {
+      meeting.logs = [];
+    }
+
+    const newLog: MeetingLog = {
+      id: `mlog-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      meetingId: meeting.id,
+      userId: user.id,
+      userName: user.name,
+      userAvatar: user.avatar,
+      action: action || 'log_entry_added',
+      details: details.trim(),
+      timestamp: new Date().toISOString()
+    };
+
+    meeting.logs.unshift(newLog);
+    meeting.updatedAt = new Date().toISOString();
+
+    addActivityLog(
+      user.id,
+      user.name,
+      user.avatar,
+      'Meeting Log Entry',
+      `Recorded log entry in meeting "${meeting.title}": "${details.trim()}"`
+    );
+
+    res.status(201).json({ meeting, log: newLog });
+  });
+
+  // POST /api/meetings/:id/topics/:topicId/toggle: Toggle completion of an agenda topic
+  app.post('/api/meetings/:id/topics/:topicId/toggle', (req: AuthenticatedRequest, res: Response) => {
+    const { id, topicId } = req.params;
+    const user = req.currentUser!;
+    const meeting = meetings.find((m) => m.id === id);
+
+    if (!meeting) {
+      res.status(404).json({ error: 'Meeting not found' });
+      return;
+    }
+
+    const topic = (meeting.topics || []).find((t) => t.id === topicId);
+    if (!topic) {
+      res.status(404).json({ error: 'Topic not found' });
+      return;
+    }
+
+    topic.completed = !topic.completed;
+    meeting.updatedAt = new Date().toISOString();
+
+    if (!meeting.logs) {
+      meeting.logs = [];
+    }
+
+    const logEntry: MeetingLog = {
+      id: `mlog-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      meetingId: meeting.id,
+      userId: user.id,
+      userName: user.name,
+      userAvatar: user.avatar,
+      action: topic.completed ? 'topic_completed' : 'topic_reopened',
+      details: topic.completed
+        ? `Marked topic "${topic.title}" as completed`
+        : `Re-opened topic "${topic.title}" for discussion`,
+      timestamp: new Date().toISOString()
+    };
+
+    meeting.logs.unshift(logEntry);
+
+    res.json({ meeting, topic, log: logEntry });
+  });
+
+  // DELETE /api/meetings/:id: Delete meeting
+  app.delete('/api/meetings/:id', (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const user = req.currentUser!;
+    const meetingIndex = meetings.findIndex((m) => m.id === id);
+
+    if (meetingIndex === -1) {
+      res.status(404).json({ error: 'Meeting not found' });
+      return;
+    }
+
+    const meeting = meetings[meetingIndex];
+    if (user.role !== 'admin' && meeting.createdBy !== user.id) {
+      res.status(403).json({ error: 'Forbidden: Only the meeting organizer or an admin can delete this meeting.' });
+      return;
+    }
+
+    meetings.splice(meetingIndex, 1);
+
+    addActivityLog(
+      user.id,
+      user.name,
+      user.avatar,
+      'Deleted Meeting',
+      `Cancelled/deleted meeting "${meeting.title}"`
+    );
+
+    res.json({ success: true, message: 'Meeting deleted successfully.' });
+  });
+
+  // POST /api/meetings/:id/attachments: Upload meeting file attachment (pdf, txt, csv, docx, mp3)
+  app.post('/api/meetings/:id/attachments', (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const { name, size, type, url, base64Data } = req.body;
+    const user = req.currentUser!;
+    const meeting = meetings.find((m) => m.id === id);
+
+    if (!meeting) {
+      res.status(404).json({ error: 'Meeting not found' });
+      return;
+    }
+
+    if (!name || typeof name !== 'string') {
+      res.status(400).json({ error: 'Attachment file name is required.' });
+      return;
+    }
+
+    const cleanName = name.trim();
+    const extMatch = cleanName.match(/\.([a-zA-Z0-9]+)$/);
+    const fileExt = extMatch ? extMatch[1].toLowerCase() : '';
+
+    // Allowed extensions for meetings: pdf, txt, csv, docx, mp3, plus png, jpg
+    const ALLOWED_MEETING_EXTENSIONS = ['pdf', 'txt', 'csv', 'docx', 'mp3', 'png', 'jpg', 'jpeg', 'ogg', 'wav'];
+    if (!ALLOWED_MEETING_EXTENSIONS.includes(fileExt)) {
+      res.status(400).json({
+        error: `Invalid file format ".${fileExt}". Allowed formats are: PDF, TXT, CSV, DOCX, MP3, PNG, JPG.`
+      });
+      return;
+    }
+
+    // Size limit: 10MB (10485760 bytes)
+    const MAX_SIZE_BYTES = 10 * 1024 * 1024;
+    const fileSize = typeof size === 'number' && size > 0 ? size : 102400;
+
+    if (fileSize > MAX_SIZE_BYTES) {
+      res.status(400).json({
+        error: `File size exceeds the 10 MB limit (${(fileSize / (1024 * 1024)).toFixed(1)} MB).`
+      });
+      return;
+    }
+
+    let mimeType = type || 'application/octet-stream';
+    if (fileExt === 'pdf') mimeType = 'application/pdf';
+    else if (fileExt === 'txt') mimeType = 'text/plain; charset=utf-8';
+    else if (fileExt === 'csv') mimeType = 'text/csv; charset=utf-8';
+    else if (fileExt === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    else if (fileExt === 'mp3') mimeType = 'audio/mpeg';
+    else if (fileExt === 'ogg') mimeType = 'audio/ogg';
+    else if (fileExt === 'wav') mimeType = 'audio/wav';
+    else if (fileExt === 'png') mimeType = 'image/png';
+    else if (fileExt === 'jpg' || fileExt === 'jpeg') mimeType = 'image/jpeg';
+
+    const attachmentId = `matt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const downloadToken = Math.random().toString(36).substring(2, 15);
+
+    const contentPayload = base64Data || (url && url.startsWith('data:') ? url.split(',')[1] : Buffer.from(`TaskFlow Meeting Doc: ${cleanName}`).toString('base64'));
+
+    secureFileStore.set(attachmentId, {
+      id: attachmentId,
+      name: cleanName,
+      size: fileSize,
+      mimeType,
+      dataBase64: contentPayload,
+      checksum: `sha256-${Math.random().toString(36).substring(2, 10)}`,
+      token: downloadToken,
+      uploadedBy: user.id,
+      uploadedAt: new Date().toISOString()
+    });
+
+    const secureDownloadUrl = `/api/attachments/${attachmentId}/download?token=${downloadToken}`;
+    const secureViewUrl = `/api/attachments/${attachmentId}/view?token=${downloadToken}`;
+
+    const newAttachment: MeetingAttachment = {
+      id: attachmentId,
+      name: cleanName,
+      size: fileSize,
+      type: mimeType,
+      url: url && (url.startsWith('http') || url.startsWith('data:')) ? url : secureViewUrl,
+      downloadUrl: secureDownloadUrl,
+      uploadedBy: user.id,
+      uploadedByName: user.name,
+      uploadedAt: new Date().toISOString(),
+      extension: fileExt as any
+    };
+
+    if (!meeting.attachments) {
+      meeting.attachments = [];
+    }
+    meeting.attachments.push(newAttachment);
+    
+    if (!meeting.logs) {
+      meeting.logs = [];
+    }
+    meeting.logs.unshift({
+      id: `mlog-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      meetingId: meeting.id,
+      userId: user.id,
+      userName: user.name,
+      userAvatar: user.avatar,
+      action: 'attachment_uploaded',
+      details: `Attached file "${newAttachment.name}" (${(newAttachment.size / 1024).toFixed(1)} KB)`,
+      timestamp: new Date().toISOString()
+    });
+
+    meeting.updatedAt = new Date().toISOString();
+
+    addActivityLog(
+      user.id,
+      user.name,
+      user.avatar,
+      'Uploaded Meeting Attachment',
+      `Attached "${newAttachment.name}" (${(newAttachment.size / 1024).toFixed(1)} KB) to meeting "${meeting.title}"`
+    );
+
+    res.status(201).json(meeting);
+  });
+
+  // DELETE /api/meetings/:id/attachments/:attachmentId: Remove meeting attachment
+  app.delete('/api/meetings/:id/attachments/:attachmentId', (req: AuthenticatedRequest, res: Response) => {
+    const { id, attachmentId } = req.params;
+    const user = req.currentUser!;
+    const meeting = meetings.find((m) => m.id === id);
+
+    if (!meeting) {
+      res.status(404).json({ error: 'Meeting not found' });
+      return;
+    }
+
+    const attIndex = (meeting.attachments || []).findIndex((a) => a.id === attachmentId);
+    if (attIndex === -1) {
+      res.status(404).json({ error: 'Attachment not found' });
+      return;
+    }
+
+    const attachment = meeting.attachments[attIndex];
+    if (user.role !== 'admin' && meeting.createdBy !== user.id && attachment.uploadedBy !== user.id) {
+      res.status(403).json({ error: 'Forbidden: You do not have permission to delete this attachment.' });
+      return;
+    }
+
+    const removed = meeting.attachments.splice(attIndex, 1)[0];
+    secureFileStore.delete(attachmentId);
+    
+    if (!meeting.logs) {
+      meeting.logs = [];
+    }
+    meeting.logs.unshift({
+      id: `mlog-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      meetingId: meeting.id,
+      userId: user.id,
+      userName: user.name,
+      userAvatar: user.avatar,
+      action: 'attachment_removed',
+      details: `Deleted attachment "${removed.name}"`,
+      timestamp: new Date().toISOString()
+    });
+
+    meeting.updatedAt = new Date().toISOString();
+
+    addActivityLog(
+      user.id,
+      user.name,
+      user.avatar,
+      'Removed Meeting Attachment',
+      `Deleted attachment "${removed.name}" from meeting "${meeting.title}"`
+    );
+
+    res.json(meeting);
   });
 
   // GET /api/activity: Audit logs

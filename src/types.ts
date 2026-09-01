@@ -129,6 +129,20 @@ export interface Project {
   updatedAt: string;
 }
 
+export interface TaskTimeLog {
+  id: string;
+  taskId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  startTime: string;
+  endTime?: string;
+  durationSeconds: number;
+  description?: string;
+  isBillable?: boolean;
+  createdAt: string;
+}
+
 export interface Task {
   id: string;
   projectId?: string;
@@ -145,6 +159,11 @@ export interface Task {
   codeSnippets?: TaskCodeSnippet[];
   codeSnippet?: string;
   codeLanguage?: CodeLanguage;
+  timeSpentSeconds?: number;
+  estimatedHours?: number;
+  timeLogs?: TaskTimeLog[];
+  isTimerRunning?: boolean;
+  activeTimerStartedAt?: string;
   createdAt: string;
   updatedAt: string;
   createdBy: string;
@@ -161,7 +180,105 @@ export interface FilterState {
   tag: string;
 }
 
-export type ViewMode = 'kanban' | 'tickets' | 'list' | 'timeline' | 'dashboard' | 'audit' | 'rewards' | 'users' | 'graph' | 'chat';
+export type ViewMode =
+  | 'kanban'
+  | 'tickets'
+  | 'list'
+  | 'timeline'
+  | 'meetings'
+  | 'dashboard'
+  | 'audit'
+  | 'rewards'
+  | 'users'
+  | 'graph'
+  | 'chat';
+
+export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface MeetingMember {
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  role: 'organizer' | 'required' | 'optional';
+}
+
+export interface MeetingTopic {
+  id: string;
+  title: string;
+  durationMinutes?: number;
+  presenterId?: string;
+  presenterName?: string;
+  notes?: string;
+  completed?: boolean;
+}
+
+export interface MeetingAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  downloadUrl?: string;
+  uploadedBy: string;
+  uploadedByName?: string;
+  uploadedAt: string;
+  extension?: 'pdf' | 'txt' | 'csv' | 'docx' | 'mp3' | string;
+}
+
+export interface MeetingLog {
+  id: string;
+  meetingId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  action:
+    | 'created'
+    | 'status_changed'
+    | 'notes_updated'
+    | 'topic_added'
+    | 'topic_completed'
+    | 'topic_reopened'
+    | 'topic_removed'
+    | 'member_added'
+    | 'member_removed'
+    | 'member_role_changed'
+    | 'attachment_uploaded'
+    | 'attachment_removed'
+    | 'details_updated'
+    | 'decision'
+    | 'action_item'
+    | 'note'
+    | 'log_entry_added'
+    | string;
+  details: string;
+  timestamp: string;
+}
+
+export interface Meeting {
+  id: string;
+  title: string;
+  description?: string;
+  date?: string;
+  startTime: string;
+  endTime: string;
+  durationMinutes: number;
+  location?: string;
+  meetingUrl?: string;
+  projectId?: string;
+  memberIds: string[];
+  members?: MeetingMember[];
+  topics: MeetingTopic[];
+  notes: string;
+  attachments: MeetingAttachment[];
+  logs?: MeetingLog[];
+  status: MeetingStatus;
+  createdBy: string;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt: string;
+  linkedProjectIds?: string[];
+  linkedTaskIds?: string[];
+}
 
 export interface ChatMessageAttachment {
   id: string;

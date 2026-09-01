@@ -27,6 +27,7 @@ import {
   Crown,
   Palette,
   MessageSquare,
+  Video,
   User as UserIcon,
   Camera,
   ExternalLink
@@ -44,11 +45,14 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
   const { currentUser, users, switchUser, isAdmin } = useAuth();
   const {
     viewMode,
     setViewMode,
+    isSidebarOpen,
+    setIsSidebarOpen,
+    toggleSidebar,
     projects,
     activeProjectId,
     setActiveProjectId,
@@ -63,6 +67,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
   } = useTasks();
   const { theme, setTheme, isDark, toggleDarkMode, setIsThemeEditorOpen, themeConfig } = useTheme();
   const { totalUnreadCount } = useChat();
+
+  const isOpen = propIsOpen !== undefined ? propIsOpen : isSidebarOpen;
+  const onClose = propOnClose || (() => setIsSidebarOpen(false));
 
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -99,6 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
     { mode: 'timeline', label: 'Timeline', icon: <Calendar className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
     { mode: 'graph', label: 'Graph', icon: <Network className="w-4 h-4" />, colorDot: 'bg-indigo-400', isAllowed: true },
     { mode: 'chat', label: 'Chat', icon: <MessageSquare className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: true, unreadCount: totalUnreadCount },
+    { mode: 'meetings', label: 'Meetings', icon: <Video className="w-4 h-4" />, colorDot: 'bg-violet-400', isAllowed: true },
     { mode: 'rewards', label: 'Rewards', icon: <Trophy className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
     { mode: 'dashboard', label: 'Dashboard', icon: <BarChart3 className="w-4 h-4" />, colorDot: 'bg-blue-400', isAllowed: isAdmin || canManageUsers, adminBadge: true },
     { mode: 'users', label: 'Team', icon: <Users className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: isAdmin || canManageUsers, adminBadge: true },
@@ -109,20 +117,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 
   const handleNavClick = (mode: ViewMode) => {
     setViewMode(mode);
-    if (window.innerWidth < 1024 && onClose) onClose();
   };
 
   const handleOpenNewProject = () => {
     setEditingProject(null);
     setIsProjectModalOpen(true);
-    if (window.innerWidth < 1024 && onClose) onClose();
   };
 
   const handleEditProject = (e: React.MouseEvent, proj: Project) => {
     e.stopPropagation();
     setEditingProject(proj);
     setIsProjectModalOpen(true);
-    if (window.innerWidth < 1024 && onClose) onClose();
   };
 
   return (
@@ -335,7 +340,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
                   id="sidebar-btn-team"
                   onClick={() => {
                     setIsUserModalOpen(true);
-                    if (onClose) onClose();
                   }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-400 hover:bg-[#1a1a1a] hover:text-white rounded text-xs font-medium transition-colors text-left cursor-pointer"
                 >
@@ -350,7 +354,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
                   id="sidebar-btn-workflow"
                   onClick={() => {
                     setIsStatusManagerOpen(true);
-                    if (onClose) onClose();
                   }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-400 hover:bg-[#1a1a1a] hover:text-white rounded text-xs font-medium transition-colors text-left cursor-pointer"
                 >
@@ -429,7 +432,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
               id="sidebar-btn-open-theme-editor"
               onClick={() => {
                 setIsThemeEditorOpen(true);
-                if (window.innerWidth < 1024 && onClose) onClose();
               }}
               className="w-full flex items-center justify-between px-2.5 py-1.5 bg-[#0d0d0d] hover:bg-[#1f1f1f] border border-[#262626] rounded text-xs font-medium text-neutral-300 hover:text-white transition-all cursor-pointer group"
             >

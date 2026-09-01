@@ -28,7 +28,11 @@ import {
   Briefcase,
   Link2,
   Check,
-  Share2
+  Share2,
+  Play,
+  StopCircle,
+  Timer,
+  DollarSign
 } from 'lucide-react';
 import { Task, Status, Priority, User, CodeLanguage } from '../types';
 import { useTasks } from '../context/TaskContext';
@@ -56,6 +60,9 @@ export const TaskDetailModal: React.FC = () => {
     addComment,
     addAttachment,
     deleteAttachment,
+    addTimeLog,
+    deleteTimeLog,
+    toggleTaskTimer,
     activityLogs,
     addToast,
     setViewMode
@@ -72,12 +79,39 @@ export const TaskDetailModal: React.FC = () => {
   const [description, setDescription] = useState('');
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [newTag, setNewTag] = useState('');
-  const [activeTab, setActiveTab] = useState<'details' | 'code' | 'comments' | 'attachments' | 'activity'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'code' | 'timer' | 'comments' | 'attachments' | 'activity'>('details');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Time tracking local state
+  const [liveElapsedSeconds, setLiveElapsedSeconds] = useState(0);
+  const [timerNotes, setTimerNotes] = useState('');
+  const [timerIsBillable, setTimerIsBillable] = useState(true);
+  const [manualHours, setManualHours] = useState('');
+  const [manualMinutes, setManualMinutes] = useState('30');
+  const [manualDesc, setManualDesc] = useState('');
+  const [manualIsBillable, setManualIsBillable] = useState(true);
+
+  // Live timer interval calculation
+  useEffect(() => {
+    if (!task?.isTimerRunning || !task?.activeTimerStartedAt) {
+      setLiveElapsedSeconds(0);
+      return;
+    }
+
+    const computeElapsed = () => {
+      const startMs = new Date(task.activeTimerStartedAt!).getTime();
+      const nowMs = Date.now();
+      setLiveElapsedSeconds(Math.max(0, Math.floor((nowMs - startMs) / 1000)));
+    };
+
+    computeElapsed();
+    const interval = setInterval(computeElapsed, 1000);
+    return () => clearInterval(interval);
+  }, [task?.isTimerRunning, task?.activeTimerStartedAt]);
 
   useEffect(() => {
     if (task) {
@@ -479,6 +513,31 @@ export const TaskDetailModal: React.FC = () => {
             )}
           </button>
 
+          {/* Time Tracker Tab */}
+          <button
+            type="button"
+            id="tab-time-tracker"
+            onClick={() => setActiveTab('timer')}
+            title="Time Tracker & Session Logs"
+            className={`flex items-center gap-1.5 py-3 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'timer'
+                ? 'border-emerald-500 text-emerald-400'
+                : 'border-transparent text-neutral-400 hover:text-neutral-200'
+            }`}
+          >
+            <Timer className="w-4 h-4" />
+            <span>Time Tracker</span>
+            {task.isTimerRunning ? (
+              <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-1.5 py-0.2 rounded font-bold ml-1 animate-pulse">
+                Active
+              </span>
+            ) : task.timeLogs && task.timeLogs.length > 0 ? (
+              <span className="text-[10px] bg-[#222222] text-neutral-300 px-1.5 py-0.2 rounded font-medium ml-1">
+                {Math.floor((task.timeSpentSeconds || 0) / 3600)}h {Math.floor(((task.timeSpentSeconds || 0) % 3600) / 60)}m
+              </span>
+            ) : null}
+          </button>
+
           <button
             type="button"
             onClick={() => setActiveTab('comments')}
@@ -674,6 +733,284 @@ export const TaskDetailModal: React.FC = () => {
                   await updateTaskCode(task.id, data);
                 }}
               />
+            )}
+
+            {/* Time Tracker Tab */}
+            {activeTab === 'timer' && (
+              <div className="space-y-6">
+                {/* Live Stopwatch Section */}
+                <div className="p-5 bg-[#181818] border border-[#262626] rounded space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Timer className="w-5 h-5 text-emerald-400" />
+                      <h4 className="text-sm font-bold text-white">Live Time Tracker</h4>
+                    </div>
+                    {task.isTimerRunning ? (
+                      <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700 animate-pulse">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        RECORDING LIVE
+                      </span>
+                    ) : (
+                      <span className="text-xs text-neutral-400">Timer is paused</span>
+                    )}
+                  </div>
+
+                  {/* Large Digital Stopwatch Display */}
+                  <div className="bg-[#121212] border border-[#222222] rounded-lg p-6 text-center">
+                    <div className="text-4xl sm:text-5xl font-mono font-bold tracking-widest text-emerald-400 select-all">
+                      {String(Math.floor(liveElapsedSeconds / 3600)).padStart(2, '0')}:
+                      {String(Math.floor((liveElapsedSeconds % 3600) / 60)).padStart(2, '0')}:
+                      {String(liveElapsedSeconds % 60).padStart(2, '0')}
+                    </div>
+                    <p className="text-xs text-neutral-400 mt-2">
+                      {task.isTimerRunning && task.activeTimerStartedAt
+                        ? `Session started at ${new Date(task.activeTimerStartedAt).toLocaleTimeString()}`
+                        : 'Click Start to begin timing your work session'}
+                    </p>
+                  </div>
+
+                  {/* Timer Controls & Notes */}
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="sm:col-span-2">
+                        <input
+                          type="text"
+                          value={timerNotes}
+                          onChange={(e) => setTimerNotes(e.target.value)}
+                          placeholder="Session note: e.g. Implementing API endpoints..."
+                          className="w-full px-3 py-2 text-xs bg-[#121212] border border-[#333333] rounded text-white placeholder:text-neutral-500 focus:ring-1 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <label className="flex items-center gap-2 px-3 py-2 bg-[#121212] border border-[#333333] rounded text-xs text-neutral-200 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={timerIsBillable}
+                          onChange={(e) => setTimerIsBillable(e.target.checked)}
+                          className="rounded text-emerald-500 focus:ring-emerald-500"
+                        />
+                        <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Billable Work</span>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {task.isTimerRunning ? (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await toggleTaskTimer(task.id, 'stop', timerNotes, timerIsBillable);
+                            setTimerNotes('');
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-colors cursor-pointer shadow-lg shadow-rose-950/40"
+                        >
+                          <StopCircle className="w-4 h-4" />
+                          <span>Stop Timer & Save Session</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await toggleTaskTimer(task.id, 'start', timerNotes, timerIsBillable);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors cursor-pointer shadow-lg shadow-emerald-950/40"
+                        >
+                          <Play className="w-4 h-4" />
+                          <span>Start Live Timer</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Manual Log Form */}
+                <div className="p-4 bg-[#181818] border border-[#262626] rounded space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Log Completed Work Manually</span>
+                  </h4>
+
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      const hrs = parseInt(manualHours || '0', 10);
+                      const mins = parseInt(manualMinutes || '0', 10);
+                      const totalSec = (hrs * 3600) + (mins * 60);
+                      if (totalSec <= 0) {
+                        addToast('error', 'Please enter a valid time duration (at least 1 minute).');
+                        return;
+                      }
+                      await addTimeLog(task.id, {
+                        durationSeconds: totalSec,
+                        description: manualDesc || undefined,
+                        isBillable: manualIsBillable
+                      });
+                      setManualHours('');
+                      setManualMinutes('30');
+                      setManualDesc('');
+                    }}
+                    className="space-y-3"
+                  >
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-[10px] text-neutral-400 mb-1">Hours</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="24"
+                          value={manualHours}
+                          onChange={(e) => setManualHours(e.target.value)}
+                          placeholder="0"
+                          className="w-full px-2.5 py-1.5 text-xs bg-[#121212] border border-[#333333] rounded text-white focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-neutral-400 mb-1">Minutes</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="59"
+                          value={manualMinutes}
+                          onChange={(e) => setManualMinutes(e.target.value)}
+                          placeholder="30"
+                          className="w-full px-2.5 py-1.5 text-xs bg-[#121212] border border-[#333333] rounded text-white focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-[10px] text-neutral-400 mb-1">Work Description</label>
+                        <input
+                          type="text"
+                          value={manualDesc}
+                          onChange={(e) => setManualDesc(e.target.value)}
+                          placeholder="Notes on work completed..."
+                          className="w-full px-2.5 py-1.5 text-xs bg-[#121212] border border-[#333333] rounded text-white focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <label className="flex items-center gap-2 text-xs text-neutral-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={manualIsBillable}
+                          onChange={(e) => setManualIsBillable(e.target.checked)}
+                          className="rounded text-emerald-500 focus:ring-emerald-500"
+                        />
+                        <span>Billable session</span>
+                      </label>
+                      <button
+                        type="submit"
+                        className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded transition-colors cursor-pointer"
+                      >
+                        Add Time Log
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Summary Metrics & Work Logs List */}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div className="p-3 bg-[#181818] border border-[#262626] rounded text-center">
+                      <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-0.5">Total Logged</span>
+                      <span className="text-lg font-bold font-mono text-white">
+                        {Math.floor((task.timeSpentSeconds || 0) / 3600)}h {Math.floor(((task.timeSpentSeconds || 0) % 3600) / 60)}m
+                      </span>
+                    </div>
+                    <div className="p-3 bg-[#181818] border border-[#262626] rounded text-center">
+                      <span className="text-[10px] uppercase font-bold text-emerald-400 block mb-0.5">Billable Time</span>
+                      <span className="text-lg font-bold font-mono text-emerald-300">
+                        {Math.floor(
+                          (task.timeLogs?.filter((l) => l.isBillable).reduce((acc, cur) => acc + cur.durationSeconds, 0) || 0) / 3600
+                        )}h{' '}
+                        {Math.floor(
+                          ((task.timeLogs?.filter((l) => l.isBillable).reduce((acc, cur) => acc + cur.durationSeconds, 0) || 0) % 3600) / 60
+                        )}m
+                      </span>
+                    </div>
+                    <div className="p-3 bg-[#181818] border border-[#262626] rounded text-center col-span-2 sm:col-span-1">
+                      <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-0.5">Total Sessions</span>
+                      <span className="text-lg font-bold font-mono text-blue-400">
+                        {task.timeLogs?.length || 0}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Logs Table / List */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+                      Logged Sessions History
+                    </h4>
+
+                    {task.timeLogs && task.timeLogs.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {task.timeLogs.map((log) => {
+                          const hrs = Math.floor(log.durationSeconds / 3600);
+                          const mins = Math.floor((log.durationSeconds % 3600) / 60);
+                          const secs = log.durationSeconds % 60;
+                          return (
+                            <div
+                              key={log.id}
+                              className="flex items-center justify-between p-3 bg-[#181818] border border-[#262626] rounded text-xs"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                {log.userAvatar && (
+                                  <img
+                                    src={log.userAvatar}
+                                    alt={log.userName}
+                                    className="w-6 h-6 rounded-full object-cover shrink-0"
+                                  />
+                                )}
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-bold text-white">{log.userName || 'Team Member'}</span>
+                                    {log.isBillable ? (
+                                      <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+                                        Billable
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-400">
+                                        Non-billable
+                                      </span>
+                                    )}
+                                    <span className="text-[10px] text-neutral-500">
+                                      {new Date(log.createdAt).toLocaleDateString()} at{' '}
+                                      {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  </div>
+                                  {log.description && (
+                                    <p className="text-neutral-300 text-xs mt-0.5 truncate">{log.description}</p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-3 shrink-0 ml-3">
+                                <span className="font-mono font-bold text-white text-sm">
+                                  {hrs > 0 ? `${hrs}h ` : ''}
+                                  {mins}m {secs > 0 && hrs === 0 ? `${secs}s` : ''}
+                                </span>
+                                {(isAdmin || log.userId === currentUser?.id) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteTimeLog(task.id, log.id)}
+                                    className="p-1 text-neutral-500 hover:text-rose-400 rounded hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                    title="Delete this time log"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-8 text-center text-neutral-500 text-xs bg-[#161616] rounded border border-[#222222]">
+                        No time logged on this task yet. Start the live stopwatch or log time manually above.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Comments Tab */}
@@ -933,6 +1270,54 @@ export const TaskDetailModal: React.FC = () => {
           {/* Right Metadata Sidebar */}
           <div className="space-y-5 border-t md:border-t-0 md:border-l border-[#262626] pt-5 md:pt-0 md:pl-6">
             
+            {/* Quick Time Tracker Widget */}
+            <div className="p-3 bg-[#181818] border border-[#262626] rounded space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
+                  <Timer className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Time Logged</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('timer')}
+                  className="text-[10px] font-semibold text-emerald-400 hover:text-emerald-300 cursor-pointer"
+                >
+                  View Details →
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <div>
+                  <span className="text-base font-bold font-mono text-white block">
+                    {Math.floor((task.timeSpentSeconds || 0) / 3600)}h {Math.floor(((task.timeSpentSeconds || 0) % 3600) / 60)}m
+                  </span>
+                  <span className="text-[10px] text-neutral-500">
+                    {task.timeLogs?.length || 0} work session{task.timeLogs?.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+
+                {task.isTimerRunning ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleTaskTimer(task.id, 'stop', timerNotes, timerIsBillable)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded text-xs font-bold transition-colors cursor-pointer animate-pulse"
+                  >
+                    <StopCircle className="w-3.5 h-3.5" />
+                    <span>Stop ({String(Math.floor(liveElapsedSeconds / 60)).padStart(2, '0')}:{String(liveElapsedSeconds % 60).padStart(2, '0')})</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => toggleTaskTimer(task.id, 'start', timerNotes, timerIsBillable)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    <span>Start Timer</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Project Association */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">

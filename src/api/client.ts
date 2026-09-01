@@ -10,7 +10,10 @@ import {
   Project,
   ChatMessage,
   ChatChannel,
-  ChatMessageAttachment
+  ChatMessageAttachment,
+  Meeting,
+  MeetingAttachment,
+  TaskTimeLog
 } from '../types';
 
 let currentUserId = localStorage.getItem('taskflow_user_id') || 'user-admin-1';
@@ -256,6 +259,82 @@ export const api = {
     }),
   markChannelAsRead: (channelId: string) =>
     request<{ success: boolean; channelId: string; readAt: string }>(`/api/chat/channels/${channelId}/read`, {
+      method: 'POST'
+    }),
+
+  // Time Tracker for Tasks
+  addTimeLog: (
+    taskId: string,
+    data: {
+      durationSeconds: number;
+      startTime?: string;
+      endTime?: string;
+      description?: string;
+      isBillable?: boolean;
+    }
+  ) =>
+    request<Task>(`/api/tasks/${taskId}/time-logs`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  deleteTimeLog: (taskId: string, logId: string) =>
+    request<Task>(`/api/tasks/${taskId}/time-logs/${logId}`, {
+      method: 'DELETE'
+    }),
+  toggleTaskTimer: (taskId: string, action: 'start' | 'stop', data?: { description?: string; isBillable?: boolean }) =>
+    request<Task>(`/api/tasks/${taskId}/timer`, {
+      method: 'POST',
+      body: JSON.stringify({ action, ...data })
+    }),
+
+  // Meetings
+  getMeetings: () => request<Meeting[]>('/api/meetings'),
+  getMeeting: (id: string) => request<Meeting>(`/api/meetings/${id}`),
+  createMeeting: (data: Partial<Meeting>) =>
+    request<Meeting>('/api/meetings', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  updateMeeting: (id: string, data: Partial<Meeting>) =>
+    request<Meeting>(`/api/meetings/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+  deleteMeeting: (id: string) =>
+    request<{ success: boolean; message: string }>(`/api/meetings/${id}`, {
+      method: 'DELETE'
+    }),
+  addMeetingAttachment: (
+    meetingId: string,
+    data: {
+      name: string;
+      size: number;
+      type: string;
+      url?: string;
+      base64Data?: string;
+    }
+  ) =>
+    request<Meeting>(`/api/meetings/${meetingId}/attachments`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  deleteMeetingAttachment: (meetingId: string, attachmentId: string) =>
+    request<Meeting>(`/api/meetings/${meetingId}/attachments/${attachmentId}`, {
+      method: 'DELETE'
+    }),
+  addMeetingLog: (
+    meetingId: string,
+    data: {
+      details: string;
+      action?: string;
+    }
+  ) =>
+    request<{ meeting: Meeting; log: any }>(`/api/meetings/${meetingId}/logs`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  toggleMeetingTopic: (meetingId: string, topicId: string) =>
+    request<{ meeting: Meeting; topic: any; log: any }>(`/api/meetings/${meetingId}/topics/${topicId}/toggle`, {
       method: 'POST'
     })
 };

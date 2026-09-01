@@ -193,14 +193,40 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
         </div>
       </div>
 
-      {/* Task Title */}
-      <h4
-        className={`text-sm font-semibold mb-1.5 leading-snug text-neutral-100 group-hover:text-blue-400 transition-colors ${
-          isDone ? 'line-through text-neutral-500' : ''
-        }`}
-      >
-        {task.title}
-      </h4>
+      {/* Task Title with Dot representation */}
+      <div className="flex items-start gap-2 mb-1.5">
+        <span
+          className={`mt-1 inline-block w-2.5 h-2.5 rounded-full shrink-0 ring-2 ${
+            task.isTimerRunning ? 'ring-emerald-500 animate-pulse' : 'ring-[#262626]'
+          }`}
+          style={{ backgroundColor: currentStatus?.color || '#3B82F6' }}
+          title={`Status: ${currentStatus?.name || 'Task'}`}
+        />
+        <h4
+          className={`text-sm font-semibold leading-snug text-neutral-100 group-hover:text-blue-400 transition-colors flex-1 ${
+            isDone ? 'line-through text-neutral-500' : ''
+          }`}
+        >
+          {task.title}
+        </h4>
+      </div>
+
+      {/* Time Tracking Indicator if active or logged */}
+      {(task.isTimerRunning || (task.timeSpentSeconds && task.timeSpentSeconds > 0)) && (
+        <div className="flex items-center gap-2 mb-2">
+          {task.isTimerRunning ? (
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50 animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              LIVE TRACKING
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-neutral-400 bg-[#222222] px-1.5 py-0.5 rounded border border-[#333333]">
+              <Clock className="w-3 h-3 text-neutral-500" />
+              {Math.floor((task.timeSpentSeconds || 0) / 3600)}h {Math.floor(((task.timeSpentSeconds || 0) % 3600) / 60)}m logged
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Optional Description snippet if present and active */}
       {!isDone && task.description && (

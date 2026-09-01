@@ -11,7 +11,11 @@ import {
   TaskCodeSnippet,
   CodeLanguage,
   Project,
-  MetricsVisibility
+  MetricsVisibility,
+  Meeting,
+  MeetingTopic,
+  MeetingAttachment,
+  TaskTimeLog
 } from '../types';
 import { api } from '../api/client';
 import { useAuth } from './AuthContext';
@@ -52,6 +56,9 @@ interface TaskContextType {
   resetFilters: () => void;
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
+  isSidebarOpen: boolean;
+  setIsSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  toggleSidebar: () => void;
   graphSelectedUserId: string | null;
   setGraphSelectedUserId: (id: string | null) => void;
   navigateToGraph: (userId?: string) => void;
@@ -105,6 +112,26 @@ interface TaskContextType {
   reorderStatuses: (orderedIds: string[]) => Promise<boolean>;
   deleteStatus: (id: string, fallbackStatusId?: string) => Promise<boolean>;
   resetDemoData: () => Promise<void>;
+  // Meetings State & Handlers
+  meetings: Meeting[];
+  selectedMeeting: Meeting | null;
+  setSelectedMeeting: (meeting: Meeting | null) => void;
+  isCreateMeetingModalOpen: boolean;
+  setIsCreateMeetingModalOpen: (open: boolean) => void;
+  isMeetingDetailModalOpen: boolean;
+  setIsMeetingDetailModalOpen: (open: boolean) => void;
+  openMeetingDetail: (meeting: Meeting) => void;
+  createMeeting: (data: Partial<Meeting>) => Promise<Meeting | null>;
+  updateMeeting: (id: string, data: Partial<Meeting>) => Promise<Meeting | null>;
+  deleteMeeting: (id: string) => Promise<boolean>;
+  addMeetingAttachment: (meetingId: string, fileData: { name: string; size: number; type: string; url?: string; base64Data?: string }) => Promise<Meeting | null>;
+  deleteMeetingAttachment: (meetingId: string, attachmentId: string) => Promise<Meeting | null>;
+  addMeetingLog: (meetingId: string, data: { details: string; action?: string }) => Promise<Meeting | null>;
+  toggleMeetingTopic: (meetingId: string, topicId: string) => Promise<Meeting | null>;
+  // Task Time Tracking Handlers
+  addTimeLog: (taskId: string, data: { durationSeconds: number; description?: string; isBillable?: boolean; startTime?: string; endTime?: string }) => Promise<Task | null>;
+  deleteTimeLog: (taskId: string, logId: string) => Promise<Task | null>;
+  toggleTaskTimer: (taskId: string, action: 'start' | 'stop', description?: string, isBillable?: boolean) => Promise<Task | null>;
 }
 
 const initialFilters: FilterState = {
@@ -137,7 +164,48 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<FilterState>(initialFilters);
-  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const [viewMode, setViewModeState] = useState<ViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('taskflow_view_mode') as ViewMode | null;
+      const validModes: ViewMode[] = ['kanban', 'tickets', 'list', 'timeline', 'graph', 'chat', 'meetings', 'dashboard', 'users', 'audit', 'rewards'];
+      if (saved && validModes.includes(saved)) {
+        return saved;
+      }
+    }
+    return 'kanban';
+  });
+
+  const setViewMode = useCallback((mode: ViewMode) => {
+    setViewModeState(mode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('taskflow_view_mode', mode);
+    }
+  }, []);
+
+  const [isSidebarOpen, setIsSidebarOpenState] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('taskflow_sidebar_open');
+      if (saved !== null) {
+        return saved === 'true';
+      }
+      return window.innerWidth >= 1024;
+    }
+    return true;
+  });
+
+  const setIsSidebarOpen = useCallback((action: React.SetStateAction<boolean>) => {
+    setIsSidebarOpenState((prev) => {
+      const next = typeof action === 'function' ? (action as (p: boolean) => boolean)(prev) : action;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('taskflow_sidebar_open', String(next));
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarOpen((prev) => !prev);
+  }, [setIsSidebarOpen]);
   const [graphSelectedUserId, setGraphSelectedUserId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskIdState] = useState<string | null>(null);
 
@@ -223,7 +291,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const defaultMetricsVisibility: MetricsVisibility = {
-    showMetricsBar: false,
+    showMetricsBar: true,
     showActiveTasks: true,
     showCompletionRate: true,
     showCriticalBlockers: true,
@@ -232,12 +300,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [metricsVisibility, setMetricsVisibility] = useState<MetricsVisibility>(() => {
     try {
-      // Clear legacy storage key if present from previous sessions
-      if (localStorage.getItem('taskflow_metrics_visibility')) {
-        localStorage.removeItem('taskflow_metrics_visibility');
-      }
-
-      const saved = localStorage.getItem('taskflow_metrics_visibility_v2');
+      const saved = localStorage.getItem('taskflow_metrics_visibility_v3');
       if (saved) {
         return { ...defaultMetricsVisibility, ...JSON.parse(saved) };
       }
@@ -249,7 +312,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     try {
-      localStorage.setItem('taskflow_metrics_visibility_v2', JSON.stringify(metricsVisibility));
+      localStorage.setItem('taskflow_metrics_visibility_v3', JSON.stringify(metricsVisibility));
     } catch (e) {
       // Ignore
     }
@@ -273,6 +336,17 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  // Meetings State
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
+  const [isCreateMeetingModalOpen, setIsCreateMeetingModalOpen] = useState(false);
+  const [isMeetingDetailModalOpen, setIsMeetingDetailModalOpen] = useState(false);
+
+  const openMeetingDetail = useCallback((meeting: Meeting) => {
+    setSelectedMeeting(meeting);
+    setIsMeetingDetailModalOpen(true);
+  }, []);
+
   const addToast = useCallback((type: 'success' | 'error' | 'info', message: string) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     setToasts((prev) => [...prev, { id, type, message }]);
@@ -289,17 +363,19 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentUser) return;
     try {
       setIsLoading(true);
-      const [fetchedTasks, fetchedStatuses, fetchedProjects, fetchedLogs] = await Promise.all([
+      const [fetchedTasks, fetchedStatuses, fetchedProjects, fetchedLogs, fetchedMeetings] = await Promise.all([
         api.getTasks(),
         api.getStatuses(),
         api.getProjects().catch(() => []),
-        api.getActivityLogs()
+        api.getActivityLogs(),
+        api.getMeetings().catch(() => [])
       ]);
 
       setTasks(fetchedTasks);
       setStatuses(fetchedStatuses);
       setProjects(fetchedProjects);
       setActivityLogs(fetchedLogs);
+      setMeetings(fetchedMeetings);
 
       if (currentUser.role === 'admin') {
         try {
@@ -740,6 +816,171 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Meetings Handlers
+  const createMeeting = async (data: Partial<Meeting>) => {
+    try {
+      const newMeeting = await api.createMeeting(data);
+      setMeetings((prev) => [newMeeting, ...prev]);
+      addToast('success', `Meeting "${newMeeting.title}" scheduled`);
+      refreshData();
+      return newMeeting;
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to create meeting');
+      return null;
+    }
+  };
+
+  const updateMeeting = async (id: string, data: Partial<Meeting>) => {
+    try {
+      const updated = await api.updateMeeting(id, data);
+      setMeetings((prev) => prev.map((m) => (m.id === id ? updated : m)));
+      if (selectedMeeting?.id === id) {
+        setSelectedMeeting(updated);
+      }
+      addToast('success', 'Meeting updated');
+      refreshData();
+      return updated;
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to update meeting');
+      return null;
+    }
+  };
+
+  const deleteMeeting = async (id: string) => {
+    try {
+      await api.deleteMeeting(id);
+      setMeetings((prev) => prev.filter((m) => m.id !== id));
+      if (selectedMeeting?.id === id) {
+        setSelectedMeeting(null);
+        setIsMeetingDetailModalOpen(false);
+      }
+      addToast('success', 'Meeting removed');
+      refreshData();
+      return true;
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to delete meeting');
+      return false;
+    }
+  };
+
+  const addMeetingAttachment = async (
+    meetingId: string,
+    fileData: { name: string; size: number; type: string; url?: string; base64Data?: string }
+  ) => {
+    try {
+      const updatedMeeting = await api.addMeetingAttachment(meetingId, fileData);
+      setMeetings((prev) => prev.map((m) => (m.id === meetingId ? updatedMeeting : m)));
+      if (selectedMeeting?.id === meetingId) {
+        setSelectedMeeting(updatedMeeting);
+      }
+      addToast('success', `Attached "${fileData.name}" to meeting`);
+      return updatedMeeting;
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to upload meeting attachment');
+      return null;
+    }
+  };
+
+  const deleteMeetingAttachment = async (meetingId: string, attachmentId: string) => {
+    try {
+      const updatedMeeting = await api.deleteMeetingAttachment(meetingId, attachmentId);
+      setMeetings((prev) => prev.map((m) => (m.id === meetingId ? updatedMeeting : m)));
+      if (selectedMeeting?.id === meetingId) {
+        setSelectedMeeting(updatedMeeting);
+      }
+      addToast('success', 'Meeting attachment removed');
+      return updatedMeeting;
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to delete meeting attachment');
+      return null;
+    }
+  };
+
+  const addMeetingLog = async (meetingId: string, data: { details: string; action?: string }) => {
+    try {
+      const result = await api.addMeetingLog(meetingId, data);
+      const updatedMeeting = result.meeting;
+      setMeetings((prev) => prev.map((m) => (m.id === meetingId ? updatedMeeting : m)));
+      if (selectedMeeting?.id === meetingId) {
+        setSelectedMeeting(updatedMeeting);
+      }
+      addToast('success', 'Meeting log recorded');
+      refreshData();
+      return updatedMeeting;
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to record meeting log');
+      return null;
+    }
+  };
+
+  const toggleMeetingTopic = async (meetingId: string, topicId: string) => {
+    try {
+      const result = await api.toggleMeetingTopic(meetingId, topicId);
+      const updatedMeeting = result.meeting;
+      setMeetings((prev) => prev.map((m) => (m.id === meetingId ? updatedMeeting : m)));
+      if (selectedMeeting?.id === meetingId) {
+        setSelectedMeeting(updatedMeeting);
+      }
+      refreshData();
+      return updatedMeeting;
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to toggle agenda topic');
+      return null;
+    }
+  };
+
+  // Time Tracker Handlers
+  const addTimeLog = async (
+    taskId: string,
+    data: { durationSeconds: number; description?: string; isBillable?: boolean; startTime?: string; endTime?: string }
+  ) => {
+    try {
+      const updatedTask = await api.addTimeLog(taskId, data);
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
+      addToast('success', 'Work session time logged successfully');
+      refreshData();
+      return updatedTask;
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to log time');
+      return null;
+    }
+  };
+
+  const deleteTimeLog = async (taskId: string, logId: string) => {
+    try {
+      const updatedTask = await api.deleteTimeLog(taskId, logId);
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
+      addToast('success', 'Time log removed');
+      refreshData();
+      return updatedTask;
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to delete time log');
+      return null;
+    }
+  };
+
+  const toggleTaskTimer = async (
+    taskId: string,
+    action: 'start' | 'stop',
+    description?: string,
+    isBillable?: boolean
+  ) => {
+    try {
+      const updatedTask = await api.toggleTaskTimer(taskId, action, { description, isBillable });
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updatedTask : t)));
+      if (action === 'start') {
+        addToast('info', 'Live timer started for task');
+      } else {
+        addToast('success', 'Timer stopped and duration logged');
+      }
+      refreshData();
+      return updatedTask;
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to toggle task timer');
+      return null;
+    }
+  };
+
   return (
     <TaskContext.Provider
       value={{
@@ -764,6 +1005,9 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetFilters,
         viewMode,
         setViewMode,
+        isSidebarOpen,
+        setIsSidebarOpen,
+        toggleSidebar,
         graphSelectedUserId,
         setGraphSelectedUserId,
         navigateToGraph,
@@ -806,7 +1050,27 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateStatus,
         reorderStatuses,
         deleteStatus,
-        resetDemoData
+        resetDemoData,
+        // Meetings
+        meetings,
+        selectedMeeting,
+        setSelectedMeeting,
+        isCreateMeetingModalOpen,
+        setIsCreateMeetingModalOpen,
+        isMeetingDetailModalOpen,
+        setIsMeetingDetailModalOpen,
+        openMeetingDetail,
+        createMeeting,
+        updateMeeting,
+        deleteMeeting,
+        addMeetingAttachment,
+        deleteMeetingAttachment,
+        addMeetingLog,
+        toggleMeetingTopic,
+        // Time Tracker
+        addTimeLog,
+        deleteTimeLog,
+        toggleTaskTimer
       }}
     >
       {children}

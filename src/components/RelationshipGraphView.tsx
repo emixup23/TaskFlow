@@ -284,7 +284,7 @@ export const RelationshipGraphView: React.FC = () => {
         color: statusColor,
         statusId: task.statusId,
         priority: task.priority,
-        radius: isDone ? 16 : 19,
+        radius: 9,
         data: {
           task,
           status: taskStatus
@@ -630,21 +630,7 @@ export const RelationshipGraphView: React.FC = () => {
             .text(d.data.assignedCount);
         }
       } else if (d.type === 'task') {
-        // Task Card Node (Rounded rectangle or Hexagon)
-        const w = 40;
-        const h = 26;
-        el.append('rect')
-          .attr('x', -w / 2)
-          .attr('y', -h / 2)
-          .attr('width', w)
-          .attr('height', h)
-          .attr('rx', 6)
-          .attr('fill', '#141414')
-          .attr('stroke', d.color || '#3b82f6')
-          .attr('stroke-width', 0.7)
-          .attr('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))');
-
-        // Priority dot
+        // Task Dot Node: Clean status/priority dot without 'TASK' text and without rectangle border
         const priorityColors: Record<string, string> = {
           urgent: '#ef4444',
           high: '#f97316',
@@ -652,22 +638,14 @@ export const RelationshipGraphView: React.FC = () => {
           low: '#64748b'
         };
         const pColor = priorityColors[d.priority || 'medium'] || '#3b82f6';
+        const dotColor = d.color || pColor;
 
         el.append('circle')
-          .attr('cx', -w / 2 + 8)
-          .attr('cy', -h / 2 + 8)
-          .attr('r', 3.5)
-          .attr('fill', pColor);
-
-        // Task Icon Glyph in center
-        el.append('text')
-          .attr('text-anchor', 'middle')
-          .attr('dy', 4)
-          .attr('dx', 2)
-          .attr('font-size', 11)
-          .attr('font-weight', 'bold')
-          .attr('fill', '#cbd5e1')
-          .text('TASK');
+          .attr('cx', 0)
+          .attr('cy', 0)
+          .attr('r', 8)
+          .attr('fill', dotColor)
+          .attr('filter', 'drop-shadow(0 1px 3px rgba(0,0,0,0.4))');
       } else if (d.type === 'tag') {
         // Tag Diamond / Pill
         el.append('rect')
@@ -1597,8 +1575,8 @@ export const RelationshipGraphView: React.FC = () => {
                 <span>User Node</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3.5 h-2.5 rounded bg-[#1e293b] border border-blue-400 shrink-0" />
-                <span>Task Card</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
+                <span>Task Dot</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3.5 h-2 rounded-full bg-purple-900 border border-purple-400 shrink-0" />
