@@ -13,10 +13,20 @@ import {
   ChatMessageAttachment,
   Meeting,
   MeetingAttachment,
-  TaskTimeLog
+  TaskTimeLog,
+  LoginCredentials,
+  RegisterCredentials,
+  AuthResponse,
+  BackupSnapshotSummary,
+  BackupStats,
+  BackupDataPayload,
+  RestoreValidationResult,
+  RestoreResult,
+  RestoreOptions
 } from '../types';
 
 let currentUserId = localStorage.getItem('taskflow_user_id') || 'user-admin-1';
+let currentAuthToken = localStorage.getItem('taskflow_auth_token') || '';
 
 export function setApiUserId(id: string) {
   currentUserId = id;
@@ -27,12 +37,30 @@ export function getApiUserId(): string {
   return currentUserId;
 }
 
+export function setApiAuthToken(token: string) {
+  currentAuthToken = token;
+  if (token) {
+    localStorage.setItem('taskflow_auth_token', token);
+  } else {
+    localStorage.removeItem('taskflow_auth_token');
+  }
+}
+
+export function getApiAuthToken(): string {
+  return currentAuthToken;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const headers = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'x-user-id': currentUserId,
-    ...(options.headers || {})
+    ...(options.headers as Record<string, string> || {})
   };
+
+  if (currentAuthToken) {
+    headers['Authorization'] = `Bearer ${currentAuthToken}`;
+    headers['x-auth-token'] = currentAuthToken;
+  }
 
   const response = await fetch(path, { ...options, headers });
 
@@ -51,6 +79,34 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  // Authentication & Session
+  login: (credentials: LoginCredentials) =>
+    request<AuthResponse>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    }),
+  register: (credentials: RegisterCredentials) =>
+    request<AuthResponse>('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    }),
+  logout: () =>
+    request<{ success: boolean; message: string }>('/api/auth/logout', {
+      method: 'POST'
+    }),
+  getAuthMe: () =>
+    request<{ user: User; privileges: User['privileges'] }>('/api/auth/me'),
+  switchDemoUser: (userId: string) =>
+    request<AuthResponse>('/api/auth/switch-demo-user', {
+      method: 'POST',
+      body: JSON.stringify({ userId })
+    }),
+  changePassword: (data: { currentPassword?: string; newPassword?: string }) =>
+    request<{ success: boolean; message: string }>('/api/auth/change-password', {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+
   // Current user & Users
   getCurrentUser: () => request<User>('/api/current-user'),
   getUsers: () => request<User[]>('/api/users'),
@@ -336,5 +392,56 @@ export const api = {
   toggleMeetingTopic: (meetingId: string, topicId: string) =>
     request<{ meeting: Meeting; topic: any; log: any }>(`/api/meetings/${meetingId}/topics/${topicId}/toggle`, {
       method: 'POST'
-    })
+    }),
+
+  // Backup & Restore Engine (Admin Only)
+  getBackups: () =>
+    request<{
+      snapshots: BackupSnapshotSummary[];
+      currentLiveStats: BackupStats;
+      lastBackupTimestamp: string | null;
+    }>('/api/admin/backups'),
+
+  createBackup: (data: { name?: string; description?: string; customGamification?: any }) =>
+    request<BackupDataPayload>('/api/admin/backups', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
+  validateBackup: (payload: any) =>
+    request<RestoreValidationResult>('/api/admin/backups/validate', {
+      method: 'POST',
+      body: JSON.stringify({ payload })
+    }),
+
+  restoreBackup: (data: {
+    snapshotId?: string;
+    backupData?: BackupDataPayload;
+    options?: RestoreOptions;
+  }) =>
+    request<RestoreResult>('/api/admin/backups/restore', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
+  deleteBackupSnapshot: (id: string) =>
+    request<{ success: boolean; message: string }>(`/api/admin/backups/${id}`, {
+      method: 'DELETE'
+    }),
+
+  downloadBackup: async (id: string = 'live') => {
+    const token = getApiAuthToken();
+    const userId = getApiUserId();
+    const response = await fetch(`/api/admin/backups/${id}/download`, {
+      headers: {
+        'x-user-id': userId,
+        ...(token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {})
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to download backup (${response.status})`);
+    }
+    const blob = await response.blob();
+    return blob;
+  }
 };

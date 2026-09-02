@@ -36,6 +36,7 @@ import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
 import { Meeting, MeetingStatus, MeetingTopic, MeetingMember, MeetingAttachment, MeetingLog } from '../types';
 import { UserAvatar } from './UserAvatar';
+import { formatMeetingDateTime, formatDateTimeDDMMYYYYHHMM } from '../utils/dateUtils';
 
 export const MeetingDetailModal: React.FC = () => {
   const {
@@ -355,9 +356,9 @@ export const MeetingDetailModal: React.FC = () => {
                 </div>
               )}
               <div className="flex items-center gap-2 text-xs text-neutral-400 mt-0.5">
-                <span>{new Date(meeting.date || meeting.startTime).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                <span className="font-mono text-neutral-300">{formatMeetingDateTime(meeting.date, meeting.startTime, meeting.endTime)}</span>
                 <span>•</span>
-                <span className="font-mono">{meeting.startTime}{meeting.endTime ? ` - ${meeting.endTime}` : ''} ({meeting.durationMinutes}m)</span>
+                <span className="font-mono">({meeting.durationMinutes}m)</span>
               </div>
             </div>
           </div>
@@ -953,12 +954,7 @@ export const MeetingDetailModal: React.FC = () => {
                       badgeLabel = 'ATTENDEES';
                     }
 
-                    const formattedTime = new Date(log.timestamp).toLocaleString([], {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
+                    const formattedTime = formatDateTimeDDMMYYYYHHMM(log.timestamp);
 
                     return (
                       <div

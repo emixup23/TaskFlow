@@ -19,6 +19,7 @@ import { UserManagementView } from './components/UserManagementView';
 import { RelationshipGraphView } from './components/RelationshipGraphView';
 import { ChatView } from './components/ChatView';
 import { MeetingsView } from './components/MeetingsView';
+import { BackupRestoreView } from './components/BackupRestoreView';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { CreateTaskModal } from './components/CreateTaskModal';
 import { CreateMeetingModal } from './components/CreateMeetingModal';
@@ -32,11 +33,13 @@ import { LevelUpModal } from './components/LevelUpModal';
 import { ThemeEditorModal } from './components/ThemeEditorModal';
 import { FloatingXpToast } from './components/FloatingXpToast';
 import { ToastContainer } from './components/ToastContainer';
+import { LoginView } from './components/LoginView';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { Loader2 } from 'lucide-react';
 
 const WorkspaceContent: React.FC = () => {
   const { viewMode, isLoading, isSidebarOpen, setIsSidebarOpen, toggleSidebar } = useTasks();
-  const { isLoading: isAuthLoading } = useAuth();
+  const { isLoading: isAuthLoading, isAuthenticated, currentUser } = useAuth();
   const { setIsThemeEditorOpen } = useTheme();
 
   // Keyboard shortcuts (Ctrl+B / Cmd+B for Sidebar, Ctrl+Shift+T / Cmd+Shift+T for Theme Studio)
@@ -70,6 +73,16 @@ const WorkspaceContent: React.FC = () => {
     );
   }
 
+  // Authentication Gate: Render clean, secure login/registration view if not authenticated
+  if (!isAuthenticated || !currentUser) {
+    return (
+      <>
+        <LoginView />
+        <ToastContainer />
+      </>
+    );
+  }
+
   const showFilterBar = viewMode === 'kanban' || viewMode === 'list' || viewMode === 'timeline';
 
   return (
@@ -100,9 +113,26 @@ const WorkspaceContent: React.FC = () => {
           {viewMode === 'graph' && <RelationshipGraphView />}
           {viewMode === 'chat' && <ChatView />}
           {viewMode === 'meetings' && <MeetingsView />}
-          {viewMode === 'dashboard' && <AdminDashboard />}
-          {viewMode === 'users' && <UserManagementView />}
-          {viewMode === 'audit' && <AuditLogView />}
+          {viewMode === 'dashboard' && (
+            <ProtectedRoute requiredRole="admin" title="Executive Analytics & Dashboard">
+              <AdminDashboard />
+            </ProtectedRoute>
+          )}
+          {viewMode === 'users' && (
+            <ProtectedRoute requiredPrivilege="canManageUsers" title="Team Directory & Access Management">
+              <UserManagementView />
+            </ProtectedRoute>
+          )}
+          {viewMode === 'backup' && (
+            <ProtectedRoute requiredRole="admin" title="Backup & Disaster Recovery Center">
+              <BackupRestoreView />
+            </ProtectedRoute>
+          )}
+          {viewMode === 'audit' && (
+            <ProtectedRoute requiredPrivilege="canViewAuditLogs" title="Activity & Security Audit Trail">
+              <AuditLogView />
+            </ProtectedRoute>
+          )}
           {viewMode === 'rewards' && <GamificationView />}
         </div>
       </main>

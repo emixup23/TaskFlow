@@ -30,7 +30,11 @@ import {
   Video,
   User as UserIcon,
   Camera,
-  ExternalLink
+  ExternalLink,
+  LogOut,
+  LogIn,
+  KeyRound,
+  Database
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
@@ -46,7 +50,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
-  const { currentUser, users, switchUser, isAdmin } = useAuth();
+  const { currentUser, users, switchUser, isAdmin, logout } = useAuth();
   const {
     viewMode,
     setViewMode,
@@ -110,6 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
     { mode: 'rewards', label: 'Rewards', icon: <Trophy className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
     { mode: 'dashboard', label: 'Dashboard', icon: <BarChart3 className="w-4 h-4" />, colorDot: 'bg-blue-400', isAllowed: isAdmin || canManageUsers, adminBadge: true },
     { mode: 'users', label: 'Team', icon: <Users className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: isAdmin || canManageUsers, adminBadge: true },
+    { mode: 'backup', label: 'Backup & Restore', icon: <Database className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: isAdmin, adminBadge: true },
     { mode: 'audit', label: 'Log & Audit', icon: <History className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: canViewAuditLogs }
   ];
 
@@ -626,6 +631,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Sign Out Button */}
+              <div className="pt-2 mt-2 border-t border-[#262626]">
+                <button
+                  type="button"
+                  id="sidebar-btn-signout"
+                  onClick={async () => {
+                    setIsUserDropdownOpen(false);
+                    await logout();
+                  }}
+                  className="w-full flex items-center gap-2 p-2 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-xs font-semibold text-rose-300 transition-colors cursor-pointer border border-rose-800/40"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-rose-400" />
+                  <span className="flex-1 text-left">Sign Out / Lock Session</span>
+                </button>
               </div>
             </div>
           )}

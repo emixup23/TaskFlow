@@ -25,6 +25,7 @@ import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
 import { Meeting, MeetingStatus } from '../types';
 import { UserAvatar } from './UserAvatar';
+import { formatMeetingDateTime, formatDateDDMMYYYY } from '../utils/dateUtils';
 
 export const MeetingsView: React.FC = () => {
   const {
@@ -42,6 +43,9 @@ export const MeetingsView: React.FC = () => {
   const [timeFilter, setTimeFilter] = useState<'all' | 'upcoming' | 'past' | 'today'>('all');
 
   const todayStr = new Date().toISOString().split('T')[0];
+//
+
+
 
   // Filtering meetings
   const filteredMeetings = meetings.filter((m) => {
@@ -270,16 +274,11 @@ export const MeetingsView: React.FC = () => {
                       </p>
                     )}
 
-                    {/* Schedule Date & Time Information */}
+                    {/* Schedule Date & Time Information (dd/mm/yyyy HH:MM) */}
                     <div className="flex items-center gap-3 text-xs text-neutral-300 mb-3.5 bg-[#1a1a1a] p-2 rounded border border-[#2a2a2a]">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-violet-400" />
-                        <span>{new Date(mDate).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                      </div>
-                      <span>•</span>
                       <div className="flex items-center gap-1.5 font-mono text-neutral-200">
-                        <span>{meeting.startTime}</span>
-                        {meeting.endTime && <span>- {meeting.endTime}</span>}
+                        <Calendar className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+                        <span>{formatMeetingDateTime(meeting.date || mDate, meeting.startTime, meeting.endTime)}</span>
                       </div>
                     </div>
 

@@ -1,5 +1,25 @@
 export type UserRole = 'admin' | 'basic';
 
+export interface LoginCredentials {
+  email: string;
+  password?: string;
+}
+
+export interface RegisterCredentials {
+  name: string;
+  email: string;
+  password?: string;
+  role?: UserRole;
+  department?: string;
+  title?: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+  message?: string;
+}
+
 export interface UserPrivileges {
   canCreateTask: boolean;
   canEditAnyTask: boolean;
@@ -191,7 +211,8 @@ export type ViewMode =
   | 'rewards'
   | 'users'
   | 'graph'
-  | 'chat';
+  | 'chat'
+  | 'backup';
 
 export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -525,4 +546,113 @@ export interface ThemePreset {
   badge: string;
   config: CustomThemeConfig;
 }
+
+// -------------------------------------------------------------
+// Backup & Restore Types
+// -------------------------------------------------------------
+
+export interface BackupFileStoreItem {
+  id: string;
+  name: string;
+  size: number;
+  mimeType: string;
+  dataBase64: string;
+  checksum: string;
+  token: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  taskId?: string;
+  meetingId?: string;
+}
+
+export interface BackupStats {
+  usersCount: number;
+  tasksCount: number;
+  projectsCount: number;
+  statusesCount: number;
+  meetingsCount: number;
+  channelsCount: number;
+  chatMessagesCount: number;
+  activityLogsCount: number;
+  filesCount: number;
+  totalFilesSizeBytes: number;
+}
+
+export interface BackupMetadata {
+  id: string;
+  version: string;
+  timestamp: string;
+  createdAtFormatted: string;
+  name: string;
+  description?: string;
+  checksum: string;
+  generatedBy: {
+    userId: string;
+    userName: string;
+    userEmail: string;
+    userRole: string;
+  };
+  stats: BackupStats;
+}
+
+export interface BackupDataPayload {
+  metadata: BackupMetadata;
+  data: {
+    users: User[];
+    userPasswordHashes?: Record<string, string>;
+    statuses: Status[];
+    projects: Project[];
+    tasks: Task[];
+    meetings: Meeting[];
+    channels: ChatChannel[];
+    chatMessages: ChatMessage[];
+    activityLogs: ActivityLog[];
+    files: BackupFileStoreItem[];
+    gamification?: Record<string, any>;
+  };
+}
+
+export interface BackupSnapshotSummary {
+  id: string;
+  name: string;
+  description?: string;
+  timestamp: string;
+  checksum: string;
+  sizeBytes: number;
+  stats: BackupStats;
+  generatedBy: BackupMetadata['generatedBy'];
+  isAutoSnapshot?: boolean;
+}
+
+export interface RestoreValidationResult {
+  valid: boolean;
+  checksumMatches: boolean;
+  version: string;
+  errors: string[];
+  warnings: string[];
+  metadata?: BackupMetadata;
+  previewStats?: BackupStats;
+}
+
+export interface RestoreOptions {
+  mode?: 'clean_overwrite' | 'merge';
+  restoreUsers?: boolean;
+  restoreTasks?: boolean;
+  restoreFiles?: boolean;
+  restoreChat?: boolean;
+  restoreMeetings?: boolean;
+  restoreAuditLogs?: boolean;
+}
+
+export interface RestoreResult {
+  success: boolean;
+  restoredAt: string;
+  message: string;
+  restoredStats: BackupStats;
+  adminUser: {
+    id: string;
+    name: string;
+  };
+}
+
 

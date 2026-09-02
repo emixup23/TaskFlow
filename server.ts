@@ -1,5 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { createServer as createViteServer } from 'vite';
 
 export interface UserPrivileges {
@@ -351,6 +353,19 @@ interface StoredFile {
 
 const secureFileStore = new Map<string, StoredFile>();
 
+// Secure Authentication & Session Store
+export interface UserSession {
+  token: string;
+  userId: string;
+  createdAt: string;
+  expiresAt: number;
+}
+
+const activeSessions = new Map<string, UserSession>();
+const userPasswordHashes = new Map<string, string>();
+const DEFAULT_DEMO_PASSWORD = 'password123';
+const DEFAULT_DEMO_HASH = bcrypt.hashSync(DEFAULT_DEMO_PASSWORD, 10);
+
 // Initial Data
 const DEFAULT_USERS: User[] = [
   {
@@ -511,6 +526,10 @@ function initializeSeedData() {
   users = [...DEFAULT_USERS];
   statuses = [...DEFAULT_STATUSES];
   projects = [...DEFAULT_PROJECTS];
+  userPasswordHashes.clear();
+  DEFAULT_USERS.forEach((u) => {
+    userPasswordHashes.set(u.id, DEFAULT_DEMO_HASH);
+  });
   activityLogs = [
     {
       id: 'log-1',
@@ -1962,19 +1981,60 @@ function addActivityLog(
   return log;
 }
 
-// Auth Middleware: Resolve user from `x-user-id` header
+// Auth Middleware: Resolve user from session token or `x-user-id` header
 interface AuthenticatedRequest extends Request {
   currentUser?: User;
+  sessionToken?: string;
 }
 
 const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  const userId = (req.headers['x-user-id'] as string) || 'user-admin-1';
-  const foundUser = users.find((u) => u.id === userId);
+  const authHeader = req.headers['authorization'];
+  let token = '';
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7).trim();
+  } else if (req.headers['x-auth-token']) {
+    token = req.headers['x-auth-token'] as string;
+  }
+
+  let foundUser: User | undefined;
+
+  // 1. Resolve from session token
+  if (token && activeSessions.has(token)) {
+    const session = activeSessions.get(token)!;
+    if (session.expiresAt > Date.now()) {
+      foundUser = users.find((u) => u.id === session.userId);
+      req.sessionToken = token;
+    } else {
+      activeSessions.delete(token);
+    }
+  }
+
+  // 2. Resolve from x-user-id header (for backward compatibility & direct testing)
   if (!foundUser) {
-    // Default to first user if not found
-    req.currentUser = users[0];
-  } else {
+    const userId = req.headers['x-user-id'] as string;
+    if (userId) {
+      foundUser = users.find((u) => u.id === userId);
+    }
+  }
+
+  if (foundUser) {
     req.currentUser = foundUser;
+  } else if (users.length > 0) {
+    // Default fallback to first active user if not specified
+    req.currentUser = users.find((u) => u.status === 'active') || users[0];
+  }
+
+  next();
+};
+
+const requireAuth = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  if (!req.currentUser) {
+    res.status(401).json({ error: 'Unauthorized: Valid authentication session is required.' });
+    return;
+  }
+  if (req.currentUser.status === 'suspended') {
+    res.status(403).json({ error: 'Forbidden: Account is suspended.' });
+    return;
   }
   next();
 };
@@ -1989,15 +2049,274 @@ const requireAdmin = (req: AuthenticatedRequest, res: Response, next: NextFuncti
   next();
 };
 
+const requirePrivilege = (privilegeKey: keyof UserPrivileges) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (!req.currentUser) {
+      res.status(401).json({ error: 'Unauthorized: Authentication required.' });
+      return;
+    }
+    if (req.currentUser.role === 'admin') {
+      return next();
+    }
+    const userPrivs = req.currentUser.privileges || BASIC_DEFAULT_PRIVILEGES;
+    if (userPrivs[privilegeKey]) {
+      return next();
+    }
+    res.status(403).json({
+      error: `Forbidden: Missing required privilege "${privilegeKey}".`
+    });
+  };
+};
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json({ limit: '10mb' }));
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
   app.use(authMiddleware);
 
   // -------------------------------------------------------------
-  // API Routes
+  // API Routes: Authentication & Session Management
+  // -------------------------------------------------------------
+
+  // POST /api/auth/login - Authenticate with email and password
+  app.post('/api/auth/login', (req: Request, res: Response) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      res.status(400).json({ error: 'Email and password are required.' });
+      return;
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const targetUser = users.find((u) => u.email.toLowerCase() === cleanEmail);
+
+    if (!targetUser) {
+      res.status(401).json({ error: 'Invalid email or password.' });
+      return;
+    }
+
+    if (targetUser.status === 'suspended') {
+      res.status(403).json({ error: 'This account has been suspended. Please contact your administrator.' });
+      return;
+    }
+
+    // Verify password hash
+    let storedHash = userPasswordHashes.get(targetUser.id);
+    if (!storedHash) {
+      storedHash = DEFAULT_DEMO_HASH;
+      userPasswordHashes.set(targetUser.id, DEFAULT_DEMO_HASH);
+    }
+
+    const isValid = bcrypt.compareSync(String(password), storedHash);
+    if (!isValid) {
+      res.status(401).json({ error: 'Invalid email or password.' });
+      return;
+    }
+
+    // Issue session token
+    const token = 'tok_' + crypto.randomBytes(32).toString('hex');
+    const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+
+    activeSessions.set(token, {
+      token,
+      userId: targetUser.id,
+      createdAt: new Date().toISOString(),
+      expiresAt
+    });
+
+    targetUser.lastLoginAt = new Date().toISOString();
+
+    addActivityLog(
+      targetUser.id,
+      targetUser.name,
+      targetUser.avatar,
+      'User Logged In',
+      `${targetUser.name} signed in successfully (${targetUser.role.toUpperCase()}).`
+    );
+
+    res.json({
+      token,
+      user: targetUser,
+      message: 'Login successful'
+    });
+  });
+
+  // POST /api/auth/register - Register a new account
+  app.post('/api/auth/register', (req: Request, res: Response) => {
+    const { name, email, password, role, department, title } = req.body;
+    if (!name || !email || !password) {
+      res.status(400).json({ error: 'Name, email, and password are required.' });
+      return;
+    }
+
+    if (String(password).length < 6) {
+      res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+      return;
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    if (users.some((u) => u.email.toLowerCase() === cleanEmail)) {
+      res.status(409).json({ error: 'An account with this email address already exists.' });
+      return;
+    }
+
+    const isFirstUser = users.length === 0;
+    const userRole: 'admin' | 'basic' = isFirstUser || role === 'admin' ? 'admin' : 'basic';
+    const userPrivileges: UserPrivileges = userRole === 'admin'
+      ? { ...ADMIN_DEFAULT_PRIVILEGES }
+      : { ...BASIC_DEFAULT_PRIVILEGES };
+
+    const newUserId = `user-${Date.now()}`;
+    const newUser: User = {
+      id: newUserId,
+      name: String(name).trim(),
+      email: cleanEmail,
+      role: userRole,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(String(name).trim())}`,
+      title: title ? String(title).trim() : (userRole === 'admin' ? 'Workspace Admin' : 'Team Member'),
+      department: department ? String(department).trim() : 'Engineering',
+      bio: '',
+      phone: '',
+      status: 'active',
+      privileges: userPrivileges,
+      createdAt: new Date().toISOString(),
+      lastLoginAt: new Date().toISOString()
+    };
+
+    // Hash password with bcrypt
+    const hash = bcrypt.hashSync(String(password), 10);
+    userPasswordHashes.set(newUserId, hash);
+    users.push(newUser);
+
+    // Issue session token
+    const token = 'tok_' + crypto.randomBytes(32).toString('hex');
+    activeSessions.set(token, {
+      token,
+      userId: newUserId,
+      createdAt: new Date().toISOString(),
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
+    });
+
+    addActivityLog(
+      newUser.id,
+      newUser.name,
+      newUser.avatar,
+      'User Registered',
+      `${newUser.name} created an account with ${newUser.role.toUpperCase()} role.`
+    );
+
+    res.status(201).json({
+      token,
+      user: newUser,
+      message: 'Account registered successfully'
+    });
+  });
+
+  // POST /api/auth/logout - End user session
+  app.post('/api/auth/logout', (req: AuthenticatedRequest, res: Response) => {
+    const authHeader = req.headers['authorization'];
+    let token = '';
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7).trim();
+    } else if (req.headers['x-auth-token']) {
+      token = req.headers['x-auth-token'] as string;
+    }
+
+    if (token && activeSessions.has(token)) {
+      activeSessions.delete(token);
+    }
+
+    if (req.currentUser) {
+      addActivityLog(
+        req.currentUser.id,
+        req.currentUser.name,
+        req.currentUser.avatar,
+        'User Logged Out',
+        `${req.currentUser.name} signed out of the workspace.`
+      );
+    }
+
+    res.json({ success: true, message: 'Logged out successfully.' });
+  });
+
+  // GET /api/auth/me - Validate current session token and permissions
+  app.get('/api/auth/me', (req: AuthenticatedRequest, res: Response) => {
+    if (!req.currentUser) {
+      res.status(401).json({ error: 'Unauthenticated' });
+      return;
+    }
+    res.json({
+      user: req.currentUser,
+      privileges: req.currentUser.privileges || (req.currentUser.role === 'admin' ? ADMIN_DEFAULT_PRIVILEGES : BASIC_DEFAULT_PRIVILEGES)
+    });
+  });
+
+  // PUT /api/auth/change-password - Change account password securely
+  app.put('/api/auth/change-password', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ error: 'Current password and new password are required.' });
+      return;
+    }
+    if (String(newPassword).length < 6) {
+      res.status(400).json({ error: 'New password must be at least 6 characters long.' });
+      return;
+    }
+
+    let storedHash = userPasswordHashes.get(req.currentUser!.id);
+    if (!storedHash) {
+      storedHash = DEFAULT_DEMO_HASH;
+    }
+
+    const isValid = bcrypt.compareSync(String(currentPassword), storedHash);
+    if (!isValid) {
+      res.status(400).json({ error: 'Current password is incorrect.' });
+      return;
+    }
+
+    const newHash = bcrypt.hashSync(String(newPassword), 10);
+    userPasswordHashes.set(req.currentUser!.id, newHash);
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Password Changed',
+      `${req.currentUser!.name} updated their security password.`
+    );
+
+    res.json({ success: true, message: 'Password updated successfully.' });
+  });
+
+  // POST /api/auth/switch-demo-user - Switch user context for demo purposes and get new token
+  app.post('/api/auth/switch-demo-user', (req: Request, res: Response) => {
+    const { userId } = req.body;
+    const targetUser = users.find((u) => u.id === userId);
+    if (!targetUser) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    const token = 'tok_' + crypto.randomBytes(32).toString('hex');
+    activeSessions.set(token, {
+      token,
+      userId: targetUser.id,
+      createdAt: new Date().toISOString(),
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
+    });
+
+    targetUser.lastLoginAt = new Date().toISOString();
+
+    res.json({
+      token,
+      user: targetUser,
+      message: `Switched to user ${targetUser.name}`
+    });
+  });
+
+  // -------------------------------------------------------------
+  // API Routes: Users Management
   // -------------------------------------------------------------
 
   // GET current authenticated user profile
@@ -4686,6 +5005,478 @@ async function startServer() {
     channelReadState.get(channelId)!.set(user.id, nowIso);
 
     res.json({ success: true, channelId, readAt: nowIso });
+  });
+
+  // -------------------------------------------------------------
+  // Backup & Restore Engine (Admin Only)
+  // -------------------------------------------------------------
+
+  interface BackupFileStoreItem {
+    id: string;
+    name: string;
+    size: number;
+    mimeType: string;
+    dataBase64: string;
+    checksum: string;
+    token: string;
+    uploadedBy: string;
+    uploadedAt: string;
+    taskId?: string;
+    meetingId?: string;
+  }
+
+  interface BackupStats {
+    usersCount: number;
+    tasksCount: number;
+    projectsCount: number;
+    statusesCount: number;
+    meetingsCount: number;
+    channelsCount: number;
+    chatMessagesCount: number;
+    activityLogsCount: number;
+    filesCount: number;
+    totalFilesSizeBytes: number;
+  }
+
+  interface BackupMetadata {
+    id: string;
+    version: string;
+    timestamp: string;
+    createdAtFormatted: string;
+    name: string;
+    description?: string;
+    checksum: string;
+    generatedBy: {
+      userId: string;
+      userName: string;
+      userEmail: string;
+      userRole: string;
+    };
+    stats: BackupStats;
+  }
+
+  interface BackupDataPayload {
+    metadata: BackupMetadata;
+    data: {
+      users: User[];
+      userPasswordHashes?: Record<string, string>;
+      statuses: Status[];
+      projects: Project[];
+      tasks: Task[];
+      meetings: Meeting[];
+      channels: ChatChannel[];
+      chatMessages: ChatMessage[];
+      activityLogs: ActivityLog[];
+      files: BackupFileStoreItem[];
+      gamification?: Record<string, any>;
+    };
+  }
+
+  const savedServerSnapshots = new Map<string, BackupDataPayload>();
+  let lastBackupTimestamp: string | null = null;
+
+  function formatServerDateTime(dateInput: Date | string | number = new Date()): string {
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return '';
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  }
+
+  function computeLiveBackupStats(): BackupStats {
+    const fileList = Array.from(secureFileStore.values());
+    const totalFilesSizeBytes = fileList.reduce((acc, f) => acc + (f.size || 0), 0);
+    return {
+      usersCount: users.length,
+      tasksCount: tasks.length,
+      projectsCount: projects.length,
+      statusesCount: statuses.length,
+      meetingsCount: meetings.length,
+      channelsCount: channels.length,
+      chatMessagesCount: chatMessages.length,
+      activityLogsCount: activityLogs.length,
+      filesCount: secureFileStore.size,
+      totalFilesSizeBytes
+    };
+  }
+
+  function generateBackupPayload(
+    adminUser: User,
+    name?: string,
+    description?: string,
+    customGamification?: any
+  ): BackupDataPayload {
+    const id = `backup-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const timestamp = new Date().toISOString();
+    const createdAtFormatted = formatServerDateTime(timestamp);
+    const backupName = name?.trim() || `TaskFlow Full Backup (${createdAtFormatted})`;
+
+    // Export all files from secure file store with payload
+    const files: BackupFileStoreItem[] = Array.from(secureFileStore.values()).map((f) => ({
+      id: f.id,
+      name: f.name,
+      size: f.size,
+      mimeType: f.mimeType,
+      dataBase64: f.dataBase64,
+      checksum: f.checksum,
+      token: f.token,
+      uploadedBy: f.uploadedBy,
+      uploadedAt: f.uploadedAt,
+      taskId: f.taskId
+    }));
+
+    // Export password hashes securely
+    const passwordHashesMap: Record<string, string> = {};
+    userPasswordHashes.forEach((hash, uId) => {
+      passwordHashesMap[uId] = hash;
+    });
+
+    const rawData = {
+      users: JSON.parse(JSON.stringify(users)),
+      userPasswordHashes: passwordHashesMap,
+      statuses: JSON.parse(JSON.stringify(statuses)),
+      projects: JSON.parse(JSON.stringify(projects)),
+      tasks: JSON.parse(JSON.stringify(tasks)),
+      meetings: JSON.parse(JSON.stringify(meetings)),
+      channels: JSON.parse(JSON.stringify(channels)),
+      chatMessages: JSON.parse(JSON.stringify(chatMessages)),
+      activityLogs: JSON.parse(JSON.stringify(activityLogs)),
+      files,
+      gamification: customGamification || {}
+    };
+
+    const dataString = JSON.stringify(rawData);
+    const checksum = crypto.createHash('sha256').update(dataString).digest('hex');
+
+    const stats: BackupStats = {
+      usersCount: rawData.users.length,
+      tasksCount: rawData.tasks.length,
+      projectsCount: rawData.projects.length,
+      statusesCount: rawData.statuses.length,
+      meetingsCount: rawData.meetings.length,
+      channelsCount: rawData.channels.length,
+      chatMessagesCount: rawData.chatMessages.length,
+      activityLogsCount: rawData.activityLogs.length,
+      filesCount: rawData.files.length,
+      totalFilesSizeBytes: files.reduce((acc, f) => acc + (f.size || 0), 0)
+    };
+
+    const metadata: BackupMetadata = {
+      id,
+      version: '2.0.0',
+      timestamp,
+      createdAtFormatted,
+      name: backupName,
+      description: description || 'Complete platform snapshot including tasks, meetings, channels, users, activity logs, and all uploaded file attachments.',
+      checksum,
+      generatedBy: {
+        userId: adminUser.id,
+        userName: adminUser.name,
+        userEmail: adminUser.email,
+        userRole: adminUser.role
+      },
+      stats
+    };
+
+    return {
+      metadata,
+      data: rawData
+    };
+  }
+
+  function validateBackupPayload(payload: any): {
+    valid: boolean;
+    checksumMatches: boolean;
+    version: string;
+    errors: string[];
+    warnings: string[];
+    metadata?: BackupMetadata;
+    previewStats?: BackupStats;
+  } {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (!payload || typeof payload !== 'object') {
+      return {
+        valid: false,
+        checksumMatches: false,
+        version: 'unknown',
+        errors: ['Invalid payload: Must be a valid JSON object.'],
+        warnings: []
+      };
+    }
+
+    if (!payload.data || typeof payload.data !== 'object') {
+      errors.push('Missing "data" object containing application state entities.');
+    }
+
+    if (!payload.metadata || typeof payload.metadata !== 'object') {
+      warnings.push('Metadata missing or incomplete. Default metadata will be generated.');
+    }
+
+    const data = payload.data || {};
+    if (!Array.isArray(data.tasks)) errors.push('Missing or invalid "data.tasks" array.');
+    if (!Array.isArray(data.users)) errors.push('Missing or invalid "data.users" array.');
+    if (!Array.isArray(data.statuses)) errors.push('Missing or invalid "data.statuses" array.');
+    if (!Array.isArray(data.projects)) errors.push('Missing or invalid "data.projects" array.');
+
+    if (!Array.isArray(data.meetings)) warnings.push('No meetings array found in backup; empty meetings table will be initialized.');
+    if (!Array.isArray(data.channels)) warnings.push('No chat channels found in backup; default channels will be preserved or initialized.');
+    if (!Array.isArray(data.files)) warnings.push('No files array found in backup; uploaded files store will be cleared.');
+
+    // Checksum test
+    let checksumMatches = false;
+    if (payload.metadata && payload.metadata.checksum && errors.length === 0) {
+      try {
+        const dataString = JSON.stringify(data);
+        const computedHash = crypto.createHash('sha256').update(dataString).digest('hex');
+        checksumMatches = (computedHash === payload.metadata.checksum);
+        if (!checksumMatches) {
+          warnings.push('Integrity Checksum mismatch: Data may have been manually modified or formatted.');
+        }
+      } catch {
+        warnings.push('Could not verify SHA-256 checksum.');
+      }
+    }
+
+    const fileArr = Array.isArray(data.files) ? data.files : [];
+    const totalFilesSizeBytes = fileArr.reduce((acc: number, f: any) => acc + (typeof f?.size === 'number' ? f.size : 0), 0);
+
+    const previewStats: BackupStats = {
+      usersCount: Array.isArray(data.users) ? data.users.length : 0,
+      tasksCount: Array.isArray(data.tasks) ? data.tasks.length : 0,
+      projectsCount: Array.isArray(data.projects) ? data.projects.length : 0,
+      statusesCount: Array.isArray(data.statuses) ? data.statuses.length : 0,
+      meetingsCount: Array.isArray(data.meetings) ? data.meetings.length : 0,
+      channelsCount: Array.isArray(data.channels) ? data.channels.length : 0,
+      chatMessagesCount: Array.isArray(data.chatMessages) ? data.chatMessages.length : 0,
+      activityLogsCount: Array.isArray(data.activityLogs) ? data.activityLogs.length : 0,
+      filesCount: fileArr.length,
+      totalFilesSizeBytes
+    };
+
+    return {
+      valid: errors.length === 0,
+      checksumMatches,
+      version: payload.metadata?.version || '1.0.0',
+      errors,
+      warnings,
+      metadata: payload.metadata,
+      previewStats
+    };
+  }
+
+  function executeRestore(backup: BackupDataPayload, adminUser: User, options?: any) {
+    const { data, metadata } = backup;
+
+    // 1. Restore Users
+    if (Array.isArray(data.users) && data.users.length > 0) {
+      users = [...data.users];
+    }
+
+    // 2. Restore Password Hashes
+    if (data.userPasswordHashes && typeof data.userPasswordHashes === 'object') {
+      userPasswordHashes.clear();
+      Object.entries(data.userPasswordHashes).forEach(([uId, hash]) => {
+        userPasswordHashes.set(uId, hash);
+      });
+    } else {
+      // Ensure all users have at least the default demo hash if not included
+      users.forEach((u) => {
+        if (!userPasswordHashes.has(u.id)) {
+          userPasswordHashes.set(u.id, DEFAULT_DEMO_HASH);
+        }
+      });
+    }
+
+    // 3. Restore Statuses & Projects
+    if (Array.isArray(data.statuses)) statuses = [...data.statuses];
+    if (Array.isArray(data.projects)) projects = [...data.projects];
+
+    // 4. Restore Tasks
+    if (Array.isArray(data.tasks)) tasks = [...data.tasks];
+
+    // 5. Restore Meetings
+    if (Array.isArray(data.meetings)) meetings = [...data.meetings];
+
+    // 6. Restore Chat Channels & Messages
+    if (Array.isArray(data.channels)) channels = [...data.channels];
+    if (Array.isArray(data.chatMessages)) chatMessages = [...data.chatMessages];
+
+    // 7. Restore Activity Logs
+    if (Array.isArray(data.activityLogs)) activityLogs = [...data.activityLogs];
+
+    // 8. Restore Secure File Store (Attachments & Uploaded Binaries)
+    secureFileStore.clear();
+    if (Array.isArray(data.files)) {
+      data.files.forEach((f) => {
+        secureFileStore.set(f.id, {
+          id: f.id,
+          name: f.name,
+          size: f.size,
+          mimeType: f.mimeType,
+          dataBase64: f.dataBase64,
+          checksum: f.checksum,
+          token: f.token || Math.random().toString(36).substring(2, 15),
+          uploadedBy: f.uploadedBy || adminUser.id,
+          uploadedAt: f.uploadedAt || new Date().toISOString(),
+          taskId: f.taskId
+        });
+      });
+    }
+
+    // 9. Record Audit Log Entry for the Restore Operation
+    addActivityLog(
+      adminUser.id,
+      adminUser.name,
+      adminUser.avatar,
+      'Platform Restored from Backup',
+      `Administrator ${adminUser.name} executed restore from "${metadata?.name || 'Uploaded Backup'}" (${tasks.length} tasks, ${users.length} users, ${meetings.length} meetings, ${secureFileStore.size} attachment files synchronized).`
+    );
+
+    return {
+      success: true,
+      restoredAt: new Date().toISOString(),
+      message: `Platform successfully restored from "${metadata?.name || 'backup'}".`,
+      restoredStats: computeLiveBackupStats(),
+      adminUser: {
+        id: adminUser.id,
+        name: adminUser.name
+      }
+    };
+  }
+
+  // Pre-seed baseline snapshot in memory
+  try {
+    const baseline = generateBackupPayload(
+      DEFAULT_USERS[0],
+      'Baseline Seed Snapshot',
+      'Standard initial platform baseline snapshot with default tasks, members, chat channels, and files.'
+    );
+    baseline.metadata.id = 'snapshot-baseline';
+    savedServerSnapshots.set('snapshot-baseline', baseline);
+  } catch (err) {
+    console.error('Error creating baseline snapshot:', err);
+  }
+
+  // GET /api/admin/backups: List saved snapshots & live stats (Admin only)
+  app.get('/api/admin/backups', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+    const list = Array.from(savedServerSnapshots.values()).map((b) => ({
+      id: b.metadata.id,
+      name: b.metadata.name,
+      description: b.metadata.description,
+      timestamp: b.metadata.timestamp,
+      checksum: b.metadata.checksum,
+      sizeBytes: JSON.stringify(b).length,
+      stats: b.metadata.stats,
+      generatedBy: b.metadata.generatedBy,
+      isAutoSnapshot: b.metadata.id === 'snapshot-baseline'
+    }));
+
+    res.json({
+      snapshots: list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
+      currentLiveStats: computeLiveBackupStats(),
+      lastBackupTimestamp
+    });
+  });
+
+  // POST /api/admin/backups: Create and save a new snapshot (Admin only)
+  app.post('/api/admin/backups', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+    const { name, description, customGamification } = req.body;
+    const backup = generateBackupPayload(req.currentUser!, name, description, customGamification);
+    savedServerSnapshots.set(backup.metadata.id, backup);
+    lastBackupTimestamp = backup.metadata.timestamp;
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Created Platform Backup',
+      `Administrator created backup snapshot "${backup.metadata.name}" (${backup.metadata.stats.tasksCount} tasks, ${backup.metadata.stats.filesCount} files).`
+    );
+
+    res.status(201).json(backup);
+  });
+
+  // GET /api/admin/backups/:id/download: Download snapshot JSON file (Admin only)
+  app.get('/api/admin/backups/:id/download', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    let backup: BackupDataPayload | undefined;
+
+    if (id === 'live') {
+      backup = generateBackupPayload(req.currentUser!, 'Live System Snapshot');
+      lastBackupTimestamp = backup.metadata.timestamp;
+    } else {
+      backup = savedServerSnapshots.get(id);
+    }
+
+    if (!backup) {
+      res.status(404).json({ error: 'Backup snapshot not found.' });
+      return;
+    }
+
+    const dateStr = new Date(backup.metadata.timestamp).toISOString().slice(0, 10);
+    const filename = `taskflow-backup-${dateStr}-${backup.metadata.id.slice(-6)}.json`;
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(JSON.stringify(backup, null, 2));
+  });
+
+  // POST /api/admin/backups/validate: Validate uploaded backup file (Admin only)
+  app.post('/api/admin/backups/validate', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+    const payload = req.body.payload || req.body;
+    const result = validateBackupPayload(payload);
+    res.json(result);
+  });
+
+  // POST /api/admin/backups/restore: Restore platform from snapshot ID or uploaded backup data (Admin only)
+  app.post('/api/admin/backups/restore', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+    const { snapshotId, backupData, options } = req.body;
+    let targetBackup: BackupDataPayload | undefined;
+
+    if (snapshotId) {
+      targetBackup = savedServerSnapshots.get(snapshotId);
+      if (!targetBackup) {
+        res.status(404).json({ error: `Snapshot with ID ${snapshotId} not found.` });
+        return;
+      }
+    } else if (backupData) {
+      targetBackup = backupData;
+    } else {
+      res.status(400).json({ error: 'Please provide either snapshotId or backupData.' });
+      return;
+    }
+
+    const validation = validateBackupPayload(targetBackup);
+    if (!validation.valid) {
+      res.status(400).json({
+        error: 'Backup validation failed.',
+        details: validation.errors
+      });
+      return;
+    }
+
+    const restoreResult = executeRestore(targetBackup, req.currentUser!, options);
+    res.json(restoreResult);
+  });
+
+  // DELETE /api/admin/backups/:id: Delete saved snapshot (Admin only)
+  app.delete('/api/admin/backups/:id', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    if (id === 'snapshot-baseline') {
+      res.status(400).json({ error: 'Cannot delete the baseline factory snapshot.' });
+      return;
+    }
+    if (!savedServerSnapshots.has(id)) {
+      res.status(404).json({ error: 'Snapshot not found.' });
+      return;
+    }
+    savedServerSnapshots.delete(id);
+    res.json({ success: true, message: 'Snapshot deleted.' });
   });
 
   // POST /api/reset-data: Reset data for testing demo

@@ -11,14 +11,15 @@ import {
   ArrowUpRight,
   Shield,
   TrendingUp,
-  ListTodo
+  ListTodo,
+  Database
 } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
 import { Priority } from '../types';
 
 export const AdminDashboard: React.FC = () => {
-  const { stats, tasks, statuses, setSelectedTaskId } = useTasks();
+  const { stats, tasks, statuses, setSelectedTaskId, setViewMode } = useTasks();
   const { users, isAdmin } = useAuth();
 
   if (!isAdmin) {
@@ -79,8 +80,18 @@ export const AdminDashboard: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold px-3 py-1 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800 flex items-center gap-1.5">
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            id="btn-admin-nav-backup"
+            onClick={() => setViewMode('backup')}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-950/70 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-700/60 flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+          >
+            <Database className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Backup &amp; Restore</span>
+          </button>
+
+          <span className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#1f1f1f] text-neutral-300 border border-[#333] flex items-center gap-1.5">
             <span className="w-2 h-2 rounded bg-emerald-500 animate-pulse" />
             Live Telemetry
           </span>
