@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Users,
   Shield,
@@ -27,13 +27,25 @@ import {
   Check,
   X,
   UserX,
-  Network
+  Network,
+  Layers,
+  Sliders,
+  ExternalLink,
+  MessageSquare
 } from 'lucide-react';
-import { User, UserRole, UserPrivileges } from '../types';
+import { User, UserRole, UserPrivileges, SystemRole } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
+import { useChat } from '../context/ChatContext';
 import { api } from '../api/client';
 import { UserAvatar } from './UserAvatar';
+import {
+  SYSTEM_ROLE_TEMPLATES,
+  getRoleTemplate,
+  getRoleIconComponent,
+  ADMIN_DEFAULT_PRIVILEGES,
+  BASIC_DEFAULT_PRIVILEGES
+} from '../utils/roleUtils';
 
 const PRIVILEGE_METADATA: {
   key: keyof UserPrivileges;
@@ -72,6 +84,12 @@ const PRIVILEGE_METADATA: {
     category: 'admin'
   },
   {
+    key: 'canManageRoles',
+    label: 'Manage Role Templates',
+    description: 'Enables creating and configuring workspace role templates & policies.',
+    category: 'admin'
+  },
+  {
     key: 'canUploadAttachments',
     label: 'Upload File Attachments',
     description: 'Allows attaching validated files (txt, csv, png, jpg up to 1024 KB).',
@@ -99,11 +117,15 @@ const PRIVILEGE_METADATA: {
 
 export const UserManagementView: React.FC = () => {
   const { currentUser, users, refreshUsers, switchUser, isAdmin } = useAuth();
-  const { tasks, navigateToGraph, openUserProfile } = useTasks();
+  const { tasks, navigateToGraph, openUserProfile, setViewMode } = useTasks();
+  const { startDirectChat } = useChat();
+
+  // Role Templates loaded from backend or defaults
+  const [roleTemplates, setRoleTemplates] = useState<SystemRole[]>(SYSTEM_ROLE_TEMPLATES);
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'basic'>('all');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'suspended'>('all');
   const [deptFilter, setDeptFilter] = useState<string>('all');
 
@@ -115,26 +137,31 @@ export const UserManagementView: React.FC = () => {
   // Form states for Create
   const [createName, setCreateName] = useState('');
   const [createEmail, setCreateEmail] = useState('');
-  const [createRole, setCreateRole] = useState<UserRole>('basic');
+  const [createRole, setCreateRole] = useState<string>('member');
   const [createTitle, setCreateTitle] = useState('');
   const [createDept, setCreateDept] = useState('Engineering');
   const [createPhone, setCreatePhone] = useState('');
   const [createBio, setCreateBio] = useState('');
-  const [createPrivileges, setCreatePrivileges] = useState<UserPrivileges>({
-    canCreateTask: true,
-    canEditAnyTask: false,
-    canDeleteTask: false,
-    canManageStatuses: false,
-    canManageUsers: false,
-    canUploadAttachments: true,
-    canDeleteAttachments: true,
-    canViewAuditLogs: false,
-    canExportData: false
-  });
+  const [createPrivileges, setCreatePrivileges] = useState<UserPrivileges>({ ...BASIC_DEFAULT_PRIVILEGES });
 
   // Notifications
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load custom roles if available
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const fetched = await api.getRoles();
+        if (fetched && fetched.length > 0) {
+          setRoleTemplates(fetched);
+        }
+      } catch (err) {
+        // Fallback to SYSTEM_ROLE_TEMPLATES
+      }
+    };
+    fetchRoles();
+  }, []);
 
   const showFeedback = (text: string, type: 'success' | 'error' = 'success') => {
     setFeedbackMsg({ type, text });
@@ -159,7 +186,13 @@ export const UserManagementView: React.FC = () => {
         (u.title && u.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (u.department && u.department.toLowerCase().includes(searchTerm.toLowerCase()));
 
-      const matchRole = roleFilter === 'all' || u.role === roleFilter;
+      let matchRole = true;
+      if (roleFilter !== 'all') {
+        const normUserRole = u.role === 'basic' ? 'member' : u.role;
+        const normFilter = roleFilter === 'basic' ? 'member' : roleFilter;
+        matchRole = normUserRole === normFilter;
+      }
+
       const matchStatus = statusFilter === 'all' || (u.status || 'active') === statusFilter;
       const matchDept = deptFilter === 'all' || u.department === deptFilter;
 
@@ -167,15 +200,37 @@ export const UserManagementView: React.FC = () => {
     });
   }, [users, searchTerm, roleFilter, statusFilter, deptFilter]);
 
-  // Summary Metrics
+  // Summary Metrics by Role Templates
   const metrics = useMemo(() => {
     const total = users.length;
     const admins = users.filter((u) => u.role === 'admin').length;
-    const basics = users.filter((u) => u.role === 'basic').length;
+    const managers = users.filter((u) => u.role === 'manager').length;
+    const leads = users.filter((u) => u.role === 'lead').length;
+    const members = users.filter((u) => u.role === 'member' || u.role === 'basic').length;
+    const auditors = users.filter((u) => u.role === 'auditor').length;
     const active = users.filter((u) => (u.status || 'active') === 'active').length;
-    const inactive = users.filter((u) => u.status === 'inactive' || u.status === 'suspended').length;
-    return { total, admins, basics, active, inactive };
+    return { total, admins, managers, leads, members, auditors, active };
   }, [users]);
+
+  // Handle Create User Role Selection & auto-populate default privileges
+  const handleSelectCreateRole = (roleId: string) => {
+    setCreateRole(roleId);
+    const template = getRoleTemplate(roleId, roleTemplates);
+    if (template?.defaultPrivileges) {
+      setCreatePrivileges({ ...template.defaultPrivileges });
+    }
+  };
+
+  // Handle Edit User Role Selection & auto-populate
+  const handleSelectEditRole = (roleId: string) => {
+    if (!editingUser) return;
+    const template = getRoleTemplate(roleId, roleTemplates);
+    setEditingUser({
+      ...editingUser,
+      role: roleId,
+      privileges: template?.defaultPrivileges ? { ...template.defaultPrivileges } : editingUser.privileges
+    });
+  };
 
   // Handle Create User Submit
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -184,11 +239,13 @@ export const UserManagementView: React.FC = () => {
 
     try {
       setIsSubmitting(true);
+      const selectedTemplate = getRoleTemplate(createRole, roleTemplates);
+
       await api.createUser({
         name: createName.trim(),
         email: createEmail.trim().toLowerCase(),
         role: createRole,
-        title: createTitle.trim() || (createRole === 'admin' ? 'System Administrator' : 'Software Engineer'),
+        title: createTitle.trim() || selectedTemplate.name,
         department: createDept.trim() || 'Engineering',
         phone: createPhone.trim(),
         bio: createBio.trim(),
@@ -197,7 +254,7 @@ export const UserManagementView: React.FC = () => {
       });
 
       await refreshUsers();
-      showFeedback(`User ${createName.trim()} created successfully.`);
+      showFeedback(`User ${createName.trim()} created with role "${selectedTemplate.name}".`);
       setIsAddModalOpen(false);
       resetCreateForm();
     } catch (err: any) {
@@ -210,22 +267,12 @@ export const UserManagementView: React.FC = () => {
   const resetCreateForm = () => {
     setCreateName('');
     setCreateEmail('');
-    setCreateRole('basic');
+    setCreateRole('member');
     setCreateTitle('');
     setCreateDept('Engineering');
     setCreatePhone('');
     setCreateBio('');
-    setCreatePrivileges({
-      canCreateTask: true,
-      canEditAnyTask: false,
-      canDeleteTask: false,
-      canManageStatuses: false,
-      canManageUsers: false,
-      canUploadAttachments: true,
-      canDeleteAttachments: true,
-      canViewAuditLogs: false,
-      canExportData: false
-    });
+    setCreatePrivileges({ ...BASIC_DEFAULT_PRIVILEGES });
   };
 
   // Handle Edit User Submit
@@ -249,7 +296,7 @@ export const UserManagementView: React.FC = () => {
       });
 
       await refreshUsers();
-      showFeedback(`Profile and privileges updated for ${editingUser.name}.`);
+      showFeedback(`Profile and role privileges updated for ${editingUser.name}.`);
       setEditingUser(null);
     } catch (err: any) {
       showFeedback(err.message || 'Failed to update user profile', 'error');
@@ -295,110 +342,72 @@ export const UserManagementView: React.FC = () => {
     }
   };
 
-  // Preset privilege application
-  const applyPreset = (preset: 'admin' | 'lead' | 'contributor' | 'readonly') => {
+  // Apply quick Role Template to editing user
+  const applyRolePreset = (roleId: string) => {
     if (!editingUser) return;
-    let newPrivileges: UserPrivileges;
-
-    switch (preset) {
-      case 'admin':
-        newPrivileges = {
-          canCreateTask: true,
-          canEditAnyTask: true,
-          canDeleteTask: true,
-          canManageStatuses: true,
-          canManageUsers: true,
-          canUploadAttachments: true,
-          canDeleteAttachments: true,
-          canViewAuditLogs: true,
-          canExportData: true
-        };
-        break;
-      case 'lead':
-        newPrivileges = {
-          canCreateTask: true,
-          canEditAnyTask: true,
-          canDeleteTask: false,
-          canManageStatuses: true,
-          canManageUsers: false,
-          canUploadAttachments: true,
-          canDeleteAttachments: true,
-          canViewAuditLogs: true,
-          canExportData: true
-        };
-        break;
-      case 'contributor':
-        newPrivileges = {
-          canCreateTask: true,
-          canEditAnyTask: false,
-          canDeleteTask: false,
-          canManageStatuses: false,
-          canManageUsers: false,
-          canUploadAttachments: true,
-          canDeleteAttachments: true,
-          canViewAuditLogs: false,
-          canExportData: false
-        };
-        break;
-      case 'readonly':
-        newPrivileges = {
-          canCreateTask: false,
-          canEditAnyTask: false,
-          canDeleteTask: false,
-          canManageStatuses: false,
-          canManageUsers: false,
-          canUploadAttachments: false,
-          canDeleteAttachments: false,
-          canViewAuditLogs: true,
-          canExportData: true
-        };
-        break;
+    const template = getRoleTemplate(roleId, roleTemplates);
+    if (template) {
+      setEditingUser({
+        ...editingUser,
+        role: roleId,
+        privileges: { ...template.defaultPrivileges }
+      });
     }
-
-    setEditingUser({
-      ...editingUser,
-      privileges: newPrivileges
-    });
   };
 
   return (
     <div id="manage-users-page" className="flex-1 overflow-y-auto bg-[#0d0d0d] p-4 sm:p-6 lg:p-8 space-y-6">
       
-      {/* Top Banner / Header */}
+      {/* Top Banner / Header with merged Role & Access and Role Templates */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-[#141414] rounded border border-[#262626] shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold">
               <Users className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold text-white tracking-tight">
-                  User Management & Privileges
+                  Team Directory & Role Templates
                 </h1>
-                <span className="text-xs font-semibold uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  Admin Authority
+                <span className="text-xs font-semibold uppercase px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  Merged RBAC Architecture
                 </span>
               </div>
               <p className="text-xs text-neutral-400">
-                Manage organization user profiles, role assignments, and granular access control privileges
+                Manage user identities, assign granular Role Templates (Administrator, Operations Manager, Tech Lead, Contributor, Security Auditor), and audit privileges
               </p>
             </div>
           </div>
         </div>
 
-        {/* Action button */}
-        {isAdmin && (
-          <button
-            type="button"
-            id="btn-add-new-user"
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded shadow-md transition-all flex items-center gap-2 cursor-pointer self-start md:self-auto"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add New User</span>
-          </button>
-        )}
+        {/* Action buttons */}
+        <div className="flex items-center gap-2.5 self-start md:self-auto">
+          {isAdmin && (
+            <button
+              type="button"
+              id="btn-nav-to-access-manager"
+              onClick={() => setViewMode('access')}
+              className="px-3.5 py-2.5 bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 text-xs font-semibold rounded shadow-md transition-all flex items-center gap-2 cursor-pointer"
+              title="Open full Role Templates governance matrix"
+            >
+              <Layers className="w-4 h-4 text-indigo-400" />
+              <span>Role Templates Manager</span>
+            </button>
+          )}
+
+          {isAdmin && (
+            <button
+              type="button"
+              id="btn-add-new-user"
+              onClick={() => setIsAddModalOpen(true)}
+              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded shadow-md transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Team Member</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Global Feedback Banner */}
@@ -428,30 +437,55 @@ export const UserManagementView: React.FC = () => {
         </div>
       )}
 
-      {/* Stats Cards Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className="p-4 bg-[#141414] rounded border border-[#262626] space-y-1">
-          <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">Total Members</span>
-          <p className="text-2xl font-extrabold text-white">{metrics.total}</p>
+      {/* Role Templates Summary Breakdown Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="p-3.5 bg-[#141414] rounded border border-[#262626] space-y-1">
+          <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Total Members</span>
+          <p className="text-xl font-extrabold text-white">{metrics.total}</p>
         </div>
 
-        <div className="p-4 bg-[#141414] rounded border border-[#262626] space-y-1">
-          <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">Administrators</span>
-          <p className="text-2xl font-extrabold text-amber-300">{metrics.admins}</p>
+        <div className="p-3.5 bg-[#141414] rounded border border-emerald-900/40 space-y-1">
+          <div className="flex items-center gap-1.5 text-emerald-400">
+            <Shield className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Administrators</span>
+          </div>
+          <p className="text-xl font-extrabold text-emerald-300">{metrics.admins}</p>
         </div>
 
-        <div className="p-4 bg-[#141414] rounded border border-[#262626] space-y-1">
-          <span className="text-[11px] font-semibold text-blue-400 uppercase tracking-wider">Standard Users</span>
-          <p className="text-2xl font-extrabold text-blue-300">{metrics.basics}</p>
+        <div className="p-3.5 bg-[#141414] rounded border border-blue-900/40 space-y-1">
+          <div className="flex items-center gap-1.5 text-blue-400">
+            <Briefcase className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Project Mgrs</span>
+          </div>
+          <p className="text-xl font-extrabold text-blue-300">{metrics.managers}</p>
         </div>
 
-        <div className="p-4 bg-[#141414] rounded border border-[#262626] space-y-1">
-          <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Active Status</span>
-          <p className="text-2xl font-extrabold text-emerald-300">{metrics.active}</p>
+        <div className="p-3.5 bg-[#141414] rounded border border-purple-900/40 space-y-1">
+          <div className="flex items-center gap-1.5 text-purple-400">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Tech Leads</span>
+          </div>
+          <p className="text-xl font-extrabold text-purple-300">{metrics.leads}</p>
+        </div>
+
+        <div className="p-3.5 bg-[#141414] rounded border border-amber-900/40 space-y-1">
+          <div className="flex items-center gap-1.5 text-amber-400">
+            <Users className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Contributors</span>
+          </div>
+          <p className="text-xl font-extrabold text-amber-300">{metrics.members}</p>
+        </div>
+
+        <div className="p-3.5 bg-[#141414] rounded border border-cyan-900/40 space-y-1">
+          <div className="flex items-center gap-1.5 text-cyan-400">
+            <Eye className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Auditors</span>
+          </div>
+          <p className="text-xl font-extrabold text-cyan-300">{metrics.auditors}</p>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
+      {/* Filter and Search Bar with full Role Templates */}
       <div className="p-4 bg-[#141414] rounded border border-[#262626] flex flex-wrap items-center justify-between gap-3">
         
         {/* Search */}
@@ -462,14 +496,14 @@ export const UserManagementView: React.FC = () => {
             id="user-search-input"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by name, email, title, department..."
+            placeholder="Search by name, email, title, role template, department..."
             className="w-full pl-9 pr-4 py-2 bg-[#1c1c1c] border border-[#333333] rounded text-xs text-white placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
           {searchTerm && (
             <button
               type="button"
               onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white text-xs"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white text-xs cursor-pointer"
             >
               ×
             </button>
@@ -478,16 +512,19 @@ export const UserManagementView: React.FC = () => {
 
         {/* Filter Dropdowns */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Role filter */}
+          {/* Role Templates filter */}
           <select
             id="filter-user-role"
             value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value as any)}
-            className="px-3 py-2 bg-[#1c1c1c] border border-[#333333] rounded text-xs text-neutral-200 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="px-3 py-2 bg-[#1c1c1c] border border-[#333333] rounded text-xs text-neutral-200 focus:ring-1 focus:ring-blue-500 cursor-pointer font-medium"
           >
-            <option value="all">All Roles</option>
-            <option value="admin">Administrators</option>
-            <option value="basic">Standard Users</option>
+            <option value="all">All Role Templates</option>
+            {roleTemplates.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
           </select>
 
           {/* Status filter */}
@@ -520,17 +557,17 @@ export const UserManagementView: React.FC = () => {
         </div>
       </div>
 
-      {/* Users Table / Directory */}
+      {/* Users Table / Directory with Role Templates */}
       <div className="bg-[#141414] rounded border border-[#262626] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-neutral-300">
             <thead className="bg-[#181818] text-neutral-400 font-bold uppercase tracking-wider text-[11px] border-b border-[#262626]">
               <tr>
                 <th className="px-5 py-3.5">User & Identity</th>
-                <th className="px-4 py-3.5">Role & Department</th>
+                <th className="px-4 py-3.5">Assigned Role Template</th>
                 <th className="px-4 py-3.5">Status</th>
                 <th className="px-4 py-3.5">Privileges Matrix</th>
-                <th className="px-4 py-3.5">Tasks Assigned</th>
+                <th className="px-4 py-3.5">Tasks</th>
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
@@ -541,6 +578,8 @@ export const UserManagementView: React.FC = () => {
                   const assignedTasksCount = tasks.filter((t) => t.assigneeIds.includes(user.id)).length;
                   const privCount = Object.values(user.privileges || {}).filter(Boolean).length;
                   const userStatus = user.status || 'active';
+                  const userRoleTemplate = getRoleTemplate(user.role, roleTemplates);
+                  const IconComp = getRoleIconComponent(userRoleTemplate.icon);
 
                   return (
                     <tr
@@ -591,23 +630,25 @@ export const UserManagementView: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Role & Dept */}
+                      {/* Role Template & Dept */}
                       <td className="px-4 py-4">
-                        <div className="space-y-1">
-                          <div>
-                            {user.role === 'admin' ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-amber-950/60 border border-amber-800/80 px-2 py-0.5 rounded">
-                                <Shield className="w-3 h-3" />
-                                Administrator
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-300 bg-blue-950/60 border border-blue-800/80 px-2 py-0.5 rounded">
-                                Standard User
-                              </span>
-                            )}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded shadow-xs"
+                              style={{
+                                backgroundColor: `${userRoleTemplate.color}20`,
+                                color: userRoleTemplate.color,
+                                borderColor: `${userRoleTemplate.color}50`,
+                                borderWidth: 1
+                              }}
+                            >
+                              <IconComp className="w-3 h-3" />
+                              {userRoleTemplate.name}
+                            </span>
                           </div>
                           <p className="text-[11px] text-neutral-400 font-medium">
-                            {user.title || 'Team Member'} • {user.department || 'General'}
+                            {user.title || userRoleTemplate.name} • <span className="text-neutral-300">{user.department || 'General'}</span>
                           </p>
                         </div>
                       </td>
@@ -636,12 +677,12 @@ export const UserManagementView: React.FC = () => {
                       <td className="px-4 py-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-1.5">
-                            <KeyRound className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                            <KeyRound className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                             <span className="font-semibold text-white text-xs">
-                              {privCount} of 9 Granted
+                              {privCount} Permissions
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 flex-wrap max-w-[200px]">
+                          <div className="flex items-center gap-1 flex-wrap max-w-[220px]">
                             {user.privileges?.canEditAnyTask && (
                               <span className="text-[9px] bg-[#222222] text-neutral-300 px-1 py-0.2 rounded border border-[#333333]">
                                 All Tasks
@@ -653,13 +694,18 @@ export const UserManagementView: React.FC = () => {
                               </span>
                             )}
                             {user.privileges?.canManageUsers && (
-                              <span className="text-[9px] bg-amber-950/50 text-amber-300 px-1 py-0.2 rounded border border-amber-800/60">
-                                RBAC Admin
+                              <span className="text-[9px] bg-emerald-950/50 text-emerald-300 px-1 py-0.2 rounded border border-emerald-800/60">
+                                User Admin
                               </span>
                             )}
-                            {user.privileges?.canUploadAttachments && (
-                              <span className="text-[9px] bg-[#222222] text-neutral-300 px-1 py-0.2 rounded border border-[#333333]">
-                                1024KB Files
+                            {user.privileges?.canManageRoles && (
+                              <span className="text-[9px] bg-indigo-950/50 text-indigo-300 px-1 py-0.2 rounded border border-indigo-800/60">
+                                Role Admin
+                              </span>
+                            )}
+                            {user.privileges?.canViewAuditLogs && (
+                              <span className="text-[9px] bg-cyan-950/50 text-cyan-300 px-1 py-0.2 rounded border border-cyan-800/60">
+                                Audit Logs
                               </span>
                             )}
                           </div>
@@ -677,7 +723,7 @@ export const UserManagementView: React.FC = () => {
                       {/* Actions */}
                       <td className="px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          {/* View Full User Profile & Avatar */}
+                          {/* View Full User Profile */}
                           <button
                             type="button"
                             onClick={() => openUserProfile(user)}
@@ -697,7 +743,7 @@ export const UserManagementView: React.FC = () => {
                             <Network className="w-4 h-4" />
                           </button>
 
-                          {/* Switch To context */}
+                          {/* Switch To session */}
                           <button
                             type="button"
                             onClick={() => switchUser(user.id)}
@@ -707,12 +753,31 @@ export const UserManagementView: React.FC = () => {
                             <UserCheck className="w-4 h-4" />
                           </button>
 
-                          {/* Edit Profile & Privileges */}
+                          {/* Send Direct Message */}
+                          {user.id !== currentUser?.id && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await startDirectChat(user.id);
+                                  setViewMode('chat');
+                                } catch (err) {
+                                  console.error('Failed to open direct message:', err);
+                                }
+                              }}
+                              title={`Send Direct Message to ${user.name}`}
+                              className="p-1.5 text-neutral-400 hover:text-emerald-400 hover:bg-emerald-950/40 rounded transition-colors cursor-pointer"
+                            >
+                              <MessageSquare className="w-4 h-4" />
+                            </button>
+                          )}
+
+                          {/* Edit Role & Privileges */}
                           {isAdmin && (
                             <button
                               type="button"
                               onClick={() => setEditingUser({ ...user, privileges: { ...user.privileges } })}
-                              title="Edit user profile & permissions"
+                              title="Edit user role template & permissions"
                               className="p-1.5 text-neutral-400 hover:text-amber-300 hover:bg-[#222222] rounded transition-colors cursor-pointer"
                             >
                               <Edit2 className="w-4 h-4" />
@@ -738,7 +803,7 @@ export const UserManagementView: React.FC = () => {
               ) : (
                 <tr>
                   <td colSpan={6} className="px-5 py-8 text-center text-neutral-500 text-xs">
-                    No users matching the selected filters.
+                    No users matching the selected Role Template or search filters.
                   </td>
                 </tr>
               )}
@@ -747,7 +812,7 @@ export const UserManagementView: React.FC = () => {
         </div>
       </div>
 
-      {/* Edit User Profile & Privileges Modal */}
+      {/* Edit User Profile & Role Template Modal */}
       {editingUser && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
           <div className="relative bg-[#141414] w-full max-w-3xl rounded shadow-2xl border border-[#262626] overflow-hidden flex flex-col max-h-[90vh]">
@@ -762,10 +827,10 @@ export const UserManagementView: React.FC = () => {
                 />
                 <div>
                   <h2 className="text-base font-bold text-white">
-                    Edit User Profile & Privileges: {editingUser.name}
+                    Edit User & Role Template: {editingUser.name}
                   </h2>
                   <p className="text-xs text-neutral-400">
-                    Modify profile details, system roles, and custom RBAC permissions
+                    Assign Role Templates (Administrator, Operations Manager, Tech Lead, Contributor, Auditor) & custom RBAC rules
                   </p>
                 </div>
               </div>
@@ -773,7 +838,7 @@ export const UserManagementView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setEditingUser(null)}
-                className="p-1.5 text-neutral-400 hover:text-white rounded hover:bg-[#262626]"
+                className="p-1.5 text-neutral-400 hover:text-white rounded hover:bg-[#262626] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -855,18 +920,18 @@ export const UserManagementView: React.FC = () => {
 
                   <div>
                     <label className="block text-[11px] font-semibold text-neutral-300 mb-1">
-                      System Role
+                      Assigned Role Template
                     </label>
                     <select
-                      value={editingUser.role}
-                      onChange={(e) => {
-                        const newRole = e.target.value as UserRole;
-                        setEditingUser({ ...editingUser, role: newRole });
-                      }}
-                      className="w-full px-3 py-2 text-xs bg-[#1e1e1e] border border-[#333333] rounded text-white focus:ring-1 focus:ring-blue-500 font-semibold cursor-pointer"
+                      value={editingUser.role === 'basic' ? 'member' : editingUser.role}
+                      onChange={(e) => handleSelectEditRole(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-[#1e1e1e] border border-indigo-600/50 rounded text-white focus:ring-1 focus:ring-indigo-500 font-semibold cursor-pointer"
                     >
-                      <option value="basic">Basic / Standard User</option>
-                      <option value="admin">Administrator</option>
+                      {roleTemplates.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name} ({r.badge})
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -885,45 +950,32 @@ export const UserManagementView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Section 2: Custom Privileges Matrix */}
+              {/* Section 2: Role Template Presets & Custom Privileges */}
               <div className="space-y-3 pt-2 border-t border-[#262626]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
                     <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Granular Privileges Matrix</span>
+                    <span>Granular Privileges & Role Template Synchronization</span>
                   </h3>
 
-                  {/* Preset Shortcuts */}
-                  <div className="flex items-center gap-1.5 text-[11px]">
-                    <span className="text-neutral-500 font-semibold">Presets:</span>
-                    <button
-                      type="button"
-                      onClick={() => applyPreset('admin')}
-                      className="px-2 py-0.5 rounded bg-[#222222] hover:bg-[#2c2c2c] text-amber-300 border border-amber-800/50 cursor-pointer"
-                    >
-                      Full Admin
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => applyPreset('lead')}
-                      className="px-2 py-0.5 rounded bg-[#222222] hover:bg-[#2c2c2c] text-blue-300 border border-blue-800/50 cursor-pointer"
-                    >
-                      Lead
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => applyPreset('contributor')}
-                      className="px-2 py-0.5 rounded bg-[#222222] hover:bg-[#2c2c2c] text-neutral-300 border border-[#333333] cursor-pointer"
-                    >
-                      Standard
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => applyPreset('readonly')}
-                      className="px-2 py-0.5 rounded bg-[#222222] hover:bg-[#2c2c2c] text-neutral-400 border border-[#333333] cursor-pointer"
-                    >
-                      Auditor
-                    </button>
+                  {/* Role Template Quick Apply Buttons */}
+                  <div className="flex items-center gap-1.5 text-[11px] flex-wrap">
+                    <span className="text-neutral-500 font-semibold">Sync Template:</span>
+                    {roleTemplates.map((rt) => (
+                      <button
+                        key={rt.id}
+                        type="button"
+                        onClick={() => applyRolePreset(rt.id)}
+                        className="px-2 py-0.5 rounded text-[10px] font-bold border transition-colors cursor-pointer"
+                        style={{
+                          backgroundColor: `${rt.color}15`,
+                          color: rt.color,
+                          borderColor: `${rt.color}40`
+                        }}
+                      >
+                        {rt.badge || rt.name}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -980,7 +1032,7 @@ export const UserManagementView: React.FC = () => {
                   className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded shadow-md transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Check className="w-3.5 h-3.5" />
-                  <span>{isSubmitting ? 'Saving Changes...' : 'Save Profile & Privileges'}</span>
+                  <span>{isSubmitting ? 'Saving Changes...' : 'Save User & Role'}</span>
                 </button>
               </div>
             </form>
@@ -988,7 +1040,7 @@ export const UserManagementView: React.FC = () => {
         </div>
       )}
 
-      {/* Add New User Modal */}
+      {/* Add New User Modal with Role Templates */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
           <div className="relative bg-[#141414] w-full max-w-2xl rounded shadow-2xl border border-[#262626] overflow-hidden flex flex-col max-h-[90vh]">
@@ -1000,13 +1052,13 @@ export const UserManagementView: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-white">Create New Organization User</h2>
-                  <p className="text-xs text-neutral-400">Add credentials, job function, and initial permissions</p>
+                  <p className="text-xs text-neutral-400">Add credentials, job function, and initial Role Template</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="p-1.5 text-neutral-400 hover:text-white rounded hover:bg-[#262626]"
+                className="p-1.5 text-neutral-400 hover:text-white rounded hover:bg-[#262626] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1045,6 +1097,23 @@ export const UserManagementView: React.FC = () => {
 
                 <div>
                   <label className="block text-[11px] font-semibold text-neutral-300 mb-1">
+                    Role Template *
+                  </label>
+                  <select
+                    value={createRole}
+                    onChange={(e) => handleSelectCreateRole(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-[#1f1f1f] border border-indigo-600/50 rounded text-white font-semibold cursor-pointer"
+                  >
+                    {roleTemplates.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name} ({r.badge})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-neutral-300 mb-1">
                     Job Title
                   </label>
                   <input
@@ -1071,28 +1140,14 @@ export const UserManagementView: React.FC = () => {
 
                 <div>
                   <label className="block text-[11px] font-semibold text-neutral-300 mb-1">
-                    System Role
-                  </label>
-                  <select
-                    value={createRole}
-                    onChange={(e) => setCreateRole(e.target.value as UserRole)}
-                    className="w-full px-3 py-2 text-xs bg-[#1f1f1f] border border-[#333333] rounded text-white font-semibold cursor-pointer"
-                  >
-                    <option value="basic">Standard User</option>
-                    <option value="admin">Administrator</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-neutral-300 mb-1">
-                    Phone Number (Optional)
+                    Phone Number
                   </label>
                   <input
                     type="text"
                     value={createPhone}
                     onChange={(e) => setCreatePhone(e.target.value)}
                     placeholder="+1 (555) 000-0000"
-                    className="w-full px-3 py-2 text-xs bg-[#1f1f1f] border border-[#333333] rounded text-white"
+                    className="w-full px-3 py-2 text-xs bg-[#1f1f1f] border border-[#333333] rounded text-white focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -1105,25 +1160,55 @@ export const UserManagementView: React.FC = () => {
                   rows={2}
                   value={createBio}
                   onChange={(e) => setCreateBio(e.target.value)}
-                  placeholder="Summary of responsibilities..."
-                  className="w-full px-3 py-2 text-xs bg-[#1f1f1f] border border-[#333333] rounded text-white"
+                  placeholder="Responsibilities or project focus..."
+                  className="w-full px-3 py-2 text-xs bg-[#1f1f1f] border border-[#333333] rounded text-white focus:ring-1 focus:ring-blue-500"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-[#262626]">
+              {/* Privilege preview for selected Role Template */}
+              <div className="p-3 bg-[#181818] rounded border border-[#2a2a2a] space-y-2">
+                <div className="flex items-center justify-between text-xs font-semibold text-neutral-300">
+                  <span className="flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-indigo-400" />
+                    Role Template Permissions (Auto-configured)
+                  </span>
+                  <span className="text-[11px] text-neutral-400">
+                    {Object.values(createPrivileges).filter(Boolean).length} granted
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  {PRIVILEGE_METADATA.slice(0, 6).map((priv) => {
+                    const isGranted = Boolean(createPrivileges[priv.key]);
+                    return (
+                      <div
+                        key={priv.key}
+                        className={`flex items-center gap-1.5 p-1.5 rounded ${
+                          isGranted ? 'text-emerald-300 bg-emerald-950/30' : 'text-neutral-500'
+                        }`}
+                      >
+                        {isGranted ? <Check className="w-3 h-3 text-emerald-400 shrink-0" /> : <X className="w-3 h-3 text-neutral-600 shrink-0" />}
+                        <span className="truncate">{priv.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-[#262626]">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 bg-[#222222] text-neutral-300 text-xs font-semibold rounded"
+                  className="px-4 py-2 bg-[#222222] hover:bg-[#2c2c2c] text-neutral-300 text-xs font-semibold rounded cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting || !createName.trim() || !createEmail.trim()}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded disabled:opacity-40"
+                  disabled={isSubmitting}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded shadow-xs flex items-center gap-1.5 cursor-pointer"
                 >
-                  {isSubmitting ? 'Creating...' : 'Create Account'}
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{isSubmitting ? 'Creating...' : 'Create Team Member'}</span>
                 </button>
               </div>
             </form>
@@ -1133,27 +1218,28 @@ export const UserManagementView: React.FC = () => {
 
       {/* Delete User Confirmation Modal */}
       {userToDelete && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
-          <div className="bg-[#141414] w-full max-w-md rounded border border-rose-800/80 p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded bg-rose-950/80 text-rose-400 flex items-center justify-center shrink-0 border border-rose-800">
-                <UserX className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 animate-in fade-in duration-150">
+          <div className="bg-[#181818] w-full max-w-md rounded shadow-2xl border border-rose-900/60 p-6 space-y-4">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="w-10 h-10 rounded-full bg-rose-950/80 border border-rose-800 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-rose-400" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-white">Delete User Account</h3>
-                <p className="text-xs text-neutral-400">This action will remove account access and unassign tasks.</p>
+                <p className="text-xs text-neutral-400">This action is permanent and unrecoverable</p>
               </div>
             </div>
 
-            <p className="text-xs text-neutral-300 leading-relaxed bg-[#1c1c1c] p-3 rounded border border-[#2a2a2a]">
-              Are you sure you want to permanently delete <strong className="text-white">{userToDelete.name}</strong> ({userToDelete.email})?
+            <p className="text-xs text-neutral-300 leading-relaxed">
+              Are you sure you want to permanently delete <strong className="text-white">{userToDelete.name}</strong> ({userToDelete.email})? 
+              Their task assignments will remain intact, but their login credentials and custom permissions will be purged.
             </p>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2.5 pt-2">
               <button
                 type="button"
                 onClick={() => setUserToDelete(null)}
-                className="px-3 py-1.5 bg-[#222222] text-neutral-300 text-xs font-semibold rounded cursor-pointer"
+                className="px-4 py-2 bg-[#262626] hover:bg-[#333] text-neutral-300 text-xs font-semibold rounded cursor-pointer"
               >
                 Cancel
               </button>
@@ -1161,9 +1247,10 @@ export const UserManagementView: React.FC = () => {
                 type="button"
                 onClick={handleDeleteUser}
                 disabled={isSubmitting}
-                className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded shadow-md cursor-pointer"
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded shadow-md flex items-center gap-1.5 cursor-pointer"
               >
-                {isSubmitting ? 'Deleting...' : 'Confirm Delete'}
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isSubmitting ? 'Deleting...' : 'Confirm Delete'}</span>
               </button>
             </div>
           </div>

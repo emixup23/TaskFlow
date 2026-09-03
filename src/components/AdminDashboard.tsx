@@ -12,7 +12,8 @@ import {
   Shield,
   TrendingUp,
   ListTodo,
-  Database
+  Database,
+  KeyRound
 } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
@@ -81,6 +82,16 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            id="btn-admin-nav-access"
+            onClick={() => setViewMode('access')}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-950/70 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-700/60 flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+          >
+            <KeyRound className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Access Manager</span>
+          </button>
+
           <button
             type="button"
             id="btn-admin-nav-backup"

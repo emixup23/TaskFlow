@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, UserPrivileges, LoginCredentials, RegisterCredentials } from '../types';
+import { User, UserPrivileges, UserRole, LoginCredentials, RegisterCredentials } from '../types';
+import { getRoleTemplate } from '../utils/roleUtils';
 import {
   api,
   setApiUserId,
@@ -22,7 +23,7 @@ interface AuthContextType {
   updateUserProfile: (userId: string, data: Partial<User>) => Promise<User>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   hasPrivilege: (privilegeKey: keyof UserPrivileges) => boolean;
-  hasRole: (role: 'admin' | 'basic') => boolean;
+  hasRole: (role: UserRole) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -171,12 +172,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasPrivilege = (privilegeKey: keyof UserPrivileges): boolean => {
     if (!currentUser) return false;
     if (currentUser.role === 'admin') return true;
-    return !!currentUser.privileges?.[privilegeKey];
+    if (currentUser.privileges && currentUser.privileges[privilegeKey] !== undefined) {
+      return Boolean(currentUser.privileges[privilegeKey]);
+    }
+    const template = getRoleTemplate(currentUser.role);
+    return Boolean(template?.defaultPrivileges?.[privilegeKey]);
   };
 
-  const hasRole = (role: 'admin' | 'basic'): boolean => {
+  const hasRole = (role: UserRole): boolean => {
     if (!currentUser) return false;
-    return currentUser.role === role;
+    if (currentUser.role === role) return true;
+    // Normalize legacy 'basic' with standard 'member'
+    if ((role === 'basic' && currentUser.role === 'member') || (role === 'member' && currentUser.role === 'basic')) {
+      return true;
+    }
+    return false;
   };
 
   return (

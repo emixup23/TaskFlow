@@ -22,7 +22,12 @@ import {
   BackupDataPayload,
   RestoreValidationResult,
   RestoreResult,
-  RestoreOptions
+  RestoreOptions,
+  SystemRole,
+  UserPrivileges,
+  BatchAccessUpdatePayload,
+  AccessSummaryStats,
+  DailyTask
 } from '../types';
 
 let currentUserId = localStorage.getItem('taskflow_user_id') || 'user-admin-1';
@@ -443,5 +448,106 @@ export const api = {
     }
     const blob = await response.blob();
     return blob;
-  }
+  },
+
+  // Access Manager & Role Governance (Admin Only)
+  getRoles: () => request<SystemRole[]>('/api/admin/roles'),
+
+  createRole: (data: Partial<SystemRole>) =>
+    request<SystemRole>('/api/admin/roles', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
+  updateRole: (id: string, data: Partial<SystemRole> & { applyToExistingUsers?: boolean }) =>
+    request<SystemRole>(`/api/admin/roles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+
+  deleteRole: (id: string) =>
+    request<{ success: boolean; message: string; reassignedCount: number }>(`/api/admin/roles/${id}`, {
+      method: 'DELETE'
+    }),
+
+  addRoleMembers: (roleId: string, userIds: string[], applyDefaultPrivileges: boolean = true) =>
+    request<{ success: boolean; addedCount: number; role: SystemRole; message: string; users: User[] }>(
+      `/api/admin/roles/${roleId}/members/add`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ userIds, applyDefaultPrivileges })
+      }
+    ),
+
+  removeRoleMembers: (
+    roleId: string,
+    userIds: string[],
+    fallbackRoleId: string = 'member',
+    applyFallbackPrivileges: boolean = true
+  ) =>
+    request<{ success: boolean; removedCount: number; role: SystemRole; fallbackRole: SystemRole; message: string; users: User[] }>(
+      `/api/admin/roles/${roleId}/members/remove`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ userIds, fallbackRoleId, applyFallbackPrivileges })
+      }
+    ),
+
+  batchUpdateAccess: (data: BatchAccessUpdatePayload) =>
+    request<{ success: boolean; affectedCount: number; users: User[] }>('/api/admin/access/batch-update', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
+  resetUserPrivilegesToRole: (userId: string) =>
+    request<{ success: boolean; user: User }>(`/api/admin/access/reset-user-privileges/${userId}`, {
+      method: 'POST'
+    }),
+
+  cloneUserPrivileges: (sourceUserId: string, targetUserIds: string[]) =>
+    request<{ success: boolean; clonedCount: number; users: User[] }>('/api/admin/access/clone-user-privileges', {
+      method: 'POST',
+      body: JSON.stringify({ sourceUserId, targetUserIds })
+    }),
+
+  getAccessSummary: () => request<AccessSummaryStats>('/api/admin/access/summary'),
+
+  // Daily Tasks Management API
+  getDailyTasks: (params?: { userId?: string; date?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.userId) query.set('userId', params.userId);
+    if (params?.date) query.set('date', params.date);
+    const qs = query.toString();
+    return request<{
+      tasks: DailyTask[];
+      userSummaries: Record<string, { total: number; completed: number; rate: number }>;
+      total: number;
+    }>(`/api/daily-tasks${qs ? `?${qs}` : ''}`);
+  },
+
+  createDailyTask: (data: Partial<DailyTask>) =>
+    request<DailyTask>('/api/daily-tasks', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
+  updateDailyTask: (id: string, data: Partial<DailyTask>) =>
+    request<DailyTask>(`/api/daily-tasks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+
+  deleteDailyTask: (id: string) =>
+    request<{ success: boolean; id: string }>(`/api/daily-tasks/${id}`, {
+      method: 'DELETE'
+    }),
+
+  rolloverDailyTasks: (userId?: string, fromDate?: string) =>
+    request<{ success: boolean; count: number; rolledOverIds: string[]; message: string }>(
+      '/api/daily-tasks/rollover',
+      {
+        method: 'POST',
+        body: JSON.stringify({ userId, fromDate })
+      }
+    )
 };

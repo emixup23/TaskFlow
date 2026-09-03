@@ -35,18 +35,25 @@ import {
   Lock,
   KeyRound,
   Eye,
-  EyeOff
+  EyeOff,
+  CalendarCheck2
 } from 'lucide-react';
 import { User, UserRole, UserPrivileges, Task } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
 import { useGamification } from '../context/GamificationContext';
+import { useChat } from '../context/ChatContext';
 import { UserAvatar } from './UserAvatar';
 import {
   SVG_AVATAR_STYLES,
   getSvgAvatarDataUrl,
   generateAvatarSvgMarkup
 } from '../utils/avatarUtils';
+import {
+  SYSTEM_ROLE_TEMPLATES,
+  getRoleTemplate,
+  getRoleIconComponent
+} from '../utils/roleUtils';
 
 const DICEBEAR_COLLECTIONS = [
   { id: 'avataaars', name: 'Avataaars', description: 'Illustrated modern avatar cartoons' },
@@ -85,6 +92,7 @@ export const UserProfileModal: React.FC = () => {
     addToast
   } = useTasks();
   const { getUserGamification } = useGamification();
+  const { startDirectChat } = useChat();
 
   // Gamification stats for the selected user
   const userStats = selectedProfileUser ? getUserGamification(selectedProfileUser.id) : null;
@@ -340,15 +348,25 @@ export const UserProfileModal: React.FC = () => {
                     </span>
                   )}
 
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      selectedProfileUser.role === 'admin'
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                        : 'bg-slate-700/50 text-slate-300 border border-slate-600/40'
-                    }`}
-                  >
-                    {selectedProfileUser.role === 'admin' ? 'Administrator' : 'Team Member'}
-                  </span>
+                  {(() => {
+                    const currentRoleId = activeTab === 'edit' ? editRole : selectedProfileUser.role;
+                    const roleTemplate = getRoleTemplate(currentRoleId);
+                    const RoleIcon = getRoleIconComponent(roleTemplate.icon);
+                    return (
+                      <span
+                        className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5 shadow-xs"
+                        style={{
+                          backgroundColor: `${roleTemplate.color}25`,
+                          color: roleTemplate.color,
+                          borderColor: `${roleTemplate.color}60`,
+                          borderWidth: 1
+                        }}
+                      >
+                        <RoleIcon className="w-3 h-3" />
+                        {roleTemplate.name}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <p className="text-xs sm:text-sm text-neutral-300 mt-0.5 flex items-center gap-2">
@@ -405,6 +423,20 @@ export const UserProfileModal: React.FC = () => {
                   <span>Switch User</span>
                 </button>
               )}
+
+              <button
+                type="button"
+                id="user-profile-btn-view-daily"
+                onClick={() => {
+                  setViewMode('daily');
+                  closeUserProfile();
+                }}
+                className="px-3 py-1.5 rounded-lg bg-teal-600/20 hover:bg-teal-600/30 text-teal-300 border border-teal-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                title="Open Daily Tasks Day Planner"
+              >
+                <CalendarCheck2 className="w-3.5 h-3.5 text-teal-400" />
+                <span>Daily Tasks</span>
+              </button>
             </div>
           </div>
 
@@ -585,14 +617,23 @@ export const UserProfileModal: React.FC = () => {
                     </div>
 
                     <div className="flex items-center justify-between py-1.5 border-b border-[#242424]">
-                      <span className="text-neutral-400">Role & Access</span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                        selectedProfileUser.role === 'admin'
-                          ? 'bg-amber-500/20 text-amber-300'
-                          : 'bg-slate-700/40 text-slate-300'
-                      }`}>
-                        {selectedProfileUser.role === 'admin' ? 'Administrator' : 'Basic User'}
-                      </span>
+                      <span className="text-neutral-400">Role Template</span>
+                      {(() => {
+                        const template = getRoleTemplate(selectedProfileUser.role);
+                        return (
+                          <span
+                            className="px-2 py-0.5 rounded text-[10px] font-bold uppercase flex items-center gap-1 border"
+                            style={{
+                              backgroundColor: `${template.color}20`,
+                              color: template.color,
+                              borderColor: `${template.color}40`
+                            }}
+                          >
+                            <span>{template.name}</span>
+                            <span className="text-[9px] opacity-75">[{template.badge}]</span>
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     <div className="flex items-center justify-between py-1.5">
@@ -649,7 +690,14 @@ export const UserProfileModal: React.FC = () => {
                     <button
                       type="button"
                       id="profile-btn-send-message"
-                      onClick={() => {
+                      onClick={async () => {
+                        if (selectedProfileUser.id !== currentUser?.id) {
+                          try {
+                            await startDirectChat(selectedProfileUser.id);
+                          } catch (err) {
+                            console.error('Failed to open direct message:', err);
+                          }
+                        }
                         closeUserProfile();
                         setViewMode('chat');
                       }}
@@ -657,7 +705,11 @@ export const UserProfileModal: React.FC = () => {
                     >
                       <div className="flex items-center gap-2">
                         <MessageSquare className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-                        <span>Open Team Chat</span>
+                        <span>
+                          {selectedProfileUser.id === currentUser?.id
+                            ? 'Open Team Chat'
+                            : `Direct Message ${selectedProfileUser.name.split(' ')[0]}`}
+                        </span>
                       </div>
                       <ChevronRight className="w-3.5 h-3.5 text-neutral-500 group-hover:text-neutral-300" />
                     </button>
@@ -1266,15 +1318,25 @@ export const UserProfileModal: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                        System Role
+                        Assigned Role Template
                       </label>
                       <select
-                        value={editRole}
-                        onChange={(e) => setEditRole(e.target.value as UserRole)}
-                        className="w-full bg-[#121212] border border-[#333] rounded-lg px-3 py-2 text-xs text-white focus:ring-1 focus:ring-blue-500"
+                        value={editRole === 'basic' ? 'member' : editRole}
+                        onChange={(e) => {
+                          const newRoleId = e.target.value;
+                          setEditRole(newRoleId as UserRole);
+                          const template = getRoleTemplate(newRoleId);
+                          if (template?.defaultPrivileges) {
+                            setEditPrivileges({ ...template.defaultPrivileges });
+                          }
+                        }}
+                        className="w-full bg-[#121212] border border-amber-500/50 rounded-lg px-3 py-2 text-xs text-white focus:ring-1 focus:ring-amber-500 font-semibold cursor-pointer"
                       >
-                        <option value="basic">Basic User</option>
-                        <option value="admin">Administrator (Full Access)</option>
+                        {SYSTEM_ROLE_TEMPLATES.map((tpl) => (
+                          <option key={tpl.id} value={tpl.id}>
+                            {tpl.name} ({tpl.badge})
+                          </option>
+                        ))}
                       </select>
                     </div>
 

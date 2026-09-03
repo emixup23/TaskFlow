@@ -19,7 +19,9 @@ import { UserManagementView } from './components/UserManagementView';
 import { RelationshipGraphView } from './components/RelationshipGraphView';
 import { ChatView } from './components/ChatView';
 import { MeetingsView } from './components/MeetingsView';
+import { DailyTasksView } from './components/DailyTasksView';
 import { BackupRestoreView } from './components/BackupRestoreView';
+import { AccessManagerView } from './components/AccessManagerView';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { CreateTaskModal } from './components/CreateTaskModal';
 import { CreateMeetingModal } from './components/CreateMeetingModal';
@@ -107,6 +109,7 @@ const WorkspaceContent: React.FC = () => {
         {/* View Surface with smooth scrolling */}
         <div className="flex-1 flex flex-col overflow-hidden bg-[#0d0d0d]">
           {viewMode === 'kanban' && <KanbanBoard />}
+          {viewMode === 'daily' && <DailyTasksView />}
           {viewMode === 'tickets' && <TicketSystemView />}
           {viewMode === 'list' && <TableView />}
           {viewMode === 'timeline' && <TimelineView />}
@@ -121,6 +124,11 @@ const WorkspaceContent: React.FC = () => {
           {viewMode === 'users' && (
             <ProtectedRoute requiredPrivilege="canManageUsers" title="Team Directory & Access Management">
               <UserManagementView />
+            </ProtectedRoute>
+          )}
+          {viewMode === 'access' && (
+            <ProtectedRoute requiredPrivilege="canManageRoles" title="Access Manager & System Roles">
+              <AccessManagerView />
             </ProtectedRoute>
           )}
           {viewMode === 'backup' && (

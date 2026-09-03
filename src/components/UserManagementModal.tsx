@@ -15,6 +15,11 @@ import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
 import { api } from '../api/client';
 import { UserAvatar } from './UserAvatar';
+import {
+  SYSTEM_ROLE_TEMPLATES,
+  getRoleTemplate,
+  getRoleIconComponent
+} from '../utils/roleUtils';
 
 export const UserManagementModal: React.FC = () => {
   const { isUserModalOpen, setIsUserModalOpen, tasks, openUserProfile } = useTasks();
@@ -151,15 +156,18 @@ export const UserManagementModal: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[11px] font-semibold text-neutral-300 mb-1">
-                      Role & Permissions
+                      Role Template
                     </label>
                     <select
                       value={role}
                       onChange={(e) => setRole(e.target.value as UserRole)}
-                      className="w-full px-3 py-2 text-xs bg-[#1f1f1f] border border-[#333333] rounded text-neutral-200 focus:ring-1 focus:ring-blue-500 font-semibold cursor-pointer"
+                      className="w-full px-3 py-2 text-xs bg-[#1f1f1f] border border-indigo-500/50 rounded text-neutral-200 focus:ring-1 focus:ring-indigo-500 font-semibold cursor-pointer"
                     >
-                      <option value="basic">Basic User</option>
-                      <option value="admin">Administrator</option>
+                      {SYSTEM_ROLE_TEMPLATES.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} ({t.badge})
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -213,7 +221,8 @@ export const UserManagementModal: React.FC = () => {
             <div className="space-y-2">
               {users.map((u) => {
                 const assignedCount = tasks.filter((t) => t.assigneeIds.includes(u.id)).length;
-                const userIsAdmin = u.role === 'admin';
+                const template = getRoleTemplate(u.role);
+                const RoleIcon = getRoleIconComponent(template.icon);
 
                 return (
                   <div
@@ -230,17 +239,20 @@ export const UserManagementModal: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-white truncate">{u.name}</span>
                           <span
-                            className={`text-[10px] font-semibold uppercase px-1.5 py-0.2 rounded ${
-                              userIsAdmin
-                                ? 'bg-amber-950/60 text-amber-300 border border-amber-800'
-                                : 'bg-blue-950/60 text-blue-300 border border-blue-800'
-                            }`}
+                            className="text-[10px] font-bold uppercase px-2 py-0.5 rounded inline-flex items-center gap-1 shadow-xs"
+                            style={{
+                              backgroundColor: `${template.color}20`,
+                              color: template.color,
+                              borderColor: `${template.color}50`,
+                              borderWidth: 1
+                            }}
                           >
-                            {userIsAdmin ? 'Administrator' : 'Basic User'}
+                            <RoleIcon className="w-3 h-3" />
+                            {template.name}
                           </span>
                         </div>
                         <p className="text-[11px] text-neutral-400 truncate">
-                          {u.title} • {u.department} • <span className="text-neutral-500">{u.email}</span>
+                          {u.title || template.name} • {u.department || 'Engineering'} • <span className="text-neutral-500">{u.email}</span>
                         </p>
                       </div>
                     </div>

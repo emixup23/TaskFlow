@@ -5,23 +5,45 @@ import bcrypt from 'bcryptjs';
 import { createServer as createViteServer } from 'vite';
 
 export interface UserPrivileges {
+  // Task & Workflows
   canCreateTask: boolean;
   canEditAnyTask: boolean;
   canDeleteTask: boolean;
   canManageStatuses: boolean;
-  canManageUsers: boolean;
   canManageProjects?: boolean;
+  // Governance & Administration
+  canManageUsers: boolean;
+  canManageRoles?: boolean;
+  canViewAuditLogs: boolean;
+  canManageBackups?: boolean;
+  canExportData: boolean;
+  // Files & Attachments
   canUploadAttachments: boolean;
   canDeleteAttachments: boolean;
-  canViewAuditLogs: boolean;
-  canExportData: boolean;
+  // Collaboration & Meetings
+  canHostMeetings?: boolean;
+  canManageChannels?: boolean;
+}
+
+export type UserRole = 'admin' | 'basic' | 'manager' | 'lead' | 'member' | 'auditor' | 'viewer' | string;
+
+export interface SystemRole {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  badge: string;
+  icon?: string;
+  isSystemRole: boolean;
+  isEditable: boolean;
+  defaultPrivileges: UserPrivileges;
 }
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'basic';
+  role: UserRole;
   avatar: string;
   title: string;
   department: string;
@@ -173,6 +195,39 @@ export interface Task {
   createdByName?: string;
 }
 
+export type DailyTimeBlock = 'morning' | 'afternoon' | 'evening' | 'flexible';
+
+export type DailyCategory =
+  | 'development'
+  | 'design'
+  | 'review'
+  | 'operations'
+  | 'security'
+  | 'meeting'
+  | 'admin'
+  | 'general';
+
+export interface DailyTask {
+  id: string;
+  userId: string;
+  title: string;
+  description?: string;
+  date: string; // YYYY-MM-DD
+  timeBlock: DailyTimeBlock;
+  timeSlot?: string;
+  estimatedMinutes: number;
+  priority: 'urgent' | 'high' | 'medium' | 'low';
+  category: DailyCategory;
+  completed: boolean;
+  completedAt?: string;
+  completedBy?: string;
+  linkedTaskId?: string;
+  linkedTaskTitle?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface MeetingTopic {
   id: string;
   title: string;
@@ -263,7 +318,7 @@ export interface ChatMessage {
   senderId: string;
   senderName: string;
   senderAvatar: string;
-  senderRole?: 'admin' | 'basic';
+  senderRole?: UserRole | string;
   senderTitle?: string;
   content: string;
   createdAt: string;
@@ -317,11 +372,15 @@ const ADMIN_DEFAULT_PRIVILEGES: UserPrivileges = {
   canDeleteTask: true,
   canManageStatuses: true,
   canManageUsers: true,
+  canManageRoles: true,
   canManageProjects: true,
   canUploadAttachments: true,
   canDeleteAttachments: true,
   canViewAuditLogs: true,
-  canExportData: true
+  canManageBackups: true,
+  canExportData: true,
+  canHostMeetings: true,
+  canManageChannels: true
 };
 
 const BASIC_DEFAULT_PRIVILEGES: UserPrivileges = {
@@ -330,11 +389,160 @@ const BASIC_DEFAULT_PRIVILEGES: UserPrivileges = {
   canDeleteTask: false,
   canManageStatuses: false,
   canManageUsers: false,
+  canManageRoles: false,
   canManageProjects: false,
   canUploadAttachments: true,
   canDeleteAttachments: true,
   canViewAuditLogs: false,
-  canExportData: false
+  canManageBackups: false,
+  canExportData: false,
+  canHostMeetings: false,
+  canManageChannels: false
+};
+
+const DEFAULT_SYSTEM_ROLES: SystemRole[] = [
+  {
+    id: 'admin',
+    name: 'Administrator',
+    description: 'Full unrestricted governance, security configuration, user management, and system disaster recovery.',
+    color: '#10B981',
+    badge: 'SUPER ADMIN',
+    icon: 'Shield',
+    isSystemRole: true,
+    isEditable: false,
+    defaultPrivileges: { ...ADMIN_DEFAULT_PRIVILEGES }
+  },
+  {
+    id: 'manager',
+    name: 'Project & Operations Manager',
+    description: 'Project governance, workflow status design, member task administration, and team reporting.',
+    color: '#3B82F6',
+    badge: 'OPERATIONS',
+    icon: 'Briefcase',
+    isSystemRole: true,
+    isEditable: true,
+    defaultPrivileges: {
+      canCreateTask: true,
+      canEditAnyTask: true,
+      canDeleteTask: true,
+      canManageStatuses: true,
+      canManageUsers: false,
+      canManageRoles: false,
+      canManageProjects: true,
+      canUploadAttachments: true,
+      canDeleteAttachments: true,
+      canViewAuditLogs: true,
+      canManageBackups: false,
+      canExportData: true,
+      canHostMeetings: true,
+      canManageChannels: true
+    }
+  },
+  {
+    id: 'lead',
+    name: 'Team Lead / Tech Specialist',
+    description: 'Senior contributor with elevated workflow authority, cross-task editing, and meeting moderation.',
+    color: '#8B5CF6',
+    badge: 'TECH LEAD',
+    icon: 'Sparkles',
+    isSystemRole: true,
+    isEditable: true,
+    defaultPrivileges: {
+      canCreateTask: true,
+      canEditAnyTask: true,
+      canDeleteTask: false,
+      canManageStatuses: true,
+      canManageUsers: false,
+      canManageRoles: false,
+      canManageProjects: false,
+      canUploadAttachments: true,
+      canDeleteAttachments: true,
+      canViewAuditLogs: true,
+      canManageBackups: false,
+      canExportData: true,
+      canHostMeetings: true,
+      canManageChannels: false
+    }
+  },
+  {
+    id: 'member',
+    name: 'Standard Contributor',
+    description: 'Core team member creating tasks, updating assigned work items, uploading files, and participating in chats.',
+    color: '#F59E0B',
+    badge: 'CONTRIBUTOR',
+    icon: 'User',
+    isSystemRole: true,
+    isEditable: true,
+    defaultPrivileges: { ...BASIC_DEFAULT_PRIVILEGES }
+  },
+  {
+    id: 'auditor',
+    name: 'Security & Compliance Auditor',
+    description: 'Specialized read-only access for compliance review, security inspection, audit log monitoring, and reporting.',
+    color: '#06B6D4',
+    badge: 'SECURITY AUDIT',
+    icon: 'FileCheck',
+    isSystemRole: true,
+    isEditable: true,
+    defaultPrivileges: {
+      canCreateTask: false,
+      canEditAnyTask: false,
+      canDeleteTask: false,
+      canManageStatuses: false,
+      canManageUsers: false,
+      canManageRoles: false,
+      canManageProjects: false,
+      canUploadAttachments: false,
+      canDeleteAttachments: false,
+      canViewAuditLogs: true,
+      canManageBackups: false,
+      canExportData: true,
+      canHostMeetings: false,
+      canManageChannels: false
+    }
+  },
+  {
+    id: 'viewer',
+    name: 'Guest / External Stakeholder',
+    description: 'Restricted read-only access to view task status and boards without modification or deletion capabilities.',
+    color: '#64748B',
+    badge: 'EXTERNAL GUEST',
+    icon: 'Eye',
+    isSystemRole: true,
+    isEditable: true,
+    defaultPrivileges: {
+      canCreateTask: false,
+      canEditAnyTask: false,
+      canDeleteTask: false,
+      canManageStatuses: false,
+      canManageUsers: false,
+      canManageRoles: false,
+      canManageProjects: false,
+      canUploadAttachments: false,
+      canDeleteAttachments: false,
+      canViewAuditLogs: false,
+      canManageBackups: false,
+      canExportData: false,
+      canHostMeetings: false,
+      canManageChannels: false
+    }
+  }
+];
+
+let systemRoles: SystemRole[] = JSON.parse(JSON.stringify(DEFAULT_SYSTEM_ROLES));
+
+const getRoleById = (roleId: string): SystemRole | undefined => {
+  if (roleId === 'basic') return systemRoles.find((r) => r.id === 'member');
+  return systemRoles.find((r) => r.id === roleId);
+};
+
+const getDefaultPrivilegesForRole = (roleId: string): UserPrivileges => {
+  const role = getRoleById(roleId);
+  if (role) {
+    return { ...role.defaultPrivileges };
+  }
+  if (roleId === 'admin') return { ...ADMIN_DEFAULT_PRIVILEGES };
+  return { ...BASIC_DEFAULT_PRIVILEGES };
 };
 
 // In-memory secure file storage mapping
@@ -370,14 +578,14 @@ const DEFAULT_DEMO_HASH = bcrypt.hashSync(DEFAULT_DEMO_PASSWORD, 10);
 const DEFAULT_USERS: User[] = [
   {
     id: 'user-admin-1',
-    name: 'Sarah Chen',
-    email: 'sarah.chen@techcorp.io',
+    name: 'Med Osman',
+    email: 'contac@abc.io',
     role: 'admin',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+    avatar: 'https://medosman.com/src/assets/images/mohamed-osman-pro-photo.jpg',
     title: 'Director of Engineering',
     department: 'Core Infrastructure',
     bio: 'Overseeing core cloud infrastructure, security compliance, and engineering operations.',
-    phone: '+1 (555) 234-5678',
+    phone: '+216 (51) 000-099',
     status: 'active',
     privileges: { ...ADMIN_DEFAULT_PRIVILEGES },
     lastLoginAt: new Date(Date.now() - 10 * 60000).toISOString(),
@@ -387,14 +595,29 @@ const DEFAULT_USERS: User[] = [
     id: 'user-admin-2',
     name: 'Marcus Vance',
     email: 'marcus.vance@techcorp.io',
-    role: 'admin',
+    role: 'manager',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
-    title: 'Platform Operations Admin',
+    title: 'Project & Operations Manager',
     department: 'DevOps & Security',
-    bio: 'Lead DevOps engineer managing cluster orchestration, secrets, and security audits.',
+    bio: 'Lead DevOps & operations manager handling cluster orchestration, sprint timelines, and project governance.',
     phone: '+1 (555) 876-5432',
     status: 'active',
-    privileges: { ...ADMIN_DEFAULT_PRIVILEGES },
+    privileges: {
+      canCreateTask: true,
+      canEditAnyTask: true,
+      canDeleteTask: true,
+      canManageStatuses: true,
+      canManageUsers: false,
+      canManageRoles: false,
+      canManageProjects: true,
+      canUploadAttachments: true,
+      canDeleteAttachments: true,
+      canViewAuditLogs: true,
+      canManageBackups: false,
+      canExportData: true,
+      canHostMeetings: true,
+      canManageChannels: true
+    },
     lastLoginAt: new Date(Date.now() - 45 * 60000).toISOString(),
     createdAt: new Date(Date.now() - 150 * 86400000).toISOString()
   },
@@ -402,14 +625,29 @@ const DEFAULT_USERS: User[] = [
     id: 'user-basic-1',
     name: 'Alex Rivera',
     email: 'alex.rivera@techcorp.io',
-    role: 'basic',
+    role: 'lead',
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-    title: 'Senior Backend Engineer',
+    title: 'Senior Backend Tech Lead',
     department: 'API & Services',
-    bio: 'Full-stack TypeScript & Go developer building high-throughput microservices.',
+    bio: 'Full-stack TypeScript & Go developer building high-throughput microservices and mentoring engineers.',
     phone: '+1 (555) 345-6789',
     status: 'active',
-    privileges: { ...BASIC_DEFAULT_PRIVILEGES, canEditAnyTask: true },
+    privileges: {
+      canCreateTask: true,
+      canEditAnyTask: true,
+      canDeleteTask: false,
+      canManageStatuses: true,
+      canManageUsers: false,
+      canManageRoles: false,
+      canManageProjects: false,
+      canUploadAttachments: true,
+      canDeleteAttachments: true,
+      canViewAuditLogs: true,
+      canManageBackups: false,
+      canExportData: true,
+      canHostMeetings: true,
+      canManageChannels: false
+    },
     lastLoginAt: new Date(Date.now() - 2 * 3600000).toISOString(),
     createdAt: new Date(Date.now() - 120 * 86400000).toISOString()
   },
@@ -417,7 +655,7 @@ const DEFAULT_USERS: User[] = [
     id: 'user-basic-2',
     name: 'Maria Garcia',
     email: 'maria.garcia@techcorp.io',
-    role: 'basic',
+    role: 'member',
     avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
     title: 'Senior Frontend Engineer',
     department: 'Web Experience',
@@ -432,7 +670,7 @@ const DEFAULT_USERS: User[] = [
     id: 'user-basic-3',
     name: 'Liam Taylor',
     email: 'liam.taylor@techcorp.io',
-    role: 'basic',
+    role: 'member',
     avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80',
     title: 'Lead UI/UX Designer',
     department: 'Product Design',
@@ -447,14 +685,29 @@ const DEFAULT_USERS: User[] = [
     id: 'user-basic-4',
     name: 'Chloe Bennett',
     email: 'chloe.bennett@techcorp.io',
-    role: 'basic',
+    role: 'auditor',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    title: 'QA & Reliability Engineer',
-    department: 'Quality Engineering',
-    bio: 'Automation test engineer focusing on end-to-end reliability and load testing.',
+    title: 'Security & Compliance Auditor',
+    department: 'Quality & Governance',
+    bio: 'Audit & compliance inspector focusing on system security controls, audit logs, and risk reports.',
     phone: '+1 (555) 678-9012',
     status: 'active',
-    privileges: { ...BASIC_DEFAULT_PRIVILEGES, canViewAuditLogs: true },
+    privileges: {
+      canCreateTask: false,
+      canEditAnyTask: false,
+      canDeleteTask: false,
+      canManageStatuses: false,
+      canManageUsers: false,
+      canManageRoles: false,
+      canManageProjects: false,
+      canUploadAttachments: false,
+      canDeleteAttachments: false,
+      canViewAuditLogs: true,
+      canManageBackups: false,
+      canExportData: true,
+      canHostMeetings: false,
+      canManageChannels: false
+    },
     lastLoginAt: new Date(Date.now() - 14 * 3600000).toISOString(),
     createdAt: new Date(Date.now() - 45 * 86400000).toISOString()
   }
@@ -521,11 +774,577 @@ let meetings: Meeting[] = [];
 let channels: ChatChannel[] = [];
 let chatMessages: ChatMessage[] = [];
 let channelReadState: Map<string, Map<string, string>> = new Map(); // channelId -> (userId -> isoString)
+let dailyTasks: DailyTask[] = [];
+
+function generateSeedDailyTasks(): DailyTask[] {
+  const today = formatDate(0);
+  const yesterday = formatDate(-1);
+  const tomorrow = formatDate(1);
+
+  return [
+    // --- Sarah Chen (user-admin-1) ---
+    {
+      id: 'dt-sarah-1',
+      userId: 'user-admin-1',
+      title: 'Review Cloud Run compute capacity and budget alerts',
+      description: 'Audit monthly container compute usage, peak concurrency thresholds, and memory allocation.',
+      date: today,
+      timeBlock: 'morning',
+      timeSlot: '09:00 AM',
+      estimatedMinutes: 30,
+      priority: 'urgent',
+      category: 'operations',
+      completed: true,
+      completedAt: new Date(Date.now() - 3 * 3600000).toISOString(),
+      completedBy: 'Sarah Chen',
+      linkedTaskId: 'task-12',
+      linkedTaskTitle: 'Quarterly Infrastructure Capacity Planning',
+      notes: 'Reviewed metrics with DevOps team; within budget margin.',
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 3 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-sarah-2',
+      userId: 'user-admin-1',
+      title: 'Daily engineering standup & blocker triage',
+      description: 'Review cross-functional engineering deliverables, unblock backend OAuth integration, and align on Sprint 14.',
+      date: today,
+      timeBlock: 'morning',
+      timeSlot: '10:00 AM',
+      estimatedMinutes: 30,
+      priority: 'high',
+      category: 'meeting',
+      completed: true,
+      completedAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+      completedBy: 'Sarah Chen',
+      notes: 'All 6 engineers attended. Alex unblocked on token authorization.',
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 2 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-sarah-3',
+      userId: 'user-admin-1',
+      title: 'Review PR #142: OAuth 2.0 RBAC middleware & route protection',
+      description: 'Verify role-based permission verification and server-side token enforcement.',
+      date: today,
+      timeBlock: 'afternoon',
+      timeSlot: '01:30 PM',
+      estimatedMinutes: 45,
+      priority: 'urgent',
+      category: 'review',
+      completed: false,
+      linkedTaskId: 'task-1',
+      linkedTaskTitle: 'Implement OAuth 2.0 and RBAC Middleware',
+      notes: 'Need to double check penetration test results with Chloe before merging.',
+      createdAt: new Date(Date.now() - 5 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 5 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-sarah-4',
+      userId: 'user-admin-1',
+      title: '1-on-1 sprint sync with Marcus regarding sprint 14 deployment',
+      description: 'Align on release readiness and roll-back strategy for upcoming deployment.',
+      date: today,
+      timeBlock: 'afternoon',
+      timeSlot: '03:30 PM',
+      estimatedMinutes: 30,
+      priority: 'medium',
+      category: 'meeting',
+      completed: false,
+      notes: 'Focus on database compound index deployment.',
+      createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-sarah-5',
+      userId: 'user-admin-1',
+      title: 'Finalize Q3 SOC-2 security compliance audit sign-off',
+      description: 'Review Chloe’s compliance report and sign off on audit trail data retention.',
+      date: today,
+      timeBlock: 'evening',
+      timeSlot: '05:00 PM',
+      estimatedMinutes: 45,
+      priority: 'high',
+      category: 'security',
+      completed: false,
+      notes: 'Requires sign-off from legal counsel.',
+      createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-sarah-6',
+      userId: 'user-admin-1',
+      title: 'Inspect API error rate spikes on payment gateway',
+      description: 'Investigate 502 bad gateway errors reported in staging.',
+      date: yesterday,
+      timeBlock: 'morning',
+      timeSlot: '11:00 AM',
+      estimatedMinutes: 30,
+      priority: 'urgent',
+      category: 'operations',
+      completed: true,
+      completedAt: new Date(Date.now() - 25 * 3600000).toISOString(),
+      completedBy: 'Sarah Chen',
+      createdAt: new Date(Date.now() - 28 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 25 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-sarah-7',
+      userId: 'user-admin-1',
+      title: 'Quarterly board meeting slide review & engineering OKRs',
+      description: 'Review engineering performance metrics and roadmap priorities with executive team.',
+      date: tomorrow,
+      timeBlock: 'morning',
+      timeSlot: '10:30 AM',
+      estimatedMinutes: 60,
+      priority: 'high',
+      category: 'admin',
+      completed: false,
+      createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 2 * 3600000).toISOString()
+    },
+
+    // --- Marcus Vance (user-admin-2) ---
+    {
+      id: 'dt-marcus-1',
+      userId: 'user-admin-2',
+      title: 'Check CI/CD deployment pipelines & cluster health',
+      description: 'Inspect automated build runners, artifact cache latency, and Kubernetes node health.',
+      date: today,
+      timeBlock: 'morning',
+      timeSlot: '08:45 AM',
+      estimatedMinutes: 30,
+      priority: 'high',
+      category: 'operations',
+      completed: true,
+      completedAt: new Date(Date.now() - 3.5 * 3600000).toISOString(),
+      completedBy: 'Marcus Vance',
+      notes: 'All 12 nodes running nominal. 99.98% uptime.',
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 3.5 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-marcus-2',
+      userId: 'user-admin-2',
+      title: 'Daily engineering standup & blocker triage',
+      description: 'Track sprint tasks, address cross-team dependencies, and review blocker queue.',
+      date: today,
+      timeBlock: 'morning',
+      timeSlot: '10:00 AM',
+      estimatedMinutes: 30,
+      priority: 'high',
+      category: 'meeting',
+      completed: true,
+      completedAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+      completedBy: 'Marcus Vance',
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 2 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-marcus-3',
+      userId: 'user-admin-2',
+      title: 'Coordinate SSL/TLS certificate rotation with Alex',
+      description: 'Rotate internal mutual TLS certs and update secrets manager vault before expiration.',
+      date: today,
+      timeBlock: 'afternoon',
+      timeSlot: '02:00 PM',
+      estimatedMinutes: 60,
+      priority: 'urgent',
+      category: 'security',
+      completed: false,
+      linkedTaskId: 'task-8',
+      linkedTaskTitle: 'Overdue Audit: Security Certificate Rotation',
+      notes: 'Stage 3 pending production rolling restart.',
+      createdAt: new Date(Date.now() - 5 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 5 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-marcus-4',
+      userId: 'user-admin-2',
+      title: 'Prepare Sprint 15 velocity forecast & milestone roadmap',
+      description: 'Analyze story point completion trends, backlog priority, and team capacity.',
+      date: today,
+      timeBlock: 'afternoon',
+      timeSlot: '04:00 PM',
+      estimatedMinutes: 45,
+      priority: 'medium',
+      category: 'admin',
+      completed: false,
+      notes: 'Capacity estimate adjusted for upcoming team days off.',
+      createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-marcus-5',
+      userId: 'user-admin-2',
+      title: 'Audit SAML SSO XML integration parameters with Azure AD',
+      description: 'Verify SP metadata XML document and SCIM user mapping configuration.',
+      date: today,
+      timeBlock: 'evening',
+      timeSlot: '05:30 PM',
+      estimatedMinutes: 30,
+      priority: 'high',
+      category: 'security',
+      completed: false,
+      linkedTaskId: 'task-10',
+      linkedTaskTitle: 'SSO Integration with Okta & Azure AD',
+      createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    },
+
+    // --- Alex Rivera (user-basic-1) ---
+    {
+      id: 'dt-alex-1',
+      userId: 'user-basic-1',
+      title: 'Verify compound database index performance in staging',
+      description: 'Benchmark query times with compound index on assignee + status to ensure sub-50ms response.',
+      date: today,
+      timeBlock: 'morning',
+      timeSlot: '09:15 AM',
+      estimatedMinutes: 45,
+      priority: 'medium',
+      category: 'development',
+      completed: true,
+      completedAt: new Date(Date.now() - 3.5 * 3600000).toISOString(),
+      completedBy: 'Alex Rivera',
+      linkedTaskId: 'task-6',
+      linkedTaskTitle: 'Database Schema Optimization & Indexing',
+      notes: 'Latency reduced from 140ms down to 8ms under load.',
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 3.5 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-alex-2',
+      userId: 'user-basic-1',
+      title: 'Daily engineering standup & blocker triage',
+      description: 'Report progress on OAuth 2.0 and give status update on VPN gateway log inspection.',
+      date: today,
+      timeBlock: 'morning',
+      timeSlot: '10:00 AM',
+      estimatedMinutes: 30,
+      priority: 'high',
+      category: 'meeting',
+      completed: true,
+      completedAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+      completedBy: 'Alex Rivera',
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 2 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-alex-3',
+      userId: 'user-basic-1',
+      title: 'Debug VPN gateway SSL latency timeout spikes',
+      description: 'Inspect thread pool exhaustion and evaluate secondary standby node deployment.',
+      date: today,
+      timeBlock: 'afternoon',
+      timeSlot: '01:00 PM',
+      estimatedMinutes: 60,
+      priority: 'urgent',
+      category: 'operations',
+      completed: false,
+      linkedTaskId: 'task-9',
+      linkedTaskTitle: 'VPN Gateway SSL Handshake Latency Spike',
+      notes: 'Collected tcpdump packets from US-East gateway.',
+      createdAt: new Date(Date.now() - 5 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 5 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-alex-4',
+      userId: 'user-basic-1',
+      title: 'Code review: Maria’s Kanban touch gesture pull request',
+      description: 'Review PointerEvent handling, passive touch listeners, and mobile drag cancel logic.',
+      date: today,
+      timeBlock: 'afternoon',
+      timeSlot: '03:00 PM',
+      estimatedMinutes: 30,
+      priority: 'medium',
+      category: 'review',
+      completed: false,
+      notes: 'Will leave feedback on GitHub PR.',
+      createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-alex-5',
+      userId: 'user-basic-1',
+      title: 'Write unit tests for token expiration edge cases',
+      description: 'Test clock skew tolerance and expired session eviction behavior.',
+      date: today,
+      timeBlock: 'evening',
+      timeSlot: '04:30 PM',
+      estimatedMinutes: 45,
+      priority: 'high',
+      category: 'security',
+      completed: false,
+      linkedTaskId: 'task-1',
+      linkedTaskTitle: 'Implement OAuth 2.0 and RBAC Middleware',
+      createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    },
+
+    // --- Maria Garcia (user-basic-2) ---
+    {
+      id: 'dt-maria-1',
+      userId: 'user-basic-2',
+      title: 'Fix UTF-8 BOM encoding for CSV spreadsheet export',
+      description: 'Prepend byte order mark so Excel displays non-ASCII characters and accents properly.',
+      date: today,
+      timeBlock: 'morning',
+      timeSlot: '09:00 AM',
+      estimatedMinutes: 45,
+      priority: 'medium',
+      category: 'development',
+      completed: true,
+      completedAt: new Date(Date.now() - 3 * 3600000).toISOString(),
+      completedBy: 'Maria Garcia',
+      linkedTaskId: 'task-11',
+      linkedTaskTitle: 'Fix CSV Data Export Encoding for Non-ASCII Characters',
+      notes: 'Verified in Excel on Windows and macOS.',
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 3 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-maria-2',
+      userId: 'user-basic-2',
+      title: 'Daily engineering standup & blocker triage',
+      description: 'Share demo of mobile Kanban drag & drop touch listener prototype.',
+      date: today,
+      timeBlock: 'morning',
+      timeSlot: '10:00 AM',
+      estimatedMinutes: 30,
+      priority: 'high',
+      category: 'meeting',
+      completed: true,
+      completedAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+      completedBy: 'Maria Garcia',
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 2 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-maria-3',
+      userId: 'user-basic-2',
+      title: 'Implement touch listener support for mobile Kanban drag & drop',
+      description: 'Add touch-action CSS rules and drag threshold to prevent unintended scrolling.',
+      date: today,
+      timeBlock: 'afternoon',
+      timeSlot: '01:30 PM',
+      estimatedMinutes: 90,
+      priority: 'urgent',
+      category: 'development',
+      completed: false,
+      linkedTaskId: 'task-2',
+      linkedTaskTitle: 'Responsive Kanban Drag & Drop Board UI',
+      notes: 'Added auto-scroll when dragging near viewport bounds.',
+      createdAt: new Date(Date.now() - 5 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 5 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-maria-4',
+      userId: 'user-basic-2',
+      title: 'Cross-browser testing on Safari & Firefox for dark theme contrast',
+      description: 'Ensure color contrast meets WCAG AA standards across all display engines.',
+      date: today,
+      timeBlock: 'afternoon',
+      timeSlot: '04:00 PM',
+      estimatedMinutes: 45,
+      priority: 'medium',
+      category: 'design',
+      completed: false,
+      notes: 'Checked on WebKit 17.4 and Gecko 125.',
+      createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-maria-5',
+      userId: 'user-basic-2',
+      title: 'Update component documentation in Storybook',
+      description: 'Add usage examples for new Avatar and Badge components.',
+      date: today,
+      timeBlock: 'evening',
+      timeSlot: '05:30 PM',
+      estimatedMinutes: 30,
+      priority: 'low',
+      category: 'general',
+      completed: false,
+      createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    },
+
+    // --- Liam Taylor (user-basic-3) ---
+    {
+      id: 'dt-liam-1',
+      userId: 'user-basic-3',
+      title: 'Audit WCAG AA contrast ratio on dark mode neutrals',
+      description: 'Verify all foreground and muted text styles exceed the 4.5:1 ratio on #141414 surface.',
+      date: today,
+      timeBlock: 'morning',
+      timeSlot: '09:30 AM',
+      estimatedMinutes: 45,
+      priority: 'high',
+      category: 'design',
+      completed: true,
+      completedAt: new Date(Date.now() - 2.5 * 3600000).toISOString(),
+      completedBy: 'Liam Taylor',
+      linkedTaskId: 'task-3',
+      linkedTaskTitle: 'Design System & Component Tokens Update',
+      notes: 'Adjusted neutral-400 to pass on dark background.',
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 2.5 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-liam-2',
+      userId: 'user-basic-3',
+      title: 'Daily engineering standup & blocker triage',
+      description: 'Present updated typography scale and Role Template color token specifications.',
+      date: today,
+      timeBlock: 'morning',
+      timeSlot: '10:00 AM',
+      estimatedMinutes: 30,
+      priority: 'high',
+      category: 'meeting',
+      completed: true,
+      completedAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+      completedBy: 'Liam Taylor',
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 2 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-liam-3',
+      userId: 'user-basic-3',
+      title: 'Design high-fidelity wireframes for Direct Messaging & Daily Tasks',
+      description: 'Create responsive card layout, time block sections, and user switcher interface.',
+      date: today,
+      timeBlock: 'afternoon',
+      timeSlot: '01:00 PM',
+      estimatedMinutes: 90,
+      priority: 'urgent',
+      category: 'design',
+      completed: false,
+      notes: 'Created Figma frame with light and dark mode variants.',
+      createdAt: new Date(Date.now() - 5 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 5 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-liam-4',
+      userId: 'user-basic-3',
+      title: 'Update Figma token library for typography scale and spacing',
+      description: 'Sync design token values with Tailwind CSS configuration file.',
+      date: today,
+      timeBlock: 'afternoon',
+      timeSlot: '03:30 PM',
+      estimatedMinutes: 60,
+      priority: 'medium',
+      category: 'design',
+      completed: false,
+      createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-liam-5',
+      userId: 'user-basic-3',
+      title: 'Review responsive mobile layout of Meeting agenda view',
+      description: 'Ensure agenda time blocks and speaker avatars align gracefully on 375px screens.',
+      date: today,
+      timeBlock: 'evening',
+      timeSlot: '05:00 PM',
+      estimatedMinutes: 30,
+      priority: 'low',
+      category: 'review',
+      completed: false,
+      createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    },
+
+    // --- Chloe Bennett (user-basic-4) ---
+    {
+      id: 'dt-chloe-1',
+      userId: 'user-basic-4',
+      title: 'Verify user privilege isolation between Admin and Contributor',
+      description: 'Perform boundary check on endpoint authorization and privilege bitmasks.',
+      date: today,
+      timeBlock: 'morning',
+      timeSlot: '09:00 AM',
+      estimatedMinutes: 45,
+      priority: 'urgent',
+      category: 'security',
+      completed: true,
+      completedAt: new Date(Date.now() - 3 * 3600000).toISOString(),
+      completedBy: 'Chloe Bennett',
+      notes: 'Passes all 18 security isolation test cases.',
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 3 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-chloe-2',
+      userId: 'user-basic-4',
+      title: 'Daily engineering standup & blocker triage',
+      description: 'Share security findings and update team on upcoming quarterly compliance audit.',
+      date: today,
+      timeBlock: 'morning',
+      timeSlot: '10:00 AM',
+      estimatedMinutes: 30,
+      priority: 'high',
+      category: 'meeting',
+      completed: true,
+      completedAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+      completedBy: 'Chloe Bennett',
+      createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 2 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-chloe-3',
+      userId: 'user-basic-4',
+      title: 'Inspect tamper-evident backup snapshot checksums',
+      description: 'Validate SHA-256 integrity hash on the latest system snapshot.',
+      date: today,
+      timeBlock: 'afternoon',
+      timeSlot: '01:30 PM',
+      estimatedMinutes: 45,
+      priority: 'high',
+      category: 'security',
+      completed: false,
+      notes: 'Baseline seed snapshot verified clean.',
+      createdAt: new Date(Date.now() - 5 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 5 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-chloe-4',
+      userId: 'user-basic-4',
+      title: 'Audit active user session tokens & expiration thresholds',
+      description: 'Ensure token expiration enforces 24-hour limit and invalidates revoked sessions.',
+      date: today,
+      timeBlock: 'afternoon',
+      timeSlot: '03:00 PM',
+      estimatedMinutes: 60,
+      priority: 'urgent',
+      category: 'security',
+      completed: false,
+      createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    },
+    {
+      id: 'dt-chloe-5',
+      userId: 'user-basic-4',
+      title: 'Compile weekly security incident & compliance report',
+      description: 'Collate security metrics, open alerts, and resolved vulnerability tickets for CTO review.',
+      date: today,
+      timeBlock: 'evening',
+      timeSlot: '04:30 PM',
+      estimatedMinutes: 45,
+      priority: 'medium',
+      category: 'admin',
+      completed: false,
+      createdAt: new Date(Date.now() - 4 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    }
+  ];
+}
 
 function initializeSeedData() {
   users = [...DEFAULT_USERS];
   statuses = [...DEFAULT_STATUSES];
   projects = [...DEFAULT_PROJECTS];
+  dailyTasks = generateSeedDailyTasks();
   userPasswordHashes.clear();
   DEFAULT_USERS.forEach((u) => {
     userPasswordHashes.set(u.id, DEFAULT_DEMO_HASH);
@@ -2058,8 +2877,8 @@ const requirePrivilege = (privilegeKey: keyof UserPrivileges) => {
     if (req.currentUser.role === 'admin') {
       return next();
     }
-    const userPrivs = req.currentUser.privileges || BASIC_DEFAULT_PRIVILEGES;
-    if (userPrivs[privilegeKey]) {
+    const userPrivs = req.currentUser.privileges || getDefaultPrivilegesForRole(req.currentUser.role);
+    if (userPrivs && userPrivs[privilegeKey]) {
       return next();
     }
     res.status(403).json({
@@ -2329,35 +3148,40 @@ async function startServer() {
     res.json(users);
   });
 
-  // POST create a new user (Admin only)
-  app.post('/api/users', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  // POST create a new user (Admin or users with canManageUsers privilege)
+  app.post('/api/users', requirePrivilege('canManageUsers'), (req: AuthenticatedRequest, res: Response) => {
     const { name, email, role, title, department, avatar, bio, phone, privileges, status } = req.body;
     if (!name || !email) {
       res.status(400).json({ error: 'Name and email are required' });
       return;
     }
-    const isUserAdmin = role === 'admin';
+    const assignedRole = role || 'member';
+    const isUserAdmin = assignedRole === 'admin';
+    const basePrivileges = getDefaultPrivilegesForRole(assignedRole);
     const userPrivileges: UserPrivileges = privileges
       ? {
-          canCreateTask: privileges.canCreateTask ?? true,
-          canEditAnyTask: privileges.canEditAnyTask ?? isUserAdmin,
-          canDeleteTask: privileges.canDeleteTask ?? isUserAdmin,
-          canManageStatuses: privileges.canManageStatuses ?? isUserAdmin,
-          canManageUsers: privileges.canManageUsers ?? isUserAdmin,
-          canUploadAttachments: privileges.canUploadAttachments ?? true,
-          canDeleteAttachments: privileges.canDeleteAttachments ?? true,
-          canViewAuditLogs: privileges.canViewAuditLogs ?? isUserAdmin,
-          canExportData: privileges.canExportData ?? isUserAdmin
+          canCreateTask: privileges.canCreateTask ?? basePrivileges.canCreateTask ?? true,
+          canEditAnyTask: privileges.canEditAnyTask ?? basePrivileges.canEditAnyTask ?? isUserAdmin,
+          canDeleteTask: privileges.canDeleteTask ?? basePrivileges.canDeleteTask ?? isUserAdmin,
+          canManageStatuses: privileges.canManageStatuses ?? basePrivileges.canManageStatuses ?? isUserAdmin,
+          canManageUsers: privileges.canManageUsers ?? basePrivileges.canManageUsers ?? isUserAdmin,
+          canManageRoles: privileges.canManageRoles ?? basePrivileges.canManageRoles ?? isUserAdmin,
+          canManageProjects: privileges.canManageProjects ?? basePrivileges.canManageProjects ?? isUserAdmin,
+          canUploadAttachments: privileges.canUploadAttachments ?? basePrivileges.canUploadAttachments ?? true,
+          canDeleteAttachments: privileges.canDeleteAttachments ?? basePrivileges.canDeleteAttachments ?? true,
+          canViewAuditLogs: privileges.canViewAuditLogs ?? basePrivileges.canViewAuditLogs ?? isUserAdmin,
+          canManageBackups: privileges.canManageBackups ?? basePrivileges.canManageBackups ?? isUserAdmin,
+          canExportData: privileges.canExportData ?? basePrivileges.canExportData ?? isUserAdmin,
+          canHostMeetings: privileges.canHostMeetings ?? basePrivileges.canHostMeetings ?? isUserAdmin,
+          canManageChannels: privileges.canManageChannels ?? basePrivileges.canManageChannels ?? isUserAdmin
         }
-      : isUserAdmin
-      ? { ...ADMIN_DEFAULT_PRIVILEGES }
-      : { ...BASIC_DEFAULT_PRIVILEGES };
+      : { ...basePrivileges };
 
     const newUser: User = {
       id: `user-${Date.now()}`,
       name: name.trim(),
       email: email.trim().toLowerCase(),
-      role: isUserAdmin ? 'admin' : 'basic',
+      role: assignedRole,
       avatar: avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
       title: title?.trim() || 'Team Member',
       department: department?.trim() || 'General',
@@ -2375,7 +3199,7 @@ async function startServer() {
       req.currentUser!.name,
       req.currentUser!.avatar,
       'Created User',
-      `Added new team member ${newUser.name} with ${newUser.role.toUpperCase()} role and department ${newUser.department}.`
+      `Added new team member ${newUser.name} with ${String(newUser.role).toUpperCase()} role and department ${newUser.department}.`
     );
     res.status(201).json(newUser);
   });
@@ -2393,29 +3217,38 @@ async function startServer() {
 
     const isSelf = req.currentUser?.id === id;
     const isCallerAdmin = req.currentUser?.role === 'admin';
+    const callerPrivs = req.currentUser?.privileges || getDefaultPrivilegesForRole(req.currentUser?.role || '');
+    const canManageUserProfiles = isCallerAdmin || Boolean(callerPrivs.canManageUsers);
+    const canManageUserRoles = isCallerAdmin || Boolean(callerPrivs.canManageRoles);
 
-    if (!isSelf && !isCallerAdmin) {
+    if (!isSelf && !canManageUserProfiles && !canManageUserRoles) {
       res.status(403).json({ error: 'Forbidden: You can only edit your own profile' });
       return;
     }
 
     const existing = users[userIndex];
-    const newRole = isCallerAdmin && role !== undefined ? (role === 'admin' ? 'admin' : 'basic') : existing.role;
+    const newRole = canManageUserRoles && role !== undefined ? role : existing.role;
     const isUserAdmin = newRole === 'admin';
+    const basePrivileges = getDefaultPrivilegesForRole(newRole);
 
-    const updatedPrivileges: UserPrivileges = isCallerAdmin && privileges
+    const updatedPrivileges: UserPrivileges = (canManageUserRoles || canManageUserProfiles) && privileges
       ? {
-          canCreateTask: privileges.canCreateTask ?? existing.privileges?.canCreateTask ?? true,
-          canEditAnyTask: privileges.canEditAnyTask ?? existing.privileges?.canEditAnyTask ?? isUserAdmin,
-          canDeleteTask: privileges.canDeleteTask ?? existing.privileges?.canDeleteTask ?? isUserAdmin,
-          canManageStatuses: privileges.canManageStatuses ?? existing.privileges?.canManageStatuses ?? isUserAdmin,
-          canManageUsers: privileges.canManageUsers ?? existing.privileges?.canManageUsers ?? isUserAdmin,
-          canUploadAttachments: privileges.canUploadAttachments ?? existing.privileges?.canUploadAttachments ?? true,
-          canDeleteAttachments: privileges.canDeleteAttachments ?? existing.privileges?.canDeleteAttachments ?? true,
-          canViewAuditLogs: privileges.canViewAuditLogs ?? existing.privileges?.canViewAuditLogs ?? isUserAdmin,
-          canExportData: privileges.canExportData ?? existing.privileges?.canExportData ?? isUserAdmin
+          canCreateTask: privileges.canCreateTask ?? existing.privileges?.canCreateTask ?? basePrivileges.canCreateTask ?? true,
+          canEditAnyTask: privileges.canEditAnyTask ?? existing.privileges?.canEditAnyTask ?? basePrivileges.canEditAnyTask ?? isUserAdmin,
+          canDeleteTask: privileges.canDeleteTask ?? existing.privileges?.canDeleteTask ?? basePrivileges.canDeleteTask ?? isUserAdmin,
+          canManageStatuses: privileges.canManageStatuses ?? existing.privileges?.canManageStatuses ?? basePrivileges.canManageStatuses ?? isUserAdmin,
+          canManageUsers: privileges.canManageUsers ?? existing.privileges?.canManageUsers ?? basePrivileges.canManageUsers ?? isUserAdmin,
+          canManageRoles: privileges.canManageRoles ?? existing.privileges?.canManageRoles ?? basePrivileges.canManageRoles ?? isUserAdmin,
+          canManageProjects: privileges.canManageProjects ?? existing.privileges?.canManageProjects ?? basePrivileges.canManageProjects ?? isUserAdmin,
+          canUploadAttachments: privileges.canUploadAttachments ?? existing.privileges?.canUploadAttachments ?? basePrivileges.canUploadAttachments ?? true,
+          canDeleteAttachments: privileges.canDeleteAttachments ?? existing.privileges?.canDeleteAttachments ?? basePrivileges.canDeleteAttachments ?? true,
+          canViewAuditLogs: privileges.canViewAuditLogs ?? existing.privileges?.canViewAuditLogs ?? basePrivileges.canViewAuditLogs ?? isUserAdmin,
+          canManageBackups: privileges.canManageBackups ?? existing.privileges?.canManageBackups ?? basePrivileges.canManageBackups ?? isUserAdmin,
+          canExportData: privileges.canExportData ?? existing.privileges?.canExportData ?? basePrivileges.canExportData ?? isUserAdmin,
+          canHostMeetings: privileges.canHostMeetings ?? existing.privileges?.canHostMeetings ?? basePrivileges.canHostMeetings ?? isUserAdmin,
+          canManageChannels: privileges.canManageChannels ?? existing.privileges?.canManageChannels ?? basePrivileges.canManageChannels ?? isUserAdmin
         }
-      : existing.privileges || (isUserAdmin ? { ...ADMIN_DEFAULT_PRIVILEGES } : { ...BASIC_DEFAULT_PRIVILEGES });
+      : existing.privileges || { ...basePrivileges };
 
     users[userIndex] = {
       ...existing,
@@ -2438,14 +3271,461 @@ async function startServer() {
       isSelf ? 'Updated Profile' : 'Updated User Profile',
       isSelf
         ? `${users[userIndex].name} updated their profile info & avatar.`
-        : `Updated user profile & privileges for ${users[userIndex].name} (${users[userIndex].role.toUpperCase()})`
+        : `Updated user profile & privileges for ${users[userIndex].name} (${String(users[userIndex].role).toUpperCase()})`
     );
 
     res.json(users[userIndex]);
   });
 
-  // PUT update user status (Admin only)
-  app.put('/api/users/:id/status', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  // -------------------------------------------------------------
+  // API Routes: Access Manager & Roles Governance (Admin Only)
+  // -------------------------------------------------------------
+
+  // GET all system roles with user counts
+  app.get('/api/admin/roles', requirePrivilege('canManageRoles'), (req: AuthenticatedRequest, res: Response) => {
+    const rolesWithCounts = systemRoles.map((role) => ({
+      ...role,
+      userCount: users.filter((u) => u.role === role.id || (role.id === 'member' && u.role === 'basic')).length
+    }));
+    res.json(rolesWithCounts);
+  });
+
+  // POST create a new custom role template
+  app.post('/api/admin/roles', requirePrivilege('canManageRoles'), (req: AuthenticatedRequest, res: Response) => {
+    const { id, name, description, color, badge, icon, defaultPrivileges } = req.body;
+    if (!name || !name.trim()) {
+      res.status(400).json({ error: 'Role name is required' });
+      return;
+    }
+
+    const roleId = (id || name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')).replace(/^-|-$/g, '');
+    if (!roleId) {
+      res.status(400).json({ error: 'Invalid role ID format' });
+      return;
+    }
+
+    if (systemRoles.some((r) => r.id === roleId)) {
+      res.status(400).json({ error: `A role with ID "${roleId}" already exists.` });
+      return;
+    }
+
+    const newRole: SystemRole = {
+      id: roleId,
+      name: name.trim(),
+      description: description?.trim() || 'Custom system role template',
+      color: color || '#8B5CF6',
+      badge: badge?.trim().toUpperCase() || name.trim().toUpperCase(),
+      icon: icon || 'Shield',
+      isSystemRole: false,
+      isEditable: true,
+      defaultPrivileges: defaultPrivileges || { ...BASIC_DEFAULT_PRIVILEGES }
+    };
+
+    systemRoles.push(newRole);
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Created System Role',
+      `Created new custom role template "${newRole.name}" [${newRole.badge}] in Access Manager.`
+    );
+
+    res.status(201).json({
+      ...newRole,
+      userCount: 0
+    });
+  });
+
+  // PUT update an existing role template
+  app.put('/api/admin/roles/:id', requirePrivilege('canManageRoles'), (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const { name, description, color, badge, icon, defaultPrivileges, applyToExistingUsers } = req.body;
+    const roleIndex = systemRoles.findIndex((r) => r.id === id);
+
+    if (roleIndex === -1) {
+      res.status(404).json({ error: `Role with ID "${id}" not found.` });
+      return;
+    }
+
+    const existingRole = systemRoles[roleIndex];
+    if (existingRole.id === 'admin' && defaultPrivileges) {
+      // Keep admin with full privileges
+      defaultPrivileges.canManageUsers = true;
+      defaultPrivileges.canManageRoles = true;
+      defaultPrivileges.canManageBackups = true;
+    }
+
+    const updatedRole: SystemRole = {
+      ...existingRole,
+      name: name !== undefined ? name.trim() : existingRole.name,
+      description: description !== undefined ? description.trim() : existingRole.description,
+      color: color !== undefined ? color : existingRole.color,
+      badge: badge !== undefined ? badge.trim().toUpperCase() : existingRole.badge,
+      icon: icon !== undefined ? icon : existingRole.icon,
+      defaultPrivileges: defaultPrivileges ? { ...existingRole.defaultPrivileges, ...defaultPrivileges } : existingRole.defaultPrivileges
+    };
+
+    systemRoles[roleIndex] = updatedRole;
+
+    // Optionally cascade default privileges to existing users assigned to this role
+    let usersUpdatedCount = 0;
+    if (applyToExistingUsers && defaultPrivileges) {
+      users.forEach((u) => {
+        if (u.role === id || (id === 'member' && u.role === 'basic')) {
+          u.privileges = { ...updatedRole.defaultPrivileges };
+          usersUpdatedCount++;
+        }
+      });
+    }
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Updated System Role',
+      `Updated role template "${updatedRole.name}" (${usersUpdatedCount} users synchronized).`
+    );
+
+    const userCount = users.filter((u) => u.role === id || (id === 'member' && u.role === 'basic')).length;
+    res.json({
+      ...updatedRole,
+      userCount
+    });
+  });
+
+  // DELETE a custom role template
+  app.delete('/api/admin/roles/:id', requirePrivilege('canManageRoles'), (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const roleIndex = systemRoles.findIndex((r) => r.id === id);
+
+    if (roleIndex === -1) {
+      res.status(404).json({ error: `Role with ID "${id}" not found.` });
+      return;
+    }
+
+    const targetRole = systemRoles[roleIndex];
+    if (targetRole.isSystemRole && (targetRole.id === 'admin' || targetRole.id === 'member')) {
+      res.status(400).json({ error: `Core system role "${targetRole.name}" cannot be deleted.` });
+      return;
+    }
+
+    // Reassign any users who had this role to 'member'
+    let reassignedCount = 0;
+    users.forEach((u) => {
+      if (u.role === id) {
+        u.role = 'member';
+        u.privileges = { ...BASIC_DEFAULT_PRIVILEGES };
+        reassignedCount++;
+      }
+    });
+
+    const deleted = systemRoles.splice(roleIndex, 1)[0];
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Deleted System Role',
+      `Deleted role "${deleted.name}". Reassigned ${reassignedCount} user(s) to Standard Contributor.`
+    );
+
+    res.json({
+      success: true,
+      message: `Role "${deleted.name}" deleted successfully. Reassigned ${reassignedCount} user(s).`,
+      reassignedCount
+    });
+  });
+
+  // POST add members to a role template
+  app.post('/api/admin/roles/:id/members/add', requirePrivilege('canManageRoles'), (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const { userIds, applyDefaultPrivileges = true } = req.body;
+
+    const targetRole = systemRoles.find((r) => r.id === id);
+    if (!targetRole) {
+      res.status(404).json({ error: `Role with ID "${id}" not found.` });
+      return;
+    }
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      res.status(400).json({ error: 'userIds array is required and must not be empty.' });
+      return;
+    }
+
+    let addedCount = 0;
+    const addedNames: string[] = [];
+
+    userIds.forEach((uid) => {
+      const user = users.find((u) => u.id === uid);
+      if (user) {
+        user.role = id;
+        if (applyDefaultPrivileges) {
+          user.privileges = { ...targetRole.defaultPrivileges };
+        }
+        addedCount++;
+        addedNames.push(user.name);
+      }
+    });
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Added Role Members',
+      `Assigned ${addedCount} member(s) (${addedNames.slice(0, 3).join(', ')}${addedNames.length > 3 ? '...' : ''}) to role template "${targetRole.name}".`
+    );
+
+    res.json({
+      success: true,
+      addedCount,
+      role: targetRole,
+      message: `Assigned ${addedCount} member(s) to "${targetRole.name}".`,
+      users
+    });
+  });
+
+  // POST remove members from a role template (reassign to fallback role)
+  app.post('/api/admin/roles/:id/members/remove', requirePrivilege('canManageRoles'), (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const { userIds, fallbackRoleId = 'member', applyFallbackPrivileges = true } = req.body;
+
+    const targetRole = systemRoles.find((r) => r.id === id);
+    if (!targetRole) {
+      res.status(404).json({ error: `Role with ID "${id}" not found.` });
+      return;
+    }
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      res.status(400).json({ error: 'userIds array is required and must not be empty.' });
+      return;
+    }
+
+    // Safety guard: prevent removing all admins if this is the admin role
+    if (id === 'admin') {
+      const remainingAdmins = users.filter((u) => u.role === 'admin' && !userIds.includes(u.id));
+      if (remainingAdmins.length === 0) {
+        res.status(400).json({
+          error: 'Cannot remove all administrators. At least one active administrator must remain.'
+        });
+        return;
+      }
+    }
+
+    const fallbackRole = systemRoles.find((r) => r.id === fallbackRoleId) || systemRoles.find((r) => r.id === 'member') || {
+      id: 'member',
+      name: 'Standard Contributor',
+      defaultPrivileges: BASIC_DEFAULT_PRIVILEGES
+    };
+
+    let removedCount = 0;
+    const removedNames: string[] = [];
+
+    userIds.forEach((uid) => {
+      const user = users.find((u) => u.id === uid);
+      if (user && (user.role === id || (id === 'member' && user.role === 'basic'))) {
+        user.role = fallbackRole.id;
+        if (applyFallbackPrivileges) {
+          user.privileges = getDefaultPrivilegesForRole(fallbackRole.id);
+        }
+        removedCount++;
+        removedNames.push(user.name);
+      }
+    });
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Removed Role Members',
+      `Reassigned ${removedCount} member(s) (${removedNames.slice(0, 3).join(', ')}${removedNames.length > 3 ? '...' : ''}) from "${targetRole.name}" to "${fallbackRole.name}".`
+    );
+
+    res.json({
+      success: true,
+      removedCount,
+      role: targetRole,
+      fallbackRole,
+      message: `Removed ${removedCount} member(s) from "${targetRole.name}" (reassigned to "${fallbackRole.name}").`,
+      users
+    });
+  });
+
+  // POST batch update users access / roles / privileges
+  app.post('/api/admin/access/batch-update', requirePrivilege('canManageRoles'), (req: AuthenticatedRequest, res: Response) => {
+    const { userIds, role, privileges, action, privilegeKey } = req.body;
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      res.status(400).json({ error: 'userIds array is required' });
+      return;
+    }
+
+    let affectedCount = 0;
+    userIds.forEach((uid) => {
+      const uIndex = users.findIndex((u) => u.id === uid);
+      if (uIndex === -1) return;
+
+      const user = users[uIndex];
+
+      if (action === 'setRole' && role) {
+        user.role = role;
+        user.privileges = getDefaultPrivilegesForRole(role);
+        affectedCount++;
+      } else if (action === 'resetToRoleDefault') {
+        user.privileges = getDefaultPrivilegesForRole(user.role);
+        affectedCount++;
+      } else if (action === 'grantPrivilege' && privilegeKey) {
+        user.privileges = {
+          ...(user.privileges || getDefaultPrivilegesForRole(user.role)),
+          [privilegeKey]: true
+        };
+        affectedCount++;
+      } else if (action === 'revokePrivilege' && privilegeKey) {
+        // Prevent revoking admin from own self if privilegeKey === canManageRoles or canManageUsers
+        if (user.id === req.currentUser!.id && (privilegeKey === 'canManageRoles' || privilegeKey === 'canManageUsers')) {
+          return;
+        }
+        user.privileges = {
+          ...(user.privileges || getDefaultPrivilegesForRole(user.role)),
+          [privilegeKey]: false
+        };
+        affectedCount++;
+      } else if (privileges) {
+        user.privileges = {
+          ...(user.privileges || getDefaultPrivilegesForRole(user.role)),
+          ...privileges
+        };
+        affectedCount++;
+      }
+    });
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Batch Access Update',
+      `Applied bulk access operation (${action || 'custom'}) across ${affectedCount} user accounts.`
+    );
+
+    res.json({
+      success: true,
+      affectedCount,
+      users
+    });
+  });
+
+  // POST reset specific user privileges to their role default
+  app.post('/api/admin/access/reset-user-privileges/:userId', requirePrivilege('canManageRoles'), (req: AuthenticatedRequest, res: Response) => {
+    const { userId } = req.params;
+    const user = users.find((u) => u.id === userId);
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    user.privileges = getDefaultPrivilegesForRole(user.role);
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Reset User Privileges',
+      `Synchronized permissions for ${user.name} to default preset for role "${user.role}".`
+    );
+
+    res.json({
+      success: true,
+      user
+    });
+  });
+
+  // POST clone user privileges from source to target users
+  app.post('/api/admin/access/clone-user-privileges', requirePrivilege('canManageRoles'), (req: AuthenticatedRequest, res: Response) => {
+    const { sourceUserId, targetUserIds } = req.body;
+    const source = users.find((u) => u.id === sourceUserId);
+    if (!source) {
+      res.status(404).json({ error: 'Source user not found' });
+      return;
+    }
+
+    if (!Array.isArray(targetUserIds) || targetUserIds.length === 0) {
+      res.status(400).json({ error: 'targetUserIds array is required' });
+      return;
+    }
+
+    const sourcePrivileges = source.privileges || getDefaultPrivilegesForRole(source.role);
+    let clonedCount = 0;
+
+    targetUserIds.forEach((tId) => {
+      const target = users.find((u) => u.id === tId);
+      if (target) {
+        target.privileges = { ...sourcePrivileges };
+        clonedCount++;
+      }
+    });
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Cloned Privileges',
+      `Copied permission configuration from ${source.name} to ${clonedCount} team member(s).`
+    );
+
+    res.json({
+      success: true,
+      clonedCount,
+      users
+    });
+  });
+
+  // GET access governance summary
+  app.get('/api/admin/access/summary', (req: AuthenticatedRequest, res: Response) => {
+    const user = req.currentUser;
+    const userPrivs = user?.privileges || (user ? getDefaultPrivilegesForRole(user.role) : undefined);
+    if (!user || (user.role !== 'admin' && !userPrivs?.canManageRoles && !userPrivs?.canManageUsers)) {
+      res.status(403).json({ error: 'Forbidden: Access governance privileges required.' });
+      return;
+    }
+
+    let customDriftCount = 0;
+    let elevatedCount = 0;
+    let restrictedCount = 0;
+    let adminsCount = 0;
+
+    users.forEach((u) => {
+      const isAdm = u.role === 'admin';
+      if (isAdm) adminsCount++;
+
+      if (u.status === 'suspended' || u.status === 'inactive') {
+        restrictedCount++;
+      }
+
+      const defaultPrivs = getDefaultPrivilegesForRole(u.role);
+      const uPrivs = u.privileges || defaultPrivs;
+
+      // Check drift
+      const keys = Object.keys(defaultPrivs) as (keyof UserPrivileges)[];
+      const hasDrift = keys.some((k) => uPrivs[k] !== defaultPrivs[k]);
+      if (hasDrift) customDriftCount++;
+
+      // Check elevated (non-admin having high-risk privileges)
+      if (!isAdm && (uPrivs.canDeleteTask || uPrivs.canManageUsers || uPrivs.canManageRoles || uPrivs.canManageBackups || uPrivs.canExportData)) {
+        elevatedCount++;
+      }
+    });
+
+    res.json({
+      totalUsers: users.length,
+      totalRoles: systemRoles.length,
+      adminsCount,
+      elevatedUsersCount: elevatedCount,
+      customDriftUsersCount: customDriftCount,
+      restrictedUsersCount: restrictedCount
+    });
+  });
+
+  // PUT update user status (Admin or users with canManageUsers privilege)
+  app.put('/api/users/:id/status', requirePrivilege('canManageUsers'), (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     const { status } = req.body;
     if (!['active', 'inactive', 'suspended'].includes(status)) {
@@ -2453,7 +3733,7 @@ async function startServer() {
       return;
     }
     if (id === req.currentUser!.id && status !== 'active') {
-      res.status(400).json({ error: 'You cannot deactivate or suspend your own active administrator account.' });
+      res.status(400).json({ error: 'You cannot deactivate or suspend your own active account.' });
       return;
     }
     const userIndex = users.findIndex((u) => u.id === id);
@@ -2476,8 +3756,8 @@ async function startServer() {
     res.json(users[userIndex]);
   });
 
-  // DELETE a user (Admin only)
-  app.delete('/api/users/:id', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  // DELETE a user (Admin or users with canManageUsers privilege)
+  app.delete('/api/users/:id', requirePrivilege('canManageUsers'), (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     if (id === req.currentUser!.id) {
       res.status(400).json({ error: 'You cannot delete your own account while logged in.' });
@@ -2652,8 +3932,8 @@ async function startServer() {
     res.json(sorted);
   });
 
-  // POST create a status (Admin only)
-  app.post('/api/statuses', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  // POST create a status (Admin or users with canManageStatuses)
+  app.post('/api/statuses', requirePrivilege('canManageStatuses'), (req: AuthenticatedRequest, res: Response) => {
     const { name, color, description, isDone } = req.body;
     if (!name || !name.trim()) {
       res.status(400).json({ error: 'Status name is required' });
@@ -2679,8 +3959,8 @@ async function startServer() {
     res.status(201).json(newStatus);
   });
 
-  // PUT update a status (Admin only)
-  app.put('/api/statuses/:id', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  // PUT update a status (Admin or users with canManageStatuses)
+  app.put('/api/statuses/:id', requirePrivilege('canManageStatuses'), (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     const { name, color, description, isDone } = req.body;
     const index = statuses.findIndex((s) => s.id === id);
@@ -2707,8 +3987,8 @@ async function startServer() {
     res.json(statuses[index]);
   });
 
-  // PUT reorder statuses (Admin only)
-  app.put('/api/statuses/reorder', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  // PUT reorder statuses (Admin or users with canManageStatuses)
+  app.put('/api/statuses/reorder', requirePrivilege('canManageStatuses'), (req: AuthenticatedRequest, res: Response) => {
     const { orderedIds } = req.body as { orderedIds: string[] };
     if (!Array.isArray(orderedIds)) {
       res.status(400).json({ error: 'orderedIds array required' });
@@ -2730,8 +4010,8 @@ async function startServer() {
     res.json(statuses.sort((a, b) => a.order - b.order));
   });
 
-  // DELETE a status (Admin only)
-  app.delete('/api/statuses/:id', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  // DELETE a status (Admin or users with canManageStatuses)
+  app.delete('/api/statuses/:id', requirePrivilege('canManageStatuses'), (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     const { fallbackStatusId } = req.query;
     const statusIndex = statuses.findIndex((s) => s.id === id);
@@ -5008,6 +6288,229 @@ async function startServer() {
   });
 
   // -------------------------------------------------------------
+  // Daily Tasks Management API
+  // -------------------------------------------------------------
+
+  // GET /api/daily-tasks: Retrieve daily tasks (with optional userId & date filter)
+  app.get('/api/daily-tasks', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+    const { userId, date } = req.query;
+    let filtered = [...dailyTasks];
+
+    if (userId && typeof userId === 'string' && userId !== 'all') {
+      filtered = filtered.filter((t) => t.userId === userId);
+    }
+    if (date && typeof date === 'string') {
+      filtered = filtered.filter((t) => t.date === date);
+    }
+
+    // Sort: uncompleted first, then by priority (urgent -> high -> medium -> low), then by timeSlot
+    const priorityWeight: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+    filtered.sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      const pDiff = (priorityWeight[a.priority] ?? 2) - (priorityWeight[b.priority] ?? 2);
+      if (pDiff !== 0) return pDiff;
+      return (a.timeSlot || '').localeCompare(b.timeSlot || '');
+    });
+
+    // Compute user summaries for today
+    const today = formatDate(0);
+    const userSummaries: Record<string, { total: number; completed: number; rate: number }> = {};
+    users.forEach((u) => {
+      const uToday = dailyTasks.filter((t) => t.userId === u.id && t.date === today);
+      const completed = uToday.filter((t) => t.completed).length;
+      userSummaries[u.id] = {
+        total: uToday.length,
+        completed,
+        rate: uToday.length > 0 ? Math.round((completed / uToday.length) * 100) : 0
+      };
+    });
+
+    res.json({
+      tasks: filtered,
+      userSummaries,
+      total: filtered.length
+    });
+  });
+
+  // POST /api/daily-tasks: Create a new daily task
+  app.post('/api/daily-tasks', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+    const {
+      userId,
+      title,
+      description,
+      date,
+      timeBlock,
+      timeSlot,
+      estimatedMinutes,
+      priority,
+      category,
+      linkedTaskId,
+      linkedTaskTitle,
+      notes
+    } = req.body;
+
+    if (!title || !title.trim()) {
+      res.status(400).json({ error: 'Title is required for daily task.' });
+      return;
+    }
+
+    const assignedUserId = userId || req.currentUser!.id;
+    const taskDate = date || formatDate(0);
+
+    const newTask: DailyTask = {
+      id: `dt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      userId: assignedUserId,
+      title: title.trim(),
+      description: description?.trim() || '',
+      date: taskDate,
+      timeBlock: timeBlock || 'flexible',
+      timeSlot: timeSlot || '',
+      estimatedMinutes: Number(estimatedMinutes) || 30,
+      priority: priority || 'medium',
+      category: category || 'general',
+      completed: false,
+      linkedTaskId: linkedTaskId || undefined,
+      linkedTaskTitle: linkedTaskTitle || undefined,
+      notes: notes?.trim() || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    dailyTasks.push(newTask);
+
+    const targetUser = users.find((u) => u.id === assignedUserId);
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Created Daily Task',
+      `Added daily task "${newTask.title}" for ${targetUser ? targetUser.name : 'user'} (${taskDate})`
+    );
+
+    res.status(201).json(newTask);
+  });
+
+  // PUT /api/daily-tasks/:id: Update a daily task (including completion toggle)
+  app.put('/api/daily-tasks/:id', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const taskIndex = dailyTasks.findIndex((t) => t.id === id);
+
+    if (taskIndex === -1) {
+      res.status(404).json({ error: 'Daily task not found.' });
+      return;
+    }
+
+    const currentTask = dailyTasks[taskIndex];
+    const updates = req.body;
+
+    let completed = currentTask.completed;
+    let completedAt = currentTask.completedAt;
+    let completedBy = currentTask.completedBy;
+
+    if (updates.completed !== undefined && updates.completed !== currentTask.completed) {
+      completed = Boolean(updates.completed);
+      if (completed) {
+        completedAt = new Date().toISOString();
+        completedBy = req.currentUser!.name;
+      } else {
+        completedAt = undefined;
+        completedBy = undefined;
+      }
+    }
+
+    const updatedTask: DailyTask = {
+      ...currentTask,
+      ...updates,
+      completed,
+      completedAt,
+      completedBy,
+      updatedAt: new Date().toISOString()
+    };
+
+    dailyTasks[taskIndex] = updatedTask;
+
+    if (updates.completed !== undefined && updates.completed !== currentTask.completed) {
+      addActivityLog(
+        req.currentUser!.id,
+        req.currentUser!.name,
+        req.currentUser!.avatar,
+        completed ? 'Completed Daily Task' : 'Reopened Daily Task',
+        `${completed ? 'Completed' : 'Reopened'} daily task "${updatedTask.title}"`
+      );
+    }
+
+    res.json(updatedTask);
+  });
+
+  // DELETE /api/daily-tasks/:id: Delete a daily task
+  app.delete('/api/daily-tasks/:id', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const taskIndex = dailyTasks.findIndex((t) => t.id === id);
+
+    if (taskIndex === -1) {
+      res.status(404).json({ error: 'Daily task not found.' });
+      return;
+    }
+
+    const removed = dailyTasks.splice(taskIndex, 1)[0];
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Deleted Daily Task',
+      `Removed daily task "${removed.title}"`
+    );
+
+    res.json({ success: true, id });
+  });
+
+  // POST /api/daily-tasks/rollover: Rollover incomplete tasks from previous days to today
+  app.post('/api/daily-tasks/rollover', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+    const { userId, fromDate } = req.body;
+    const targetUserId = userId || req.currentUser!.id;
+    const targetFromDate = fromDate || formatDate(-1);
+    const today = formatDate(0);
+
+    const pendingTasks = dailyTasks.filter(
+      (t) => (targetUserId === 'all' || t.userId === targetUserId) && t.date === targetFromDate && !t.completed
+    );
+
+    if (pendingTasks.length === 0) {
+      res.json({ success: true, count: 0, message: 'No incomplete tasks to roll over.' });
+      return;
+    }
+
+    const rolledOverIds: string[] = [];
+    pendingTasks.forEach((t) => {
+      const rolledTask: DailyTask = {
+        ...t,
+        id: `dt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        date: today,
+        notes: (t.notes ? t.notes + '\n' : '') + `[Rolled over from ${targetFromDate}]`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      dailyTasks.push(rolledTask);
+      rolledOverIds.push(rolledTask.id);
+    });
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Rolled Over Daily Tasks',
+      `Rolled over ${pendingTasks.length} incomplete tasks from ${targetFromDate} to today`
+    );
+
+    res.json({
+      success: true,
+      count: pendingTasks.length,
+      rolledOverIds,
+      message: `Successfully rolled over ${pendingTasks.length} task(s) to today.`
+    });
+  });
+
+  // -------------------------------------------------------------
   // Backup & Restore Engine (Admin Only)
   // -------------------------------------------------------------
 
@@ -5067,6 +6570,7 @@ async function startServer() {
       channels: ChatChannel[];
       chatMessages: ChatMessage[];
       activityLogs: ActivityLog[];
+      dailyTasks?: DailyTask[];
       files: BackupFileStoreItem[];
       gamification?: Record<string, any>;
     };
@@ -5144,6 +6648,7 @@ async function startServer() {
       channels: JSON.parse(JSON.stringify(channels)),
       chatMessages: JSON.parse(JSON.stringify(chatMessages)),
       activityLogs: JSON.parse(JSON.stringify(activityLogs)),
+      dailyTasks: JSON.parse(JSON.stringify(dailyTasks)),
       files,
       gamification: customGamification || {}
     };
@@ -5308,6 +6813,9 @@ async function startServer() {
 
     // 7. Restore Activity Logs
     if (Array.isArray(data.activityLogs)) activityLogs = [...data.activityLogs];
+
+    // 7b. Restore Daily Tasks
+    if (Array.isArray(data.dailyTasks)) dailyTasks = [...data.dailyTasks];
 
     // 8. Restore Secure File Store (Attachments & Uploaded Binaries)
     secureFileStore.clear();

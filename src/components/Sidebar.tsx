@@ -34,7 +34,8 @@ import {
   LogOut,
   LogIn,
   KeyRound,
-  Database
+  Database,
+  CalendarCheck2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
@@ -43,6 +44,7 @@ import { useChat } from '../context/ChatContext';
 import { ViewMode, Project } from '../types';
 import { Logo } from './Logo';
 import { UserAvatar } from './UserAvatar';
+import { getRoleTemplate } from '../utils/roleUtils';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -80,6 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
 
   const canManageProjects = isAdmin || Boolean(currentUser?.privileges?.canManageProjects);
   const canManageUsers = isAdmin || Boolean(currentUser?.privileges?.canManageUsers);
+  const canManageRoles = isAdmin || Boolean(currentUser?.privileges?.canManageRoles);
   const canManageStatuses = isAdmin || Boolean(currentUser?.privileges?.canManageStatuses);
   const canViewAuditLogs = isAdmin || Boolean(currentUser?.privileges?.canViewAuditLogs);
 
@@ -105,6 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
     unreadCount?: number;
   }[] = [
     { mode: 'kanban', label: 'Workflow', icon: <LayoutGrid className="w-4 h-4" />, colorDot: 'bg-blue-400', isAllowed: true },
+    { mode: 'daily', label: 'Daily Tasks', icon: <CalendarCheck2 className="w-4 h-4" />, colorDot: 'bg-teal-400', isAllowed: true },
     { mode: 'tickets', label: 'Ticket System', icon: <Ticket className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
     { mode: 'list', label: 'Table List', icon: <TableIcon className="w-4 h-4" />, colorDot: 'bg-sky-400', isAllowed: true },
     { mode: 'timeline', label: 'Timeline', icon: <Calendar className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
@@ -114,6 +118,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
     { mode: 'rewards', label: 'Rewards', icon: <Trophy className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
     { mode: 'dashboard', label: 'Dashboard', icon: <BarChart3 className="w-4 h-4" />, colorDot: 'bg-blue-400', isAllowed: isAdmin || canManageUsers, adminBadge: true },
     { mode: 'users', label: 'Team', icon: <Users className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: isAdmin || canManageUsers, adminBadge: true },
+    { mode: 'access', label: 'Access Manager', icon: <KeyRound className="w-4 h-4" />, colorDot: 'bg-indigo-400', isAllowed: isAdmin || canManageRoles || canManageUsers, adminBadge: true },
     { mode: 'backup', label: 'Backup & Restore', icon: <Database className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: isAdmin, adminBadge: true },
     { mode: 'audit', label: 'Log & Audit', icon: <History className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: canViewAuditLogs }
   ];
@@ -500,11 +505,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
                 <div className="text-xs font-semibold text-white truncate group-hover:text-blue-200 transition-colors flex items-center gap-1.5">
                   <span>{currentUser?.name}</span>
                 </div>
-                <div className={`text-[9px] font-bold uppercase tracking-wider ${
-                  isAdmin ? 'text-blue-400' : 'text-emerald-400'
-                }`}>
-                  {currentUser?.role === 'admin' ? 'Administrator' : 'Basic User'}
-                </div>
+                {(() => {
+                  const tpl = getRoleTemplate(currentUser?.role);
+                  return (
+                    <div
+                      className="text-[9px] font-bold uppercase tracking-wider truncate max-w-[140px]"
+                      style={{ color: tpl.color }}
+                      title={`${tpl.name} (${tpl.badge})`}
+                    >
+                      {tpl.name}
+                    </div>
+                  );
+                })()}
               </div>
             </button>
 
@@ -605,15 +617,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
                       </button>
 
                       <div className="flex items-center gap-1 shrink-0 ml-1">
-                        <span
-                          className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded shrink-0 ${
-                            isUserAdmin
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          }`}
-                        >
-                          {isUserAdmin ? 'Admin' : 'User'}
-                        </span>
+                        {(() => {
+                          const tpl = getRoleTemplate(u.role);
+                          return (
+                            <span
+                              className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 border"
+                              style={{
+                                backgroundColor: `${tpl.color}20`,
+                                color: tpl.color,
+                                borderColor: `${tpl.color}40`
+                              }}
+                              title={tpl.name}
+                            >
+                              {tpl.badge || tpl.name}
+                            </span>
+                          );
+                        })()}
 
                         <button
                           type="button"

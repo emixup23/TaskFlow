@@ -5,6 +5,7 @@ import { useTasks } from '../context/TaskContext';
 import { ChatMessage, ChatMessageAttachment, Priority } from '../types';
 import { UserAvatar } from './UserAvatar';
 import { CreateChannelModal } from './CreateChannelModal';
+import { NewDirectMessageModal } from './NewDirectMessageModal';
 import {
   Hash,
   Lock,
@@ -34,6 +35,8 @@ import {
   AlertCircle,
   Copy,
   MessageSquare,
+  MessageSquarePlus,
+  User as UserIcon,
   Sparkles,
   Bold,
   Italic,
@@ -100,6 +103,7 @@ export const ChatView: React.FC = () => {
   const [channelSearchTerm, setChannelSearchTerm] = useState('');
   const [activeMessageActionId, setActiveMessageActionId] = useState<string | null>(null);
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
+  const [isNewDmModalOpen, setIsNewDmModalOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -325,15 +329,26 @@ export const ChatView: React.FC = () => {
               </span>
             )}
           </div>
-          <button
-            type="button"
-            id="btn-create-chat-channel"
-            onClick={() => setIsCreateChannelModalOpen(true)}
-            className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#222222] rounded-md transition-colors cursor-pointer"
-            title="Create Channel or Group"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              id="btn-open-new-direct-message"
+              onClick={() => setIsNewDmModalOpen(true)}
+              className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-[#222222] rounded-md transition-colors cursor-pointer"
+              title="Start New Direct Message"
+            >
+              <MessageSquarePlus className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              id="btn-create-chat-channel"
+              onClick={() => setIsCreateChannelModalOpen(true)}
+              className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#222222] rounded-md transition-colors cursor-pointer"
+              title="Create Channel or Group"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Channel Search */}
@@ -477,8 +492,22 @@ export const ChatView: React.FC = () => {
           {(channelCategoryFilter === 'all' || channelCategoryFilter === 'direct') && (
             <div>
               <div className="px-2 py-1 flex items-center justify-between text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-                <span>Direct Messages</span>
-                <span className="text-[10px] text-neutral-500">{directMessageChannels.length}</span>
+                <div className="flex items-center gap-1.5">
+                  <UserIcon className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Direct Messages</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-neutral-500">{directMessageChannels.length}</span>
+                  <button
+                    type="button"
+                    id="btn-add-direct-message"
+                    onClick={() => setIsNewDmModalOpen(true)}
+                    className="p-1 text-neutral-400 hover:text-blue-400 hover:bg-[#222] rounded transition-colors cursor-pointer"
+                    title="Start new Direct Message"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
               <div className="space-y-0.5 mt-1">
                 {directMessageChannels.map((c) => {
@@ -531,8 +560,17 @@ export const ChatView: React.FC = () => {
           {channelCategoryFilter === 'direct' && directMessageChannels.length === 0 && (
             <div className="p-3 text-center text-neutral-500">
               <p>No direct messages yet.</p>
-              <p className="mt-1 text-[11px]">Select a team member below to start chatting:</p>
-              <div className="mt-3 space-y-1">
+              <button
+                type="button"
+                id="btn-empty-start-dm"
+                onClick={() => setIsNewDmModalOpen(true)}
+                className="mt-2 w-full py-1.5 px-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+              >
+                <MessageSquarePlus className="w-4 h-4" />
+                <span>Start Direct Message</span>
+              </button>
+              <p className="mt-2 text-[11px]">Or select a team member below:</p>
+              <div className="mt-2 space-y-1">
                 {users
                   .filter((u) => u.id !== currentUser?.id)
                   .map((u) => (
@@ -1367,6 +1405,12 @@ export const ChatView: React.FC = () => {
 
       {/* Global Create Channel Modal */}
       <CreateChannelModal />
+
+      {/* Global New Direct Message Modal */}
+      <NewDirectMessageModal
+        isOpen={isNewDmModalOpen}
+        onClose={() => setIsNewDmModalOpen(false)}
+      />
     </div>
   );
 };

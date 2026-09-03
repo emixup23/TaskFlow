@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'basic';
+export type UserRole = 'admin' | 'basic' | 'manager' | 'lead' | 'member' | 'auditor' | 'viewer' | string;
 
 export interface LoginCredentials {
   email: string;
@@ -21,16 +21,66 @@ export interface AuthResponse {
 }
 
 export interface UserPrivileges {
+  // Task & Workflows
   canCreateTask: boolean;
   canEditAnyTask: boolean;
   canDeleteTask: boolean;
   canManageStatuses: boolean;
-  canManageUsers: boolean;
   canManageProjects?: boolean;
+  // Governance & Administration
+  canManageUsers: boolean;
+  canManageRoles?: boolean;
+  canViewAuditLogs: boolean;
+  canManageBackups?: boolean;
+  canExportData: boolean;
+  // Files & Attachments
   canUploadAttachments: boolean;
   canDeleteAttachments: boolean;
-  canViewAuditLogs: boolean;
-  canExportData: boolean;
+  // Collaboration & Meetings
+  canHostMeetings?: boolean;
+  canManageChannels?: boolean;
+}
+
+export interface SystemRole {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  badge: string;
+  icon?: string;
+  isSystemRole: boolean;
+  isEditable: boolean;
+  defaultPrivileges: UserPrivileges;
+  userCount?: number;
+}
+
+export type PrivilegeCategory = 'task' | 'admin' | 'storage' | 'collab';
+export type RiskLevel = 'high' | 'medium' | 'low';
+
+export interface PrivilegeDefinition {
+  key: keyof UserPrivileges;
+  label: string;
+  category: PrivilegeCategory;
+  categoryLabel: string;
+  description: string;
+  risk: RiskLevel;
+}
+
+export interface BatchAccessUpdatePayload {
+  userIds: string[];
+  role?: string;
+  privileges?: Partial<UserPrivileges>;
+  action?: 'setRole' | 'grantPrivilege' | 'revokePrivilege' | 'resetToRoleDefault';
+  privilegeKey?: keyof UserPrivileges;
+}
+
+export interface AccessSummaryStats {
+  totalUsers: number;
+  totalRoles: number;
+  adminsCount: number;
+  elevatedUsersCount: number;
+  customDriftUsersCount: number;
+  restrictedUsersCount: number;
 }
 
 export interface User {
@@ -190,6 +240,39 @@ export interface Task {
   createdByName?: string;
 }
 
+export type DailyTimeBlock = 'morning' | 'afternoon' | 'evening' | 'flexible';
+
+export type DailyCategory =
+  | 'development'
+  | 'design'
+  | 'review'
+  | 'operations'
+  | 'security'
+  | 'meeting'
+  | 'admin'
+  | 'general';
+
+export interface DailyTask {
+  id: string;
+  userId: string;
+  title: string;
+  description?: string;
+  date: string; // YYYY-MM-DD
+  timeBlock: DailyTimeBlock;
+  timeSlot?: string; // e.g. "09:30 AM"
+  estimatedMinutes: number;
+  priority: Priority;
+  category: DailyCategory;
+  completed: boolean;
+  completedAt?: string;
+  completedBy?: string;
+  linkedTaskId?: string;
+  linkedTaskTitle?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface FilterState {
   search: string;
   projectId?: string;
@@ -205,11 +288,13 @@ export type ViewMode =
   | 'tickets'
   | 'list'
   | 'timeline'
+  | 'daily'
   | 'meetings'
   | 'dashboard'
   | 'audit'
   | 'rewards'
   | 'users'
+  | 'access'
   | 'graph'
   | 'chat'
   | 'backup';
@@ -316,7 +401,7 @@ export interface ChatMessage {
   senderId: string;
   senderName: string;
   senderAvatar: string;
-  senderRole?: 'admin' | 'basic';
+  senderRole?: UserRole | string;
   senderTitle?: string;
   content: string;
   createdAt: string;
@@ -607,6 +692,7 @@ export interface BackupDataPayload {
     channels: ChatChannel[];
     chatMessages: ChatMessage[];
     activityLogs: ActivityLog[];
+    dailyTasks?: DailyTask[];
     files: BackupFileStoreItem[];
     gamification?: Record<string, any>;
   };
