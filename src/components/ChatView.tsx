@@ -41,11 +41,14 @@ import {
   Bold,
   Italic,
   Code,
-  List
+  List,
+  Eye
 } from 'lucide-react';
+import { FileViewerModal, FileViewerItem } from './FileViewerModal';
 
-const POPULAR_EMOJIS = ['👍', '❤️', '🚀', '🎉', '🔥', '👀', '✅', '👏', '💡', '💯', '🙌', '⭐'];
 
+//const POPULAR_EMOJIS = ['👍', '❤️', '🚀', '🎉', '🔥', '👀', '✅', '👏', '💡', '💯', '🙌', '⭐', '😀', '😄', '😁', '😅', '😂', '🤣', '😇', '😊', '🙂', '😍', '😘', '🥰', '😗', '😋', '😝', '😛', '😭', '😐', '🤫', '🤔', '😴', '😰', '😥', '😱', '🥵', '😳', '🤯', '🤬', '😡', '🤕', '🤑', '🤒', '😷', '🤧', '🤮', '🤢', '🤐', '😵‍', '😵', '😮‍', '🤤', '😪', '😴', '👾', '☠️', '👽', '🥱', '💀', '👻', '💩', '🤡', '👺', '👹', '👿', '😈', '🎃', '👾', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '👆', '👌', '👈', '👈', '👉', '👉', '🤜', '🤛', '✊', '👊', '👊', '👎', '👍', '🤝', '👏', '🙌', '🤲', '👐', '🦻', '👃', '👀', '👁️', '🧠', '👤', '🗣️', '👴', '👵', '🧓', '👨‍🦽‍', '🧑‍', '👨‍🦼', '👩‍❤️‍💋‍👨', '🧶', '🧤', '🕴', '💃', '🕺', '💃', '🤳', '💅', '🧚', '🧜‍', '🧞‍', '🧟‍', '🧛‍'];
+const POPULAR_EMOJIS = ['🌍', '💨', '⛄', '☔', '🔥', '🌪️', '☀️', '🌧️', '❄️', '🐉', '🐲', '🐮', '🐜', '🐞', '🐌', '🦋', '🐛', '🐈', '🦦', '🦝', '🐇', '🍎', '🍉', '🍓', '🥕', '🌶️', '🏆', '🥇', '🥈', '🥉', '🏅', '🎖️', '🎫', '🎯', '⚽', '🚗', '🦯', '🚜', '🛴', '🚀', '🌅', '📸', '☎️', '📺', '🖱️', '💾', '❤️', '☢️', '🇹🇳', '🇨🇮', '🇫🇷', '🇮🇹', '🇺🇲', '🇭🇲', '🇦🇺', '🇪🇸', '😀', '😄', '😁', '😅', '😂', '🤣', '😇', '😊', '🙂', '😍', '😘', '🥰', '😗', '😋', '😝', '😛', '😭', '😐', '🤫', '🤔', '😴', '😰', '😥', '😱', '🥵', '😳', '🤯', '🤬', '😡', '🤕', '🤑', '🤒', '😷', '🤧', '🤮', '🤢', '🤐', '😵‍', '😵', '😮‍', '🤤', '😪', '😴', '👾', '☠️', '👽', '🥱', '💀', '👻', '💩', '🤡', '👺', '👹', '😈', '🎃', '👾', '🤖', '😺', '😸', '😹', '😻', '😿', '😾', '👆', '👌', '👈', '👉', '🤜', '🤛', '✊', '👊', '👊', '👎', '👍', '🤝', '👏', '🦻', '👃', '👀', '🧠', '👤', '🗣️', '👴', '👵', '👨‍🦽‍', '🧑‍', '👨‍🦼', '👩‍❤️‍💋‍👨', '🧶', '🧤', '🕴', '🕺', '💃', '🤳', '💅', '🧚', '🧜‍', '🧞‍', '🧟‍', '🧛‍'];
 export const ChatView: React.FC = () => {
   const {
     channels,
@@ -104,6 +107,7 @@ export const ChatView: React.FC = () => {
   const [activeMessageActionId, setActiveMessageActionId] = useState<string | null>(null);
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
   const [isNewDmModalOpen, setIsNewDmModalOpen] = useState(false);
+  const [viewerFile, setViewerFile] = useState<FileViewerItem | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -250,16 +254,21 @@ export const ChatView: React.FC = () => {
       return;
     }
 
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const mimeType = file.type || (ext === 'pdf' ? 'application/pdf' : ext === 'csv' ? 'text/csv' : ext === 'txt' ? 'text/plain' : 'application/octet-stream');
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string;
+      const rawBase64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
       const newAtt: ChatMessageAttachment = {
         id: `att-${Date.now()}`,
         name: file.name,
         size: file.size,
-        type: file.type || 'application/octet-stream',
+        type: mimeType,
         url: dataUrl,
-        downloadUrl: dataUrl
+        downloadUrl: dataUrl,
+        base64Data: rawBase64
       };
       setStagedAttachments((prev) => [...prev, newAtt]);
     };
@@ -861,6 +870,8 @@ export const ChatView: React.FC = () => {
                               <div className="mt-2 flex flex-wrap gap-2">
                                 {msg.attachments.map((att) => {
                                   const isImage = att.type.startsWith('image/');
+                                  const isPdf = att.name.toLowerCase().endsWith('.pdf') || att.type === 'application/pdf';
+                                  const isCsv = att.name.toLowerCase().endsWith('.csv') || att.type === 'text/csv';
                                   return (
                                     <div
                                       key={att.id}
@@ -870,27 +881,66 @@ export const ChatView: React.FC = () => {
                                         <img
                                           src={att.url}
                                           alt={att.name}
-                                          className="w-10 h-10 object-cover rounded border border-[#333]"
+                                          onClick={() => setViewerFile(att)}
+                                          className="w-10 h-10 object-cover rounded border border-[#333] cursor-pointer hover:opacity-80 transition-opacity"
                                         />
+                                      ) : isPdf ? (
+                                        <div
+                                          onClick={() => setViewerFile(att)}
+                                          className="w-10 h-10 bg-rose-950/60 border border-rose-800/80 rounded flex flex-col items-center justify-center text-rose-400 shrink-0 cursor-pointer hover:bg-rose-900/60 transition-colors"
+                                          title="View PDF"
+                                        >
+                                          <FileText className="w-4 h-4" />
+                                          <span className="text-[7px] font-bold uppercase">PDF</span>
+                                        </div>
+                                      ) : isCsv ? (
+                                        <div
+                                          onClick={() => setViewerFile(att)}
+                                          className="w-10 h-10 bg-emerald-950/60 border border-emerald-800/80 rounded flex flex-col items-center justify-center text-emerald-400 shrink-0 cursor-pointer hover:bg-emerald-900/60 transition-colors"
+                                          title="View CSV"
+                                        >
+                                          <FileText className="w-4 h-4" />
+                                          <span className="text-[7px] font-bold uppercase">CSV</span>
+                                        </div>
                                       ) : (
-                                        <div className="w-10 h-10 bg-[#242424] rounded flex items-center justify-center text-blue-400 shrink-0">
+                                        <div
+                                          onClick={() => setViewerFile(att)}
+                                          className="w-10 h-10 bg-[#242424] rounded flex items-center justify-center text-blue-400 shrink-0 cursor-pointer hover:bg-[#2e2e2e] transition-colors"
+                                          title="View file"
+                                        >
                                           <FileText className="w-5 h-5" />
                                         </div>
                                       )}
                                       <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-medium text-neutral-200 truncate">{att.name}</p>
+                                        <p
+                                          onClick={() => setViewerFile(att)}
+                                          className="text-xs font-medium text-neutral-200 truncate cursor-pointer hover:text-blue-400 transition-colors"
+                                          title={`View ${att.name} in app`}
+                                        >
+                                          {att.name}
+                                        </p>
                                         <p className="text-[10px] text-neutral-500">{(att.size / 1024).toFixed(1)} KB</p>
                                       </div>
-                                      {att.downloadUrl && (
-                                        <a
-                                          href={att.downloadUrl}
-                                          download={att.name}
-                                          className="p-1 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors"
-                                          title="Download"
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => setViewerFile(att)}
+                                          className="p-1 text-neutral-400 hover:text-blue-400 hover:bg-[#262626] rounded transition-colors cursor-pointer"
+                                          title="View content inside app"
                                         >
-                                          <Download className="w-3.5 h-3.5" />
-                                        </a>
-                                      )}
+                                          <Eye className="w-3.5 h-3.5" />
+                                        </button>
+                                        {att.downloadUrl && (
+                                          <a
+                                            href={att.downloadUrl}
+                                            download={att.name}
+                                            className="p-1 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors"
+                                            title="Download"
+                                          >
+                                            <Download className="w-3.5 h-3.5" />
+                                          </a>
+                                        )}
+                                      </div>
                                     </div>
                                   );
                                 })}
@@ -1185,6 +1235,7 @@ export const ChatView: React.FC = () => {
                     <input
                       ref={fileInputRef}
                       type="file"
+                      accept=".pdf,.txt,.csv,.png,.jpg,.jpeg"
                       onChange={handleFileUpload}
                       className="hidden"
                     />
@@ -1192,7 +1243,7 @@ export const ChatView: React.FC = () => {
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
-                      title="Attach file or image (Max 1024 KB)"
+                      title="Attach file (PDF, TXT, CSV, PNG, JPG up to 1024 KB)"
                     >
                       <Paperclip className="w-4 h-4" />
                     </button>
@@ -1410,6 +1461,13 @@ export const ChatView: React.FC = () => {
       <NewDirectMessageModal
         isOpen={isNewDmModalOpen}
         onClose={() => setIsNewDmModalOpen(false)}
+      />
+
+      {/* In-App File Viewer Modal */}
+      <FileViewerModal
+        isOpen={Boolean(viewerFile)}
+        file={viewerFile}
+        onClose={() => setViewerFile(null)}
       />
     </div>
   );

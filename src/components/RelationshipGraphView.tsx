@@ -23,6 +23,7 @@ import {
   Activity,
   TrendingUp,
   AlertCircle,
+  Target,
   ListTodo,
   ExternalLink,
   Layers,
@@ -122,7 +123,15 @@ export const RelationshipGraphView: React.FC = () => {
   // Compute live KPIs for the metrics dropdown
   const totalTasksCount = tasks.length;
   const doneStatusIds = useMemo(() => statuses.filter((s) => s.isDone).map((s) => s.id), [statuses]);
-  const completedTasksCount = useMemo(() => tasks.filter((t) => doneStatusIds.includes(t.statusId)).length, [tasks, doneStatusIds]);
+  const isTaskDone = useCallback(
+    (t: Task) =>
+      doneStatusIds.includes(t.statusId) ||
+      Boolean((t as any).completed) ||
+      t.statusId === 'status-solved' ||
+      t.statusId === 'status-closed',
+    [doneStatusIds]
+  );
+  const completedTasksCount = useMemo(() => tasks.filter(isTaskDone).length, [tasks, isTaskDone]);
   const activeTasksCount = totalTasksCount - completedTasksCount;
   const completionRateVal = totalTasksCount > 0 ? ((completedTasksCount / totalTasksCount) * 100).toFixed(1) : '0.0';
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
@@ -130,10 +139,10 @@ export const RelationshipGraphView: React.FC = () => {
     () =>
       tasks.filter(
         (t) =>
-          !doneStatusIds.includes(t.statusId) &&
+          !isTaskDone(t) &&
           (t.priority === 'urgent' || (t.dueDate && t.dueDate < todayStr))
       ).length,
-    [tasks, doneStatusIds, todayStr]
+    [tasks, isTaskDone, todayStr]
   );
   const allSubtasksList = useMemo(() => tasks.flatMap((t) => t.subtasks || []), [tasks]);
   const completedSubtasksList = useMemo(() => allSubtasksList.filter((s) => s.completed).length, [allSubtasksList]);
@@ -1529,6 +1538,46 @@ export const RelationshipGraphView: React.FC = () => {
           ========================================================================= */}
       <div className="relative flex-1 w-full h-full overflow-hidden flex">
         
+        {/* Floating KPI Metrics Bar */}
+        {metricsVisibility.showMetricsBar && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-[#141414]/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-[#262626] shadow-xl text-xs max-w-[95%] overflow-x-auto">
+            {metricsVisibility.showActiveTasks && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#1a1a1a] rounded-lg border border-[#2b2b2b] shrink-0">
+                <Target className="w-3.5 h-3.5 text-blue-400" />
+                <span className="text-neutral-400 text-[11px]">Active:</span>
+                <span className="font-bold text-white font-mono">{activeTasksCount}</span>
+              </div>
+            )}
+
+            {metricsVisibility.showCompletionRate && (
+              <div className="flex items-center gap-2 px-2.5 py-1 bg-[#1a1a1a] rounded-lg border border-[#2b2b2b] shrink-0">
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-neutral-400 text-[11px]">Completion Rate:</span>
+                <span className="font-bold text-emerald-400 font-mono">{completionRateVal}%</span>
+                <div className="w-12 h-1.5 bg-[#262626] rounded-full overflow-hidden ml-1">
+                  <div className="h-full bg-emerald-500 rounded-full transition-all duration-300" style={{ width: `${completionRateVal}%` }} />
+                </div>
+              </div>
+            )}
+
+            {metricsVisibility.showCriticalBlockers && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#1a1a1a] rounded-lg border border-[#2b2b2b] shrink-0">
+                <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
+                <span className="text-neutral-400 text-[11px]">Blockers:</span>
+                <span className="font-bold text-rose-400 font-mono">{criticalBlockersCount}</span>
+              </div>
+            )}
+
+            {metricsVisibility.showTeamCapacity && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#1a1a1a] rounded-lg border border-[#2b2b2b] shrink-0">
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-neutral-400 text-[11px]">Capacity:</span>
+                <span className="font-bold text-amber-400 font-mono">{teamCapacityVal}%</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* SVG Drawing Surface */}
         <svg
           id="relationship-graph-svg"
@@ -1672,8 +1721,8 @@ export const RelationshipGraphView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Switch to this user quick button */}
-                  {currentUser?.id !== inspectedNode.data.user.id && (
+                  {/* Switch to this user quick button (Admin only) */}
+                  {isAdmin && currentUser?.id !== inspectedNode.data.user.id && (
                     <button
                       type="button"
                       onClick={() => switchUser(inspectedNode.data.user.id)}

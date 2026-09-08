@@ -3,51 +3,37 @@ import React from 'react';
 interface LogoProps {
   className?: string;
   size?: number;
+  fill?: string;
 }
 
-export const Logo: React.FC<LogoProps> = ({ className = 'w-8 h-8', size = 32 }) => {
+export const Logo: React.FC<LogoProps> = ({
+  className = 'w-8 h-8',
+  size = 32,
+  fill = '#FFB800',
+}) => {
   return (
     <svg
+      id="app-logo-svg"
       width={size}
       height={size}
-      viewBox="0 0 36 36"
+      viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={`shrink-0 ${className}`}
+      aria-label="TaskFlow Fire Logo"
     >
       <defs>
-        <linearGradient id="tf-gradient-bg" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#3b82f6" />
-          <stop offset="50%" stopColor="#2563eb" />
-          <stop offset="100%" stopColor="#1d4ed8" />
-        </linearGradient>
-        <linearGradient id="tf-gradient-accent" x1="8" y1="8" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="100%" stopColor="#e0f2fe" />
+        <linearGradient id="tf-fire-gold-gradient" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#FFC837" />
+          <stop offset="100%" stopColor="#FF8008" />
         </linearGradient>
       </defs>
 
-      {/* Rounded container with gradient background and refined border */}
-      <rect width="36" height="36" rx="8" fill="url(#tf-gradient-bg)" />
-
-      {/* Stylized Modern Workflow Glyphs */}
-      {/* Top horizontal flow header */}
-      <rect x="8" y="8" width="20" height="4.5" rx="2.25" fill="url(#tf-gradient-accent)" />
-      
-      {/* Vertical task backbone */}
-      <rect x="8" y="14.5" width="5" height="13.5" rx="2.5" fill="url(#tf-gradient-accent)" fillOpacity="0.9" />
-
-      {/* Active task check & forward flow line */}
+      {/* Fire SVG vector matching fire-svgrepo-com.svg */}
       <path
-        d="M16 20.5L20.5 24.5L28 15"
-        stroke="#ffffff"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M12.8324 21.8013C15.9583 21.1747 20 18.926 20 13.1112C20 7.8196 16.1267 4.29593 13.3415 2.67685C12.7235 2.31757 12 2.79006 12 3.50492V5.3334C12 6.77526 11.3938 9.40711 9.70932 10.5018C8.84932 11.0607 7.92052 10.2242 7.816 9.20388L7.73017 8.36604C7.6304 7.39203 6.63841 6.80075 5.85996 7.3946C4.46147 8.46144 3 10.3296 3 13.1112C3 20.2223 8.28889 22.0001 10.9333 22.0001C11.0871 22.0001 11.2488 21.9955 11.4171 21.9858C10.1113 21.8742 8 21.064 8 18.4442C8 16.3949 9.49507 15.0085 10.631 14.3346C10.9365 14.1533 11.2941 14.3887 11.2941 14.7439V15.3331C11.2941 15.784 11.4685 16.4889 11.8836 16.9714C12.3534 17.5174 13.0429 16.9454 13.0985 16.2273C13.1161 16.0008 13.3439 15.8564 13.5401 15.9711C14.1814 16.3459 15 17.1465 15 18.4442C15 20.4922 13.871 21.4343 12.8324 21.8013Z"
+        fill={fill === '#FFB800' ? 'url(#tf-fire-gold-gradient)' : fill}
       />
-
-      {/* Cyan flow accent dot */}
-      <circle cx="28" cy="15" r="1.75" fill="#38bdf8" />
     </svg>
   );
 };

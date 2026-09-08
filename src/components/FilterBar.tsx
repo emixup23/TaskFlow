@@ -27,6 +27,7 @@ export const FilterBar: React.FC = () => {
 
   // Dropdown open states
   const [openDropdown, setOpenDropdown] = useState<'status' | 'priority' | 'assignee' | 'date' | 'tag' | null>(null);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   
   // Search within dropdowns
   const [assigneeSearch, setAssigneeSearch] = useState('');
@@ -146,6 +147,16 @@ export const FilterBar: React.FC = () => {
     filters.dueDateFilter !== 'all' ||
     Boolean(filters.tag);
 
+  const nonSearchFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.statusIds.length > 0) count += filters.statusIds.length;
+    if (filters.priorities.length > 0) count += filters.priorities.length;
+    if (filters.assigneeIds.length > 0) count += filters.assigneeIds.length;
+    if (filters.dueDateFilter !== 'all') count += 1;
+    if (filters.tag) count += 1;
+    return count;
+  }, [filters]);
+
   // Active label summaries for dropdown buttons
   const statusButtonLabel = useMemo(() => {
     if (filters.statusIds.length === 0) return 'Status';
@@ -204,11 +215,10 @@ export const FilterBar: React.FC = () => {
         {/* Main Controls Row: Search + Dropdown Menus + Stats */}
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5">
           
-          {/* Left section: Search + Filter Dropdowns */}
-          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-            
+          {/* Search + Mobile Filter Toggle */}
+          <div className="flex items-center gap-2 w-full lg:w-auto">
             {/* Search Input */}
-            <div className="relative w-full sm:w-64 min-w-[200px]">
+            <div className="relative flex-1 sm:w-64 sm:flex-initial min-w-0">
               <Search className="w-3.5 h-3.5 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
@@ -216,7 +226,7 @@ export const FilterBar: React.FC = () => {
                 value={filters.search}
                 onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
                 placeholder="Search tasks or tags..."
-                className="w-full pl-8 pr-7 py-1.5 bg-[#181818] border border-[#333333] rounded text-xs text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full pl-8 pr-7 py-1.5 bg-[#181818] border border-[#333333] rounded text-xs text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all h-8"
               />
               {filters.search && (
                 <button
@@ -231,6 +241,41 @@ export const FilterBar: React.FC = () => {
               )}
             </div>
 
+            {/* Mobile Filters Toggle Button */}
+            <button
+              type="button"
+              id="btn-mobile-filter-toggle"
+              onClick={() => setIsMobileFiltersOpen(!isMobileFiltersOpen)}
+              className={`sm:hidden h-8 px-2.5 rounded text-xs font-semibold flex items-center gap-1.5 border transition-all cursor-pointer shrink-0 active:scale-95 ${
+                isMobileFiltersOpen || nonSearchFilterCount > 0
+                  ? 'bg-blue-950/60 text-blue-300 border-blue-700 shadow-xs'
+                  : 'bg-[#181818] text-neutral-300 hover:text-white border-[#2e2e2e]'
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-blue-400" />
+              <span>Filters</span>
+              {nonSearchFilterCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center font-bold">
+                  {nonSearchFilterCount}
+                </span>
+              )}
+            </button>
+
+            {/* Mobile Quick Reset Button */}
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="sm:hidden h-8 w-8 rounded bg-[#181818] hover:bg-[#222222] text-neutral-400 hover:text-white border border-[#2e2e2e] flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
+                title="Reset all filters"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Detailed Filter Dropdowns: Visible on desktop, toggleable on mobile */}
+          <div className={`${isMobileFiltersOpen ? 'flex' : 'hidden'} sm:flex flex-wrap items-center gap-2 flex-1 min-w-0 pt-1 sm:pt-0`}>
             {/* 1. Status Dropdown Menu */}
             <div className="relative">
               <button
@@ -249,7 +294,7 @@ export const FilterBar: React.FC = () => {
               </button>
 
               {openDropdown === 'status' && (
-                <div className="absolute left-0 top-full mt-1.5 w-60 bg-[#1a1a1a] border border-[#333333] rounded-lg shadow-xl z-50 py-1.5 text-xs animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute left-0 top-full mt-1.5 w-60 max-w-[calc(100vw-2.5rem)] bg-[#1a1a1a] border border-[#333333] rounded-lg shadow-xl z-50 py-1.5 text-xs animate-in fade-in zoom-in-95 duration-100">
                   <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#282828] text-neutral-400">
                     <span className="font-semibold text-[11px] uppercase tracking-wider">Status Filter</span>
                     {filters.statusIds.length > 0 && (
@@ -316,7 +361,7 @@ export const FilterBar: React.FC = () => {
               </button>
 
               {openDropdown === 'priority' && (
-                <div className="absolute left-0 top-full mt-1.5 w-56 bg-[#1a1a1a] border border-[#333333] rounded-lg shadow-xl z-50 py-1.5 text-xs animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute left-0 top-full mt-1.5 w-56 max-w-[calc(100vw-2.5rem)] bg-[#1a1a1a] border border-[#333333] rounded-lg shadow-xl z-50 py-1.5 text-xs animate-in fade-in zoom-in-95 duration-100">
                   <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#282828] text-neutral-400">
                     <span className="font-semibold text-[11px] uppercase tracking-wider">Priority Filter</span>
                     {filters.priorities.length > 0 && (
@@ -380,7 +425,7 @@ export const FilterBar: React.FC = () => {
               </button>
 
               {openDropdown === 'assignee' && (
-                <div className="absolute left-0 top-full mt-1.5 w-64 bg-[#1a1a1a] border border-[#333333] rounded-lg shadow-xl z-50 py-1.5 text-xs animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute left-0 top-full mt-1.5 w-64 max-w-[calc(100vw-2.5rem)] bg-[#1a1a1a] border border-[#333333] rounded-lg shadow-xl z-50 py-1.5 text-xs animate-in fade-in zoom-in-95 duration-100">
                   <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#282828] text-neutral-400">
                     <span className="font-semibold text-[11px] uppercase tracking-wider">Assignee Filter</span>
                     {filters.assigneeIds.length > 0 && (
@@ -465,7 +510,7 @@ export const FilterBar: React.FC = () => {
               </button>
 
               {openDropdown === 'date' && (
-                <div className="absolute left-0 top-full mt-1.5 w-52 bg-[#1a1a1a] border border-[#333333] rounded-lg shadow-xl z-50 py-1.5 text-xs animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute left-0 top-full mt-1.5 w-52 max-w-[calc(100vw-2.5rem)] bg-[#1a1a1a] border border-[#333333] rounded-lg shadow-xl z-50 py-1.5 text-xs animate-in fade-in zoom-in-95 duration-100">
                   <div className="px-3 py-1.5 border-b border-[#282828] text-neutral-400">
                     <span className="font-semibold text-[11px] uppercase tracking-wider">Deadline Filter</span>
                   </div>
@@ -518,7 +563,7 @@ export const FilterBar: React.FC = () => {
                 </button>
 
                 {openDropdown === 'tag' && (
-                  <div className="absolute left-0 top-full mt-1.5 w-56 bg-[#1a1a1a] border border-[#333333] rounded-lg shadow-xl z-50 py-1.5 text-xs animate-in fade-in zoom-in-95 duration-100">
+                  <div className="absolute left-0 top-full mt-1.5 w-56 max-w-[calc(100vw-2.5rem)] bg-[#1a1a1a] border border-[#333333] rounded-lg shadow-xl z-50 py-1.5 text-xs animate-in fade-in zoom-in-95 duration-100">
                     <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#282828] text-neutral-400">
                       <span className="font-semibold text-[11px] uppercase tracking-wider">Tag Filter</span>
                       {filters.tag && (
@@ -599,7 +644,7 @@ export const FilterBar: React.FC = () => {
           </div>
 
           {/* Right section: Results Summary & Reset All */}
-          <div className="flex items-center gap-3 justify-between lg:justify-end shrink-0 pt-1 lg:pt-0">
+          <div className={`${isMobileFiltersOpen ? 'flex' : 'hidden'} sm:flex items-center gap-3 justify-between lg:justify-end shrink-0 pt-1 lg:pt-0`}>
             <span className="text-xs text-neutral-400 font-medium whitespace-nowrap">
               Showing <strong className="text-neutral-200">{filteredTasks.length}</strong> of{' '}
               <strong className="text-neutral-200">{tasks.length}</strong> tasks
@@ -623,12 +668,12 @@ export const FilterBar: React.FC = () => {
 
         {/* Active Filter Badges Strip (Quick Dismiss Pills) */}
         {hasActiveFilters && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-[#1e1e1e] text-[11px]">
-            <span className="text-neutral-500 font-medium mr-1">Active:</span>
+          <div className="flex items-center sm:flex-wrap gap-1.5 pt-1.5 border-t border-[#1e1e1e] text-[11px] overflow-x-auto no-scrollbar whitespace-nowrap pb-0.5">
+            <span className="text-neutral-500 font-medium mr-1 shrink-0">Active:</span>
 
             {/* Search badge */}
             {filters.search && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#202020] border border-[#333333] text-neutral-200">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#202020] border border-[#333333] text-neutral-200 shrink-0">
                 <span>Search: <strong className="text-white">"{filters.search}"</strong></span>
                 <button
                   type="button"
@@ -648,7 +693,7 @@ export const FilterBar: React.FC = () => {
               return (
                 <span
                   key={sid}
-                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-950/40 border border-blue-800/60 text-blue-300 font-medium"
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-950/40 border border-blue-800/60 text-blue-300 font-medium shrink-0"
                 >
                   <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: st.color || '#3b82f6' }} />
                   <span>{st.name}</span>
@@ -671,7 +716,7 @@ export const FilterBar: React.FC = () => {
               return (
                 <span
                   key={pr}
-                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded ${p.bgClass} border border-amber-800/40 ${p.textClass} font-medium`}
+                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded ${p.bgClass} border border-amber-800/40 ${p.textClass} font-medium shrink-0`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${p.dotColor}`} />
                   <span>{p.label}</span>
@@ -694,7 +739,7 @@ export const FilterBar: React.FC = () => {
               return (
                 <span
                   key={uid}
-                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 font-medium"
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 font-medium shrink-0"
                 >
                   <UserAvatar src={u.avatar} name={u.name} size="xs" className="w-3.5 h-3.5" />
                   <span>{u.name}</span>
@@ -712,7 +757,7 @@ export const FilterBar: React.FC = () => {
 
             {/* Due date badge */}
             {filters.dueDateFilter !== 'all' && (
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-purple-950/40 border border-purple-800/60 text-purple-300 font-medium">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-purple-950/40 border border-purple-800/60 text-purple-300 font-medium shrink-0">
                 <Calendar className="w-3 h-3 text-purple-400" />
                 <span>{dueDateButtonLabel}</span>
                 <button
@@ -728,7 +773,7 @@ export const FilterBar: React.FC = () => {
 
             {/* Tag badge */}
             {filters.tag && (
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-sky-950/40 border border-sky-800/60 text-sky-300 font-medium">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-sky-950/40 border border-sky-800/60 text-sky-300 font-medium shrink-0">
                 <TagIcon className="w-3 h-3 text-sky-400" />
                 <span>#{filters.tag}</span>
                 <button

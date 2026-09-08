@@ -68,18 +68,6 @@ export const AccessDeniedView: React.FC<AccessDeniedViewProps> = ({
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Return to Kanban Board</span>
           </button>
-
-          {adminUsers.length > 0 && (
-            <button
-              id="access-denied-switch-admin-btn"
-              type="button"
-              onClick={() => switchUser(adminUsers[0].id)}
-              className="w-full py-2 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <UserCheck className="w-3.5 h-3.5" />
-              <span>Switch to Admin ({adminUsers[0].name})</span>
-            </button>
-          )}
         </div>
       </div>
     </div>

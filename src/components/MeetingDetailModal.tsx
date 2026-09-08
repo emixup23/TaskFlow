@@ -30,13 +30,15 @@ import {
   MessageSquare,
   Sparkles,
   Tag,
-  CheckSquare
+  CheckSquare,
+  Eye
 } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
 import { Meeting, MeetingStatus, MeetingTopic, MeetingMember, MeetingAttachment, MeetingLog } from '../types';
 import { UserAvatar } from './UserAvatar';
 import { formatMeetingDateTime, formatDateTimeDDMMYYYYHHMM } from '../utils/dateUtils';
+import { FileViewerModal, FileViewerItem } from './FileViewerModal';
 
 export const MeetingDetailModal: React.FC = () => {
   const {
@@ -65,6 +67,7 @@ export const MeetingDetailModal: React.FC = () => {
   const [newTopicTitle, setNewTopicTitle] = useState('');
   const [newTopicDuration, setNewTopicDuration] = useState('15');
   const [isUploading, setIsUploading] = useState(false);
+  const [viewerFile, setViewerFile] = useState<FileViewerItem | null>(null);
 
   // New Log Entry State
   const [newLogDetails, setNewLogDetails] = useState('');
@@ -781,16 +784,66 @@ export const MeetingDetailModal: React.FC = () => {
                       className="flex items-center justify-between p-3 bg-[#181818] border border-[#2a2a2a] rounded-lg text-xs"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        {getFileIcon(att.name)}
+                        <div
+                          onClick={() =>
+                            setViewerFile({
+                              id: att.id,
+                              name: att.name,
+                              size: att.size,
+                              type: att.type,
+                              url: att.url,
+                              downloadUrl: att.url,
+                              uploadedBy: att.uploadedBy
+                            })
+                          }
+                          className="cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                          title="View file in app"
+                        >
+                          {getFileIcon(att.name)}
+                        </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-white truncate">{att.name}</p>
+                          <p
+                            onClick={() =>
+                              setViewerFile({
+                                id: att.id,
+                                name: att.name,
+                                size: att.size,
+                                type: att.type,
+                                url: att.url,
+                                downloadUrl: att.url,
+                                uploadedBy: att.uploadedBy
+                              })
+                            }
+                            className="font-semibold text-white truncate cursor-pointer hover:text-violet-400 transition-colors"
+                            title={`View ${att.name} in app`}
+                          >
+                            {att.name}
+                          </p>
                           <p className="text-[10px] text-neutral-400">
                             {(att.size / 1024).toFixed(1)} KB • Uploaded by {att.uploadedBy}
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setViewerFile({
+                              id: att.id,
+                              name: att.name,
+                              size: att.size,
+                              type: att.type,
+                              url: att.url,
+                              downloadUrl: att.url,
+                              uploadedBy: att.uploadedBy
+                            })
+                          }
+                          className="p-1.5 text-neutral-300 hover:text-violet-400 hover:bg-violet-950/40 rounded transition-colors cursor-pointer"
+                          title="View content inside app"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                         <a
                           href={att.url}
                           download={att.name}
@@ -1012,6 +1065,13 @@ export const MeetingDetailModal: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* In-App File Viewer Modal */}
+      <FileViewerModal
+        isOpen={Boolean(viewerFile)}
+        file={viewerFile}
+        onClose={() => setViewerFile(null)}
+      />
     </div>
   );
 };

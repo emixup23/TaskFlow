@@ -127,6 +127,22 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
               Urgent
             </span>
           )}
+          {task.kudosReward ? (
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-950/40 text-amber-300 border border-amber-500/30 flex items-center gap-0.5"
+              title="Kudos reward earned on completion"
+            >
+              🪙 +{task.kudosReward}
+            </span>
+          ) : null}
+          {task.delegationStatus === 'pending' && (
+            <span
+              className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-950/50 text-blue-300 border border-blue-600/40"
+              title="Delegated task awaiting acceptance"
+            >
+              Delegated
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1 shrink-0">

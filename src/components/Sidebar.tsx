@@ -1,45 +1,38 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  LayoutGrid,
-  Ticket,
-  Table as TableIcon,
-  Calendar,
-  BarChart3,
-  History,
-  Trophy,
-  Sliders,
   Users,
   Shield,
-  RotateCcw,
   Sparkles,
   ChevronRight,
   UserCheck,
   X,
   Plus,
-  Moon,
-  Sun,
-  Laptop,
   PanelLeftClose,
-  Network,
   Briefcase,
   FolderPlus,
   Settings,
   Crown,
-  Palette,
-  MessageSquare,
-  Video,
   User as UserIcon,
   Camera,
   ExternalLink,
   LogOut,
-  LogIn,
-  KeyRound,
-  Database,
-  CalendarCheck2
+  LogIn
 } from 'lucide-react';
+import {
+  WorkflowIcon,
+  DailyTasksIcon,
+  TicketSystemIcon,
+  BulkTasksIcon,
+  TimelineIcon,
+  GraphIcon,
+  ChatIcon,
+  MeetingsIcon,
+  RewardsIcon,
+  DashboardIcon,
+  FormsIcon
+} from './icons/SidebarIcons';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
-import { useTheme } from '../context/ThemeContext';
 import { useChat } from '../context/ChatContext';
 import { ViewMode, Project } from '../types';
 import { Logo } from './Logo';
@@ -66,12 +59,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
     setEditingProject,
     setIsCreateModalOpen,
     setIsStatusManagerOpen,
-    setIsUserModalOpen,
     openUserProfile,
-    resetDemoData,
     tasks
   } = useTasks();
-  const { theme, setTheme, isDark, toggleDarkMode, setIsThemeEditorOpen, themeConfig } = useTheme();
   const { totalUnreadCount } = useChat();
 
   const isOpen = propIsOpen !== undefined ? propIsOpen : isSidebarOpen;
@@ -107,37 +97,47 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
     adminBadge?: boolean;
     unreadCount?: number;
   }[] = [
-    { mode: 'kanban', label: 'Workflow', icon: <LayoutGrid className="w-4 h-4" />, colorDot: 'bg-blue-400', isAllowed: true },
-    { mode: 'daily', label: 'Daily Tasks', icon: <CalendarCheck2 className="w-4 h-4" />, colorDot: 'bg-teal-400', isAllowed: true },
-    { mode: 'tickets', label: 'Ticket System', icon: <Ticket className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
-    { mode: 'list', label: 'Table List', icon: <TableIcon className="w-4 h-4" />, colorDot: 'bg-sky-400', isAllowed: true },
-    { mode: 'timeline', label: 'Timeline', icon: <Calendar className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
-    { mode: 'graph', label: 'Graph', icon: <Network className="w-4 h-4" />, colorDot: 'bg-indigo-400', isAllowed: true },
-    { mode: 'chat', label: 'Chat', icon: <MessageSquare className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: true, unreadCount: totalUnreadCount },
-    { mode: 'meetings', label: 'Meetings', icon: <Video className="w-4 h-4" />, colorDot: 'bg-violet-400', isAllowed: true },
-    { mode: 'rewards', label: 'Rewards', icon: <Trophy className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
-    { mode: 'dashboard', label: 'Dashboard', icon: <BarChart3 className="w-4 h-4" />, colorDot: 'bg-blue-400', isAllowed: isAdmin || canManageUsers, adminBadge: true },
-    { mode: 'users', label: 'Team', icon: <Users className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: isAdmin || canManageUsers, adminBadge: true },
-    { mode: 'access', label: 'Access Manager', icon: <KeyRound className="w-4 h-4" />, colorDot: 'bg-indigo-400', isAllowed: isAdmin || canManageRoles || canManageUsers, adminBadge: true },
-    { mode: 'backup', label: 'Backup & Restore', icon: <Database className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: isAdmin, adminBadge: true },
-    { mode: 'audit', label: 'Log & Audit', icon: <History className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: canViewAuditLogs }
+    { mode: 'kanban', label: 'Workflow', icon: <WorkflowIcon className="w-4 h-4" />, colorDot: 'bg-blue-400', isAllowed: true },
+    { mode: 'daily', label: 'Daily Tasks', icon: <DailyTasksIcon className="w-4 h-4" />, colorDot: 'bg-teal-400', isAllowed: true },
+    { mode: 'tickets', label: 'Ticket System', icon: <TicketSystemIcon className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
+    { mode: 'list', label: 'Bulk tasks', icon: <BulkTasksIcon className="w-4 h-4" />, colorDot: 'bg-sky-400', isAllowed: true },
+    { mode: 'timeline', label: 'Timeline', icon: <TimelineIcon className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
+    { mode: 'graph', label: 'Graph', icon: <GraphIcon className="w-4 h-4" />, colorDot: 'bg-indigo-400', isAllowed: true },
+    { mode: 'chat', label: 'Chat', icon: <ChatIcon className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: true, unreadCount: totalUnreadCount },
+    { mode: 'meetings', label: 'Meetings', icon: <MeetingsIcon className="w-4 h-4" />, colorDot: 'bg-violet-400', isAllowed: true },
+    { mode: 'forms', label: 'Forms', icon: <FormsIcon className="w-4 h-4" />, colorDot: 'bg-indigo-400', isAllowed: true },
+    { mode: 'rewards', label: 'Rewards', icon: <RewardsIcon className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
+    { mode: 'dashboard', label: 'Dashboard', icon: <DashboardIcon className="w-4 h-4" />, colorDot: 'bg-blue-400', isAllowed: isAdmin || canManageUsers, adminBadge: true }
   ];
 
   const visibleNavItems = allNavItems.filter((item) => item.isAllowed);
 
   const handleNavClick = (mode: ViewMode) => {
     setViewMode(mode);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      onClose?.();
+    }
   };
 
   const handleOpenNewProject = () => {
     setEditingProject(null);
     setIsProjectModalOpen(true);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      onClose?.();
+    }
   };
 
   const handleEditProject = (e: React.MouseEvent, proj: Project) => {
     e.stopPropagation();
     setEditingProject(proj);
     setIsProjectModalOpen(true);
+  };
+
+  const handleProjectSelect = (projId: string) => {
+    setActiveProjectId(projId);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      onClose?.();
+    }
   };
 
   return (
@@ -154,14 +154,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
         id="app-sidebar"
         className={`fixed lg:static top-0 bottom-0 left-0 z-50 bg-[#0d0d0d] text-neutral-300 flex flex-col shrink-0 border-r border-[#262626] transition-all duration-200 ease-in-out ${
           isOpen
-            ? 'w-[270px] translate-x-0 opacity-100'
+            ? 'w-[280px] max-w-[85vw] translate-x-0 opacity-100 shadow-2xl lg:shadow-none'
             : 'w-0 -translate-x-full lg:w-0 lg:translate-x-0 lg:border-r-0 overflow-hidden opacity-0 pointer-events-none'
         }`}
       >
         {/* Brand Header */}
         <div className="p-4 sm:p-5 flex items-center justify-between border-b border-[#262626] gap-2">
           <div className="flex items-center gap-3 min-w-0">
-            <Logo className="w-8 h-8 rounded shadow-md shadow-blue-600/20 shrink-0" />
+            <Logo className="w-8 h-8 drop-shadow-md drop-shadow-amber-500/20 shrink-0" />
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-white font-bold text-base tracking-tight truncate">TaskFlow</span>
@@ -178,11 +178,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
               type="button"
               id="btn-sidebar-close-toggle"
               onClick={onClose}
-              className="p-1.5 text-neutral-400 hover:text-white rounded hover:bg-[#222222] transition-colors shrink-0 cursor-pointer"
+              className="p-2 text-neutral-400 hover:text-white rounded-lg hover:bg-[#222222] transition-colors shrink-0 cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center active:scale-95"
               title="Collapse Sidebar"
             >
               <PanelLeftClose className="w-4 h-4 hidden lg:block" />
-              <X className="w-4 h-4 lg:hidden" />
+              <X className="w-5 h-5 lg:hidden" />
             </button>
           )}
         </div>
@@ -205,18 +205,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
                   type="button"
                   id={`sidebar-nav-${item.mode}`}
                   onClick={() => handleNavClick(item.mode)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-medium transition-all text-left cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded text-xs font-medium transition-all text-left cursor-pointer group ${
                     isActive
                       ? 'bg-[#1e1e1e] text-white shadow-xs font-semibold border border-[#333333]'
                       : 'text-neutral-400 hover:bg-[#1a1a1a] hover:text-white'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div
-                      className={`w-1.5 h-1.5 rounded shrink-0 transition-colors ${
-                        isActive ? item.colorDot : 'bg-neutral-600'
+                    <span
+                      className={`w-4 h-4 shrink-0 transition-colors flex items-center justify-center ${
+                        isActive ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-200'
                       }`}
-                    />
+                    >
+                      {item.icon}
+                    </span>
                     <span className="truncate">{item.label}</span>
                   </div>
 
@@ -263,7 +265,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
             <button
               type="button"
               id="sidebar-project-all"
-              onClick={() => setActiveProjectId('all')}
+              onClick={() => handleProjectSelect('all')}
               className={`w-full flex items-center justify-between px-3 py-1.5 rounded text-xs transition-all text-left cursor-pointer ${
                 activeProjectId === 'all'
                   ? 'bg-blue-950/50 text-blue-300 font-semibold border border-blue-500/30'
@@ -290,7 +292,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
                 <div
                   key={proj.id}
                   id={`sidebar-project-${proj.id}`}
-                  onClick={() => setActiveProjectId(proj.id)}
+                  onClick={() => handleProjectSelect(proj.id)}
                   className={`w-full flex items-center justify-between px-3 py-1.5 rounded text-xs transition-all text-left cursor-pointer group ${
                     isActive
                       ? 'bg-[#1c1f26] text-white font-semibold border border-blue-500/40'
@@ -337,129 +339,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
             })}
           </div>
 
-          {/* Management & Governance Section - strictly hidden if user lacks privileges */}
-          {(canManageUsers || canManageStatuses || isAdmin) && (
+          {/* Workflow Columns configuration for managers */}
+          {canManageStatuses && (
             <div className="space-y-1">
-              <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider px-3 py-1.5">
-                Management & Controls
-              </div>
-
-              {canManageUsers && (
-                <button
-                  type="button"
-                  id="sidebar-btn-team"
-                  onClick={() => {
-                    setIsUserModalOpen(true);
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-400 hover:bg-[#1a1a1a] hover:text-white rounded text-xs font-medium transition-colors text-left cursor-pointer"
-                >
-                  <div className="w-1.5 h-1.5 bg-emerald-400 rounded shrink-0" />
-                  <span>Team Directory & RBAC</span>
-                </button>
-              )}
-
-              {canManageStatuses && (
-                <button
-                  type="button"
-                  id="sidebar-btn-workflow"
-                  onClick={() => {
-                    setIsStatusManagerOpen(true);
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-400 hover:bg-[#1a1a1a] hover:text-white rounded text-xs font-medium transition-colors text-left cursor-pointer"
-                >
-                  <div className="w-1.5 h-1.5 bg-blue-400 rounded shrink-0" />
-                  <span>Workflow & Columns</span>
-                </button>
-              )}
-
-              {isAdmin && (
-                <button
-                  type="button"
-                  id="sidebar-btn-reset-data"
-                  onClick={() => {
-                    if (window.confirm('Reset all tasks, columns, and audit history to initial demo state?')) {
-                      resetDemoData();
-                    }
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-400 hover:bg-[#1a1a1a] hover:text-amber-300 rounded text-xs font-medium transition-colors text-left cursor-pointer"
-                >
-                  <div className="w-1.5 h-1.5 bg-amber-400 rounded shrink-0" />
-                  <span>Reset Demo State</span>
-                </button>
-              )}
+              <button
+                type="button"
+                id="sidebar-btn-workflow"
+                onClick={() => {
+                  setIsStatusManagerOpen(true);
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-400 hover:bg-[#1a1a1a] hover:text-white rounded text-xs font-medium transition-colors text-left cursor-pointer group"
+              >
+                <span className="w-4 h-4 shrink-0 text-neutral-400 group-hover:text-white transition-colors flex items-center justify-center">
+                  <WorkflowIcon className="w-4 h-4" />
+                </span>
+                <span>Workflow &amp; Columns</span>
+              </button>
             </div>
           )}
-
-          {/* Theme Preference Pill in Sidebar */}
-          <div className="p-2.5 bg-[#141414] rounded border border-[#262626] space-y-2">
-            <div className="flex items-center justify-between text-[10px] font-bold text-neutral-400 uppercase tracking-wider px-1">
-              <span>Theme Mode</span>
-              <span className="text-blue-400 capitalize">{theme}</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-1 bg-[#0d0d0d] p-1 rounded border border-[#262626]">
-              <button
-                type="button"
-                onClick={() => setTheme('light')}
-                title="Light Theme"
-                className={`py-1 rounded flex items-center justify-center transition-all cursor-pointer ${
-                  theme === 'light'
-                    ? 'bg-[#262626] text-amber-400 shadow-xs'
-                    : 'text-neutral-500 hover:text-neutral-300'
-                }`}
-              >
-                <Sun className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setTheme('dark')}
-                title="Dark Theme"
-                className={`py-1 rounded flex items-center justify-center transition-all cursor-pointer ${
-                  theme === 'dark'
-                    ? 'bg-[#262626] text-blue-400 shadow-xs'
-                    : 'text-neutral-500 hover:text-neutral-300'
-                }`}
-              >
-                <Moon className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setTheme('system')}
-                title="System Theme"
-                className={`py-1 rounded flex items-center justify-center transition-all cursor-pointer ${
-                  theme === 'system'
-                    ? 'bg-[#262626] text-white shadow-xs'
-                    : 'text-neutral-500 hover:text-neutral-300'
-                }`}
-              >
-                <Laptop className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Launch Theme Studio */}
-            <button
-              type="button"
-              id="sidebar-btn-open-theme-editor"
-              onClick={() => {
-                setIsThemeEditorOpen(true);
-              }}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 bg-[#0d0d0d] hover:bg-[#1f1f1f] border border-[#262626] rounded text-xs font-medium text-neutral-300 hover:text-white transition-all cursor-pointer group"
-            >
-              <div className="flex items-center gap-2">
-                <Palette className="w-3.5 h-3.5 text-blue-400 group-hover:rotate-12 transition-transform" />
-                <span>Theme Studio</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: themeConfig.primaryColor }}
-                />
-                <span className="text-[10px] text-neutral-500 font-mono truncate max-w-[65px]">
-                  {themeConfig.name || 'Custom'}
-                </span>
-              </div>
-            </button>
-          </div>
 
           {/* Quick Stats Pill inside Sidebar */}
           <div className="p-3 bg-[#141414] rounded border border-[#262626] space-y-1.5">
@@ -580,77 +477,82 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
                 </button>
               </div>
 
-              <div className="px-1 py-1 flex items-center justify-between mb-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                  Switch Active Account (RBAC)
-                </span>
-                <span className="text-[9px] text-blue-400 font-semibold">Live Sandbox</span>
-              </div>
+              {/* Only Admin can switch active user accounts */}
+              {isAdmin && (
+                <>
+                  <div className="px-1 py-1 flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                      Switch Active Account (RBAC)
+                    </span>
+                    <span className="text-[9px] text-blue-400 font-semibold">Admin Only</span>
+                  </div>
 
-              <div className="max-h-52 overflow-y-auto space-y-1 pr-1">
-                {users.map((u) => {
-                  const isCurrent = u.id === currentUser?.id;
-                  const isUserAdmin = u.role === 'admin';
+                  <div className="max-h-52 overflow-y-auto space-y-1 pr-1">
+                    {users.map((u) => {
+                      const isCurrent = u.id === currentUser?.id;
+                      const isUserAdmin = u.role === 'admin';
 
-                  return (
-                    <div
-                      key={u.id}
-                      className={`w-full flex items-center justify-between p-1.5 rounded-lg transition-all ${
-                        isCurrent
-                          ? 'bg-blue-950/60 border border-blue-500/40 text-white'
-                          : 'hover:bg-[#1f1f1f] text-neutral-300 border border-transparent'
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          switchUser(u.id);
-                          setIsUserDropdownOpen(false);
-                        }}
-                        className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer py-0.5"
-                      >
-                        <UserAvatar user={u} size="sm" className="shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium truncate">{u.name}</p>
-                          <p className="text-[10px] text-neutral-400 truncate">{u.title || u.department || 'Member'}</p>
-                        </div>
-                      </button>
-
-                      <div className="flex items-center gap-1 shrink-0 ml-1">
-                        {(() => {
-                          const tpl = getRoleTemplate(u.role);
-                          return (
-                            <span
-                              className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 border"
-                              style={{
-                                backgroundColor: `${tpl.color}20`,
-                                color: tpl.color,
-                                borderColor: `${tpl.color}40`
-                              }}
-                              title={tpl.name}
-                            >
-                              {tpl.badge || tpl.name}
-                            </span>
-                          );
-                        })()}
-
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openUserProfile(u);
-                            setIsUserDropdownOpen(false);
-                          }}
-                          className="p-1 text-neutral-400 hover:text-white rounded hover:bg-[#282828] transition-colors cursor-pointer"
-                          title={`View ${u.name}'s Profile`}
+                      return (
+                        <div
+                          key={u.id}
+                          className={`w-full flex items-center justify-between p-1.5 rounded-lg transition-all ${
+                            isCurrent
+                              ? 'bg-blue-950/60 border border-blue-500/40 text-white'
+                              : 'hover:bg-[#1f1f1f] text-neutral-300 border border-transparent'
+                          }`}
                         >
-                          <UserIcon className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              switchUser(u.id);
+                              setIsUserDropdownOpen(false);
+                            }}
+                            className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer py-0.5"
+                          >
+                            <UserAvatar user={u} size="sm" className="shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium truncate">{u.name}</p>
+                              <p className="text-[10px] text-neutral-400 truncate">{u.title || u.department || 'Member'}</p>
+                            </div>
+                          </button>
+
+                          <div className="flex items-center gap-1 shrink-0 ml-1">
+                            {(() => {
+                              const tpl = getRoleTemplate(u.role);
+                              return (
+                                <span
+                                  className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 border"
+                                  style={{
+                                    backgroundColor: `${tpl.color}20`,
+                                    color: tpl.color,
+                                    borderColor: `${tpl.color}40`
+                                  }}
+                                  title={tpl.name}
+                                >
+                                  {tpl.badge || tpl.name}
+                                </span>
+                              );
+                            })()}
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openUserProfile(u);
+                                setIsUserDropdownOpen(false);
+                              }}
+                              className="p-1 text-neutral-400 hover:text-white rounded hover:bg-[#282828] transition-colors cursor-pointer"
+                              title={`View ${u.name}'s Profile`}
+                            >
+                              <UserIcon className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
 
               {/* Sign Out Button */}
               <div className="pt-2 mt-2 border-t border-[#262626]">

@@ -126,6 +126,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const switchUser = async (userId: string) => {
+    // Only administrators can switch between user accounts
+    if (currentUser && currentUser.role !== 'admin') {
+      console.warn('Access denied: Only administrators are authorized to switch between user accounts.');
+      return;
+    }
+
     try {
       setIsLoading(true);
       const res = await api.switchDemoUser(userId);
@@ -133,12 +139,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setApiUserId(res.user.id);
       setCurrentUser(res.user);
       await refreshUsers();
-    } catch {
-      setApiUserId(userId);
-      const found = users.find((u) => u.id === userId);
-      if (found) {
-        setCurrentUser(found);
-      }
+    } catch (err) {
+      console.error('Failed to switch user:', err);
     } finally {
       setIsLoading(false);
     }

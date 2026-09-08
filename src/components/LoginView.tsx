@@ -4,14 +4,9 @@ import {
   Shield,
   Lock,
   Mail,
-  User as UserIcon,
-  Briefcase,
-  Building,
-  KeyRound,
   Eye,
   EyeOff,
   LogIn,
-  UserPlus,
   CheckCircle2,
   AlertCircle,
   Loader2,
@@ -25,15 +20,10 @@ interface LoginViewProps {
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
-  const { login, register, users, switchUser } = useAuth();
+  const { login, users, switchUser } = useAuth();
 
-  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [department, setDepartment] = useState('Engineering');
-  const [title, setTitle] = useState('Full-Stack Engineer');
-  const [role, setRole] = useState<'admin' | 'basic'>('basic');
 
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,11 +40,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
       return;
     }
 
-    if (mode === 'register' && !name.trim()) {
-      setErrorMessage('Please provide your full name to register.');
-      return;
-    }
-
     if (password.length < 6) {
       setErrorMessage('Password must be at least 6 characters long.');
       return;
@@ -62,20 +47,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
 
     try {
       setIsSubmitting(true);
-      if (mode === 'login') {
-        await login({ email: email.trim(), password });
-        setSuccessMessage('Authentication successful. Welcome back!');
-      } else {
-        await register({
-          name: name.trim(),
-          email: email.trim(),
-          password,
-          role,
-          department,
-          title
-        });
-        setSuccessMessage('Account registered successfully. Welcome to TaskFlow!');
-      }
+      await login({ email: email.trim(), password });
+      setSuccessMessage('Authentication successful. Welcome back!');
       if (onSuccess) onSuccess();
     } catch (err: any) {
       setErrorMessage(err.message || 'Authentication failed. Please check your credentials.');
@@ -125,42 +98,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
 
         {/* Card Container */}
         <div className="bg-[#141414] border border-[#262626] rounded-2xl shadow-2xl p-6 sm:p-8 backdrop-blur-xl">
-          {/* Mode Switcher Tabs */}
-          <div className="flex p-1 bg-[#0d0d0d] border border-[#222222] rounded-xl mb-6">
-            <button
-              id="auth-tab-login"
-              type="button"
-              onClick={() => {
-                setMode('login');
-                setErrorMessage(null);
-                setSuccessMessage(null);
-              }}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                mode === 'login'
-                  ? 'bg-[#242424] text-white shadow-sm'
-                  : 'text-neutral-400 hover:text-neutral-200'
-              }`}
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              Sign In
-            </button>
-            <button
-              id="auth-tab-register"
-              type="button"
-              onClick={() => {
-                setMode('register');
-                setErrorMessage(null);
-                setSuccessMessage(null);
-              }}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                mode === 'register'
-                  ? 'bg-[#242424] text-white shadow-sm'
-                  : 'text-neutral-400 hover:text-neutral-200'
-              }`}
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              Create Account
-            </button>
+          {/* Sign In Header Banner */}
+          <div className="flex items-center gap-2 pb-4 mb-5 border-b border-[#222222]">
+            <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+              <LogIn className="w-3.5 h-3.5 text-blue-400" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white">Sign In to Your Workspace</h2>
+              <p className="text-[11px] text-neutral-400">Enter your credentials to access protected projects</p>
+            </div>
           </div>
 
           {/* Feedback Alerts */}
@@ -180,62 +126,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === 'register' && (
-              <>
-                <div>
-                  <label className="block text-xs font-medium text-neutral-300 mb-1.5">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <UserIcon className="w-4 h-4 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      id="auth-input-name"
-                      type="text"
-                      required
-                      placeholder="e.g. Jordan Miller"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 bg-[#0d0d0d] border border-[#2a2a2a] rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500 transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-neutral-300 mb-1.5">
-                      Department
-                    </label>
-                    <div className="relative">
-                      <Building className="w-4 h-4 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        id="auth-input-department"
-                        type="text"
-                        placeholder="Engineering"
-                        value={department}
-                        onChange={(e) => setDepartment(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 bg-[#0d0d0d] border border-[#2a2a2a] rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500 transition-colors"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-neutral-300 mb-1.5">
-                      Initial Role
-                    </label>
-                    <select
-                      id="auth-input-role"
-                      value={role}
-                      onChange={(e) => setRole(e.target.value as 'admin' | 'basic')}
-                      className="w-full px-3 py-2 bg-[#0d0d0d] border border-[#2a2a2a] rounded-xl text-xs text-white focus:outline-none focus:border-blue-500 transition-colors cursor-pointer"
-                    >
-                      <option value="basic">Team Member (Basic)</option>
-                      <option value="admin">Administrator (Admin)</option>
-                    </select>
-                  </div>
-                </div>
-              </>
-            )}
-
             <div>
               <label className="block text-xs font-medium text-neutral-300 mb-1.5">
                 Work Email Address
@@ -259,11 +149,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
                 <label className="block text-xs font-medium text-neutral-300">
                   Password
                 </label>
-                {mode === 'login' && (
-                  <span className="text-[11px] text-neutral-400 font-mono">
-                    Demo: password123
-                  </span>
-                )}
+                <span className="text-[11px] text-neutral-400 font-mono">
+                  Demo: password123
+                </span>
               </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -299,15 +187,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Authenticating...</span>
                 </>
-              ) : mode === 'login' ? (
+              ) : (
                 <>
                   <LogIn className="w-4 h-4" />
                   <span>Sign In to Workspace</span>
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-4 h-4" />
-                  <span>Create Protected Account</span>
                 </>
               )}
             </button>

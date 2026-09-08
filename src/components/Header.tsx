@@ -4,22 +4,32 @@ import {
   Plus,
   Bell,
   Menu,
+  PanelLeft,
+  PanelLeftClose,
+  Settings,
+  ChevronDown,
   Sun,
   Moon,
   Laptop,
-  Check,
-  PanelLeft,
-  PanelLeftClose,
   Palette,
-  Sliders,
-  BarChart3
+  Users,
+  KeyRound,
+  History,
+  Database,
+  Trash2,
+  RotateCcw,
+  Check,
+  ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
 import { useTheme } from '../context/ThemeContext';
-import { GamificationHeaderPill } from './GamificationHeaderPill';
+import { useNotifications } from '../context/NotificationContext';
 import { Logo } from './Logo';
 import { UserAvatar } from './UserAvatar';
+import { RemoveDemoDataModal } from './RemoveDemoDataModal';
+import { NotificationDropdown } from './NotificationDropdown';
+import { GamificationHeaderPill } from './GamificationHeaderPill';
 
 interface HeaderProps {
   isSidebarOpen?: boolean;
@@ -30,276 +40,381 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
   const { currentUser, isAdmin } = useAuth();
   const {
     viewMode,
+    setViewMode,
     setIsCreateModalOpen,
     openUserProfile,
+    openSettings,
+    resetDemoData,
     filters,
     setFilters,
     metricsVisibility,
     toggleMetric
   } = useTasks();
-  const { theme, isDark, setTheme, toggleDarkMode, setIsThemeEditorOpen, themeConfig } = useTheme();
+  const { theme, setTheme, setIsThemeEditorOpen, themeConfig } = useTheme();
+  const { unreadCount } = useNotifications();
 
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showThemeMenu, setShowThemeMenu] = useState(false);
-  const themeMenuRef = useRef<HTMLDivElement>(null);
+  const [isSettingsDropdownOpen, setIsSettingsDropdownOpen] = useState(false);
+  const [isRemoveDemoModalOpen, setIsRemoveDemoModalOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const settingsRef = useRef<HTMLDivElement>(null);
 
   // Close menus on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
-        setShowThemeMenu(false);
-      }
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setShowNotifications(false);
+      }
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setIsSettingsDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const getViewTitle = () => {
-    switch (viewMode) {
-      case 'kanban':
-        return 'Team Workflow';
-      case 'tickets':
-        return 'Ticket System & Helpdesk Queue';
-      case 'list':
-        return 'Task Inventory & Table';
-      case 'timeline':
-        return 'Milestones & Timeline';
-      case 'graph':
-        return 'Team Relationship & Dependency Graph';
-      case 'chat':
-        return 'Team Chat & Collaboration';
-      case 'dashboard':
-        return 'Executive Analytics';
-      case 'users':
-        return 'Team Directory & Access Management';
-      case 'audit':
-        return 'Activity & Security Audit Trail';
-      case 'rewards':
-        return 'Gamification & Rewards Hub';
-      default:
-        return 'Team Workflow';
-    }
-  };
-
-  const getViewSubtitle = () => {
-    switch (viewMode) {
-      case 'kanban':
-        return 'Workflow Board';
-      case 'tickets':
-        return 'Incident & Request Tracking';
-      case 'list':
-        return 'Table View';
-      case 'timeline':
-        return 'Deadlines';
-      case 'graph':
-        return 'Tasks, Tags & User Relationships';
-      case 'chat':
-        return 'Channels, Groups & Direct Messages';
-      case 'dashboard':
-        return 'Admin Only';
-      case 'users':
-        return 'User Profiles & Permissions';
-      case 'audit':
-        return 'Audit Logs';
-      case 'rewards':
-        return 'Leaderboard & XP';
-      default:
-        return 'Sprint Active';
-    }
-  };
-
   return (
     <header className="h-16 bg-[#121212] dark:bg-[#121212] border-b border-[#262626] px-3 sm:px-6 lg:px-8 flex items-center justify-between shrink-0 z-20 sticky top-0 transition-colors duration-200">
       
-      {/* Left: Sidebar Toggle + (Brand if sidebar is hidden) + View Title & Badge */}
-      <div className="flex items-center gap-2.5 sm:gap-4 flex-1 min-w-0">
+      {/* Left: Brand (if sidebar is collapsed), Sidebar Toggle & Quick Search */}
+      <div className="flex items-center gap-2.5 sm:gap-3.5 flex-1 min-w-0 pr-3">
+        {/* Brand logo shown in header when sidebar is collapsed */}
+        {!isSidebarOpen && (
+          <div className="flex items-center gap-2.5 pr-2.5 border-r border-[#262626] animate-in fade-in duration-150 shrink-0">
+            <Logo className="w-7 h-7 drop-shadow-xs shrink-0" />
+          </div>
+        )}
+
         {onToggleSidebar && (
           <button
             type="button"
             id="btn-toggle-sidebar"
             onClick={onToggleSidebar}
-            className={`p-2 rounded transition-all cursor-pointer flex items-center justify-center ${
+            className={`w-8 h-8 rounded transition-all cursor-pointer flex items-center justify-center shrink-0 ${
               !isSidebarOpen
                 ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30 hover:bg-blue-600/25 hover:text-white'
-                : 'text-neutral-400 hover:text-white hover:bg-[#222222]'
+                : 'text-neutral-400 hover:text-white hover:bg-[#222222] border border-transparent'
             }`}
             title={isSidebarOpen ? 'Collapse sidebar (Ctrl+B)' : 'Expand sidebar (Ctrl+B)'}
           >
-            {isSidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeft className="w-5 h-5" />}
+            {isSidebarOpen ? <PanelLeftClose className="w-4.5 h-4.5" /> : <PanelLeft className="w-4.5 h-4.5" />}
           </button>
         )}
 
-        {/* Brand logo shown in header when sidebar is collapsed */}
-        {!isSidebarOpen && (
-          <div className="hidden sm:flex items-center gap-2.5 pr-2.5 border-r border-[#262626] animate-in fade-in duration-150">
-            <Logo className="w-7 h-7 rounded shadow-xs" />
-            <span className="text-white font-bold text-sm tracking-tight">TaskFlow</span>
-          </div>
-        )}
-
-        <h1 className="text-base sm:text-lg lg:text-xl font-bold text-white truncate tracking-tight">
-          {getViewTitle()} 
-        </h1>
-
-        <span className="hidden sm:inline-flex text-xs bg-[#1e1e1e] text-neutral-300 px-2.5 py-1 rounded border border-[#333333] font-medium">
-          {getViewSubtitle()}
-        </span>
-      </div>
-
-      {/* Right Controls: Search, Theme Toggle, Notification Bell, Create Task Button */}
-      <div className="flex items-center gap-2.5 sm:gap-4">
-        
-        {/* Gamification Level & Streak Header Pill */}
-        <GamificationHeaderPill />
-
         {/* Quick Search */}
-        <div className="relative hidden md:block">
+        <div className="relative hidden sm:block w-48 md:w-120 lg:w-72">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
           <input
             type="text"
             value={filters.search}
             onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-            placeholder="Quick search..."
-            className="w-44 lg:w-60 bg-[#1a1a1a] border border-[#333333] rounded px-4 py-1.5 text-xs sm:text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            placeholder="Quick search tasks..."
+            className="w-full bg-[#1a1a1a] border border-[#333333] rounded pl-8.5 pr-7 py-1.5 text-xs sm:text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all h-8"
           />
           {filters.search && (
             <button
               type="button"
               onClick={() => setFilters((prev) => ({ ...prev, search: '' }))}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-200 text-xs font-bold"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-200 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-neutral-800"
             >
               ×
             </button>
           )}
         </div>
+      </div>
 
-        {/* KPI Metrics Strip Toggle Button */}
-        <button
-          type="button"
-          id="btn-toggle-metrics-strip"
-          onClick={() => toggleMetric('showMetricsBar')}
-          title={metricsVisibility.showMetricsBar ? 'Hide KPI Metrics Strip' : 'Show KPI Metrics Strip'}
-          className={`w-8 h-8 rounded flex items-center justify-center border transition-all cursor-pointer shadow-xs ${
-            metricsVisibility.showMetricsBar
-              ? 'bg-blue-600/20 border-blue-500/40 text-blue-400 hover:bg-blue-600/30'
-              : 'bg-[#1a1a1a] border-[#333333] text-neutral-400 hover:text-white hover:bg-[#262626]'
-          }`}
-        >
-          <BarChart3 className="w-4 h-4" />
-        </button>
+      {/* Right Controls: Gamification Badge, Settings Dropdown, Notification Bell, Create Task Button, Profile */}
+      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        {/* Gamification Badge next to Settings Dropdown Menu */}
+        <GamificationHeaderPill />
 
-        {/* Theme Studio & Palette Button */}
-        <button
-          type="button"
-          id="btn-open-theme-studio"
-          onClick={() => setIsThemeEditorOpen(true)}
-          title={`Theme Studio (Current: ${themeConfig.name || 'Custom'})`}
-          className="w-8 h-8 rounded bg-[#1a1a1a] flex items-center justify-center text-neutral-300 hover:text-white border border-[#333333] hover:bg-[#262626] transition-all cursor-pointer shadow-xs relative group"
-        >
-          <Palette className="w-4 h-4 text-neutral-300 group-hover:text-blue-400 transition-colors" />
-          <span
-            className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ring-1 ring-[#121212]"
-            style={{ backgroundColor: themeConfig.primaryColor }}
-          />
-        </button>
-
-        {/* Dark Mode / Theme Selector Button */}
-        <div className="relative" ref={themeMenuRef}>
+        {/* Settings Dropdown Menu */}
+        <div className="relative" ref={settingsRef}>
           <button
             type="button"
-            id="btn-theme-toggle"
-            onClick={() => setShowThemeMenu(!showThemeMenu)}
-            title={`Current mode: ${theme} (click to switch)`}
-            className="w-8 h-8 rounded bg-[#1a1a1a] flex items-center justify-center text-neutral-300 hover:text-white border border-[#333333] hover:bg-[#262626] transition-all cursor-pointer shadow-xs"
+            id="btn-header-settings"
+            onClick={() => setIsSettingsDropdownOpen(!isSettingsDropdownOpen)}
+            title="Settings & Workspace Tools"
+            className={`h-8 px-2.5 rounded flex items-center gap-1.5 border text-xs font-medium transition-all cursor-pointer active:scale-95 group ${
+              isSettingsDropdownOpen
+                ? 'bg-blue-600/20 border-blue-500/50 text-white shadow-blue-500/10'
+                : 'bg-[#1a1a1a] hover:bg-[#262626] text-neutral-200 hover:text-white border-[#333333]'
+            }`}
           >
-            {isDark ? (
-              <Moon className="w-4 h-4 text-blue-400 fill-blue-400/20" />
-            ) : (
-              <Sun className="w-4 h-4 text-amber-500 fill-amber-500/20" />
-            )}
+            <Settings className={`w-4 h-4 text-blue-400 transition-transform duration-200 ${isSettingsDropdownOpen ? 'rotate-90' : 'group-hover:rotate-45'}`} />
+            <ChevronDown className={`w-3 h-3 text-neutral-400 transition-transform duration-200 ${isSettingsDropdownOpen ? 'rotate-180 text-blue-400' : ''}`} />
           </button>
 
-          {showThemeMenu && (
-            <div className="absolute right-0 mt-2 w-52 bg-[#181818] rounded shadow-xl border border-[#333333] py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
-              <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                Theme Preference
+          {isSettingsDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] max-w-xs sm:w-80 bg-[#161616] rounded-xl shadow-2xl border border-[#2d2d2d] py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 divide-y divide-[#262626] max-h-[85vh] overflow-y-auto">
+              {/* Dropdown Header */}
+              <div className="px-3.5 py-2 flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-white text-xs tracking-tight flex items-center gap-1.5">
+                    <Settings className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Settings &amp; Tools</span>
+                  </h3>
+                  <p className="text-[10px] text-neutral-400">Workspace controls &amp; system tools</p>
+                </div>
+                {isAdmin && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    Admin
+                  </span>
+                )}
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setTheme('light');
-                  setShowThemeMenu(false);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[#262626] transition-colors ${
-                  theme === 'light'
-                    ? 'text-blue-400 font-semibold bg-blue-950/40'
-                    : 'text-neutral-300'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Sun className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Light Theme</span>
+              {/* Theme Mode & Studio Section */}
+              <div className="px-3.5 py-2.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1">
+                    <Sun className="w-3 h-3 text-amber-400" />
+                    <span>Theme Mode</span>
+                  </span>
+                  <span className="text-[10px] text-blue-400 font-semibold capitalize">{theme}</span>
                 </div>
-                {theme === 'light' && <Check className="w-3.5 h-3.5" />}
-              </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setTheme('dark');
-                  setShowThemeMenu(false);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[#262626] transition-colors ${
-                  theme === 'dark'
-                    ? 'text-blue-400 font-semibold bg-blue-950/40'
-                    : 'text-neutral-300'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Moon className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Dark Theme</span>
+                {/* 3-segment switcher */}
+                <div className="grid grid-cols-3 gap-1 p-1 bg-[#1d1d1d] rounded-lg border border-[#2e2e2e]">
+                  <button
+                    type="button"
+                    id="dropdown-theme-light"
+                    onClick={() => setTheme('light')}
+                    className={`flex items-center justify-center gap-1.5 py-1 px-2 rounded text-[11px] font-medium transition-all cursor-pointer ${
+                      theme === 'light'
+                        ? 'bg-blue-600 text-white shadow-xs font-semibold'
+                        : 'text-neutral-400 hover:text-white hover:bg-[#282828]'
+                    }`}
+                  >
+                    <Sun className="w-3 h-3" />
+                    <span>Light</span>
+                  </button>
+                  <button
+                    type="button"
+                    id="dropdown-theme-dark"
+                    onClick={() => setTheme('dark')}
+                    className={`flex items-center justify-center gap-1.5 py-1 px-2 rounded text-[11px] font-medium transition-all cursor-pointer ${
+                      theme === 'dark'
+                        ? 'bg-blue-600 text-white shadow-xs font-semibold'
+                        : 'text-neutral-400 hover:text-white hover:bg-[#282828]'
+                    }`}
+                  >
+                    <Moon className="w-3 h-3" />
+                    <span>Dark</span>
+                  </button>
+                  <button
+                    type="button"
+                    id="dropdown-theme-system"
+                    onClick={() => setTheme('system')}
+                    className={`flex items-center justify-center gap-1.5 py-1 px-2 rounded text-[11px] font-medium transition-all cursor-pointer ${
+                      theme === 'system'
+                        ? 'bg-blue-600 text-white shadow-xs font-semibold'
+                        : 'text-neutral-400 hover:text-white hover:bg-[#282828]'
+                    }`}
+                  >
+                    <Laptop className="w-3 h-3" />
+                    <span>System</span>
+                  </button>
                 </div>
-                {theme === 'dark' && <Check className="w-3.5 h-3.5" />}
-              </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setTheme('system');
-                  setShowThemeMenu(false);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[#262626] transition-colors ${
-                  theme === 'system'
-                    ? 'text-blue-400 font-semibold bg-blue-950/40'
-                    : 'text-neutral-300'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Laptop className="w-3.5 h-3.5 text-neutral-400" />
-                  <span>System Default</span>
+                {/* Theme Studio Button */}
+                <button
+                  type="button"
+                  id="dropdown-btn-open-theme-studio"
+                  onClick={() => {
+                    setIsSettingsDropdownOpen(false);
+                    setIsThemeEditorOpen(true);
+                  }}
+                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#1c1c1c] hover:bg-[#242424] text-neutral-300 hover:text-white transition-colors border border-[#2b2b2b] cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Palette className="w-3.5 h-3.5 text-blue-400" />
+                      <span
+                        className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ring-1 ring-[#141414]"
+                        style={{ backgroundColor: themeConfig?.primaryColor || '#3b82f6' }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium">Theme Studio &amp; Palette</span>
+                  </div>
+                  <span className="text-[10px] text-blue-400 group-hover:underline">Customize &rarr;</span>
+                </button>
+              </div>
+
+              {/* Workspace Views & Admin (moved from sidebar) */}
+              <div className="py-1">
+                <div className="px-3.5 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                  Workspace Administration
                 </div>
-                {theme === 'system' && <Check className="w-3.5 h-3.5" />}
-              </button>
 
-              <div className="my-1 border-t border-[#262626]" />
+                {/* Team */}
+                <button
+                  type="button"
+                  id="dropdown-nav-team"
+                  onClick={() => {
+                    setIsSettingsDropdownOpen(false);
+                    setViewMode('users');
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2 text-left hover:bg-[#1f1f1f] transition-colors cursor-pointer group ${
+                    viewMode === 'users' ? 'bg-blue-950/40 text-blue-300' : 'text-neutral-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-950/60 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                      <Users className="w-3.5 h-3.5 text-emerald-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-xs text-white group-hover:text-blue-300 transition-colors">Team</p>
+                      <p className="text-[10px] text-neutral-400 truncate">Members, roles &amp; profiles</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-neutral-400 group-hover:text-white transition-colors">&rarr;</span>
+                </button>
 
-              {/* Open Theme Editor from Menu */}
-              <button
-                type="button"
-                id="btn-menu-open-theme-editor"
-                onClick={() => {
-                  setShowThemeMenu(false);
-                  setIsThemeEditorOpen(true);
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-[#262626] text-blue-400 font-medium transition-colors cursor-pointer"
-              >
-                <Palette className="w-3.5 h-3.5 text-blue-400" />
-                <span>Open Theme Studio...</span>
-              </button>
+                {/* Access Manager */}
+                <button
+                  type="button"
+                  id="dropdown-nav-access"
+                  onClick={() => {
+                    setIsSettingsDropdownOpen(false);
+                    setViewMode('access');
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2 text-left hover:bg-[#1f1f1f] transition-colors cursor-pointer group ${
+                    viewMode === 'access' ? 'bg-blue-950/40 text-blue-300' : 'text-neutral-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-indigo-950/60 border border-indigo-500/30 flex items-center justify-center shrink-0">
+                      <KeyRound className="w-3.5 h-3.5 text-indigo-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-semibold text-xs text-white group-hover:text-blue-300 transition-colors">Access Manager</p>
+                        <span className="text-[9px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-1 py-0.2 rounded font-semibold uppercase">
+                          RBAC
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-neutral-400 truncate">Permissions &amp; role security</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-neutral-400 group-hover:text-white transition-colors">&rarr;</span>
+                </button>
+
+                {/* Log & Audit */}
+                <button
+                  type="button"
+                  id="dropdown-nav-audit"
+                  onClick={() => {
+                    setIsSettingsDropdownOpen(false);
+                    setViewMode('audit');
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2 text-left hover:bg-[#1f1f1f] transition-colors cursor-pointer group ${
+                    viewMode === 'audit' ? 'bg-blue-950/40 text-blue-300' : 'text-neutral-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-teal-950/60 border border-teal-500/30 flex items-center justify-center shrink-0">
+                      <History className="w-3.5 h-3.5 text-teal-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-xs text-white group-hover:text-blue-300 transition-colors">Log &amp; Audit</p>
+                      <p className="text-[10px] text-neutral-400 truncate">Security logs &amp; activity trail</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-neutral-400 group-hover:text-white transition-colors">&rarr;</span>
+                </button>
+
+                {/* Backup & Restore */}
+                <button
+                  type="button"
+                  id="dropdown-nav-backup"
+                  onClick={() => {
+                    setIsSettingsDropdownOpen(false);
+                    setViewMode('backup');
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2 text-left hover:bg-[#1f1f1f] transition-colors cursor-pointer group ${
+                    viewMode === 'backup' ? 'bg-blue-950/40 text-blue-300' : 'text-neutral-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                      <Database className="w-3.5 h-3.5 text-cyan-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-xs text-white group-hover:text-blue-300 transition-colors">Backup &amp; Restore</p>
+                      <p className="text-[10px] text-neutral-400 truncate">JSON snapshots &amp; recovery</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-neutral-400 group-hover:text-white transition-colors">&rarr;</span>
+                </button>
+              </div>
+
+              {/* Data & Maintenance Section */}
+              <div className="py-1">
+                <div className="px-3.5 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                  Data &amp; Maintenance
+                </div>
+
+                <button
+                  type="button"
+                  id="dropdown-btn-remove-demo-data"
+                  onClick={() => {
+                    setIsSettingsDropdownOpen(false);
+                    setIsRemoveDemoModalOpen(true);
+                  }}
+                  className="w-full flex items-center justify-between px-3.5 py-1.5 text-left hover:bg-rose-950/30 transition-colors cursor-pointer group text-rose-300 hover:text-rose-200"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-rose-950/50 border border-rose-800/40 flex items-center justify-center shrink-0">
+                      <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-xs truncate">Remove Demo Data</p>
+                      <p className="text-[10px] text-rose-300/70 truncate">Wipe sample tasks &amp; mock projects</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-rose-400 font-semibold">Clean</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="dropdown-btn-reset-demo"
+                  onClick={() => {
+                    setIsSettingsDropdownOpen(false);
+                    resetDemoData();
+                  }}
+                  className="w-full flex items-center justify-between px-3.5 py-1.5 text-left hover:bg-[#1f1f1f] transition-colors cursor-pointer group text-neutral-300 hover:text-white"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-[#1f1f1f] border border-[#333] flex items-center justify-center shrink-0">
+                      <RotateCcw className="w-3.5 h-3.5 text-blue-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-xs truncate">Reset Demo State</p>
+                      <p className="text-[10px] text-neutral-400 truncate">Reload default factory demo data</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-neutral-400 group-hover:text-blue-400">Reload</span>
+                </button>
+              </div>
+
+              {/* Full Settings Hub Button */}
+              <div className="p-2 bg-[#121212]">
+                <button
+                  type="button"
+                  id="dropdown-btn-open-full-settings"
+                  onClick={() => {
+                    setIsSettingsDropdownOpen(false);
+                    openSettings('appearance');
+                  }}
+                  className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-600/20 transition-all cursor-pointer active:scale-98"
+                >
+                  <div className="flex items-center gap-2">
+                    <Settings className="w-3.5 h-3.5" />
+                    <span>Open All Settings Hub</span>
+                  </div>
+                  <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -308,36 +423,27 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
         <div className="relative" ref={notifRef}>
           <button
             type="button"
+            id="btn-notifications-bell"
             onClick={() => setShowNotifications(!showNotifications)}
-            className="w-8 h-8 rounded bg-[#1a1a1a] flex items-center justify-center text-neutral-400 hover:text-white border border-[#333333] cursor-pointer hover:bg-[#262626] transition-colors relative"
-            title="Team Notifications"
+            className={`w-8 h-8 rounded flex items-center justify-center border transition-all relative cursor-pointer ${
+              showNotifications
+                ? 'bg-blue-600/20 text-blue-400 border-blue-500/40'
+                : 'bg-[#1a1a1a] text-neutral-400 hover:text-white border-[#333333] hover:bg-[#262626]'
+            }`}
+            title="Notifications & Alerts"
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-4.5 h-4.5 px-1 bg-red-600 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center border-2 border-[#121212] shadow-sm animate-in zoom-in duration-200">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </button>
 
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-72 bg-[#181818] rounded shadow-xl border border-[#333333] p-3 z-50 text-xs space-y-2 animate-in fade-in zoom-in-95 duration-100">
-              <div className="flex items-center justify-between border-b border-[#2b2b2b] pb-2">
-                <span className="font-bold text-white">Team Notifications</span>
-                <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-950/60 border border-emerald-800 px-1.5 py-0.5 rounded">
-                  Live
-                </span>
-              </div>
-              <div className="space-y-1.5 text-neutral-300">
-                <div className="p-2 rounded bg-[#1f1f1f] border border-[#2b2b2b]">
-                  <p className="font-semibold text-white">Sprint Milestone Q4</p>
-                  <p className="text-[11px] text-neutral-400">3 tasks completed in QA Review.</p>
-                </div>
-                <div className="p-2 rounded bg-[#1f1f1f] border border-[#2b2b2b]">
-                  <p className="font-semibold text-white">RBAC Enforcement Active</p>
-                  <p className="text-[11px] text-neutral-400">
-                    Logged in as <strong>{currentUser?.name}</strong> ({currentUser?.role}).
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+          <NotificationDropdown
+            isOpen={showNotifications}
+            onClose={() => setShowNotifications(false)}
+          />
         </div>
 
         {/* Create Task Action - Gated by RBAC privilege */}
@@ -347,10 +453,9 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
             id="btn-create-task"
             onClick={() => setIsCreateModalOpen(true)}
             title="Create new task (N)"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3 sm:px-3.5 py-1.5 rounded transition-all shadow-md shadow-blue-600/20 flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold h-8 w-8 sm:w-auto px-2 sm:px-3.5 rounded transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span className="hidden sm:inline"></span>
           </button>
         )}
 
@@ -374,6 +479,13 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
 
       </div>
 
+      {/* Remove Demo Data Modal */}
+      {isRemoveDemoModalOpen && (
+        <RemoveDemoDataModal
+          isOpen={isRemoveDemoModalOpen}
+          onClose={() => setIsRemoveDemoModalOpen(false)}
+        />
+      )}
     </header>
   );
 };

@@ -45,11 +45,37 @@ export const RADIUS_MAP: Record<RadiusOption, { label: string; px: string }> = {
 
 export const PRESET_THEMES: ThemePreset[] = [
   {
+    id: 'cyberpunk',
+    name: 'Cyberpunk Neon',
+    description: 'Deep violet darkness ignited with striking magenta and ultraviolet highlights.',
+    mode: 'dark',
+    badge: 'Default',
+    config: {
+      id: 'cyberpunk',
+      name: 'Cyberpunk Neon',
+      mode: 'dark',
+      primaryColor: '#ec4899',
+      primaryHoverColor: '#db2777',
+      primaryLightColor: 'rgba(236, 72, 153, 0.15)',
+      backgroundColor: '#0c0714',
+      surfaceColor: '#150d24',
+      surfaceSecondaryColor: '#1f1338',
+      borderColor: '#2e1c52',
+      textColor: '#faf5ff',
+      textMutedColor: '#c084fc',
+      radius: 'modern',
+      radiusPx: '6px',
+      fontFamily: 'space',
+      density: 'standard',
+      highContrast: false
+    }
+  },
+    {
     id: 'obsidian',
     name: 'Obsidian Dark',
     description: 'High-contrast studio dark with deep obsidian black and vibrant electric blue.',
     mode: 'dark',
-    badge: 'Default',
+    badge: 'Obsidian',
     config: {
       id: 'obsidian',
       name: 'Obsidian Dark',
@@ -92,32 +118,6 @@ export const PRESET_THEMES: ThemePreset[] = [
       radius: 'precision',
       radiusPx: '3px',
       fontFamily: 'system',
-      density: 'standard',
-      highContrast: false
-    }
-  },
-  {
-    id: 'cyberpunk',
-    name: 'Cyberpunk Neon',
-    description: 'Deep violet darkness ignited with striking magenta and ultraviolet highlights.',
-    mode: 'dark',
-    badge: 'Neon',
-    config: {
-      id: 'cyberpunk',
-      name: 'Cyberpunk Neon',
-      mode: 'dark',
-      primaryColor: '#ec4899',
-      primaryHoverColor: '#db2777',
-      primaryLightColor: 'rgba(236, 72, 153, 0.15)',
-      backgroundColor: '#0c0714',
-      surfaceColor: '#150d24',
-      surfaceSecondaryColor: '#1f1338',
-      borderColor: '#2e1c52',
-      textColor: '#faf5ff',
-      textMutedColor: '#c084fc',
-      radius: 'modern',
-      radiusPx: '6px',
-      fontFamily: 'space',
       density: 'standard',
       highContrast: false
     }
@@ -364,7 +364,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const saved = localStorage.getItem(THEME_CONFIG_STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // If stored theme was the old obsidian default, seamlessly upgrade to the new Cyberpunk Neon default
+        if (parsed && parsed.id && parsed.id !== 'obsidian') {
+          return parsed;
+        }
       }
     } catch {
       // ignore
@@ -373,7 +377,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const [activePresetId, setActivePresetId] = useState<string>(() => {
-    return themeConfig.id || 'obsidian';
+    return themeConfig.id || 'cyberpunk';
   });
 
   const [isDark, setIsDark] = useState<boolean>(true);
@@ -485,7 +489,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (newTheme === 'light' && themeConfig.mode === 'dark') {
       applyPreset('daylight');
     } else if (newTheme === 'dark' && themeConfig.mode === 'light') {
-      applyPreset('obsidian');
+      applyPreset('cyberpunk');
     }
   };
 
@@ -525,7 +529,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Reset to default theme
   const resetToDefaultTheme = () => {
-    applyPreset('obsidian');
+    applyPreset('cyberpunk');
   };
 
   // Save current theme as a custom preset

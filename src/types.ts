@@ -170,6 +170,7 @@ export interface Attachment {
   uploadedByAvatar?: string;
   uploadedAt: string;
   checksum?: string;
+  base64Data?: string;
 }
 
 export interface ActivityLog {
@@ -238,6 +239,13 @@ export interface Task {
   updatedAt: string;
   createdBy: string;
   createdByName?: string;
+  kudosCost?: number;
+  kudosReward?: number;
+  delegationStatus?: 'accepted' | 'pending' | 'declined';
+  delegatedBy?: string;
+  delegatedByName?: string;
+  declinedBy?: string[];
+  declinedReason?: string;
 }
 
 export type DailyTimeBlock = 'morning' | 'afternoon' | 'evening' | 'flexible';
@@ -290,6 +298,7 @@ export type ViewMode =
   | 'timeline'
   | 'daily'
   | 'meetings'
+  | 'forms'
   | 'dashboard'
   | 'audit'
   | 'rewards'
@@ -298,6 +307,8 @@ export type ViewMode =
   | 'graph'
   | 'chat'
   | 'backup';
+
+export type SettingsTab = 'appearance' | 'team' | 'access' | 'audit' | 'backup' | 'data';
 
 export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -393,6 +404,7 @@ export interface ChatMessageAttachment {
   type: string;
   url: string;
   downloadUrl?: string;
+  base64Data?: string;
 }
 
 export interface ChatMessage {
@@ -458,6 +470,8 @@ export type NotificationType =
   | 'chat_channel'
   | 'mention'
   | 'task_assign'
+  | 'ticket_assign'
+  | 'project_assign'
   | 'task_comment'
   | 'status_change';
 
@@ -474,6 +488,8 @@ export interface NotificationItem {
   channelName?: string;
   taskId?: string;
   taskTitle?: string;
+  projectId?: string;
+  projectName?: string;
   isRead: boolean;
   createdAt: string;
   actionUrl?: string;
@@ -518,6 +534,7 @@ export interface Achievement {
   icon: string;
   category: 'completion' | 'speed' | 'checklist' | 'collaboration' | 'streak' | 'mastery';
   xpReward: number;
+  kudosReward?: number;
   unlocked: boolean;
   unlockedAt?: string;
   progress: number;
@@ -529,6 +546,7 @@ export interface Quest {
   title: string;
   description: string;
   xpReward: number;
+  kudosReward?: number;
   progress: number;
   maxProgress: number;
   completed: boolean;
@@ -548,6 +566,52 @@ export interface UserGamification {
   commentsCount: number;
   attachmentsCount: number;
   achievements: Achievement[];
+  kudosBalance?: number;
+  kudosCap?: number;
+  kudosEarnedTotal?: number;
+  kudosSpentTotal?: number;
+  kudosRefundedTotal?: number;
+}
+
+export type KudosTransactionType =
+  | 'task_completed'
+  | 'task_delegated_assign'
+  | 'task_delegated_refund'
+  | 'speed_bonus'
+  | 'streak_bonus'
+  | 'decay_adjustment'
+  | 'baseline_grant'
+  | 'peer_kudos';
+
+export interface KudosTransaction {
+  id: string;
+  userId: string;
+  amount: number; // positive for earned/refunded/granted, negative for spent/decayed
+  type: KudosTransactionType;
+  description: string;
+  timestamp: string;
+  taskId?: string;
+  taskTitle?: string;
+  relatedUserId?: string;
+  relatedUserName?: string;
+  multiplier?: number;
+  breakdown?: {
+    base: number;
+    difficultyBonus?: number;
+    speedBonus?: number;
+    streakBonus?: number;
+  };
+}
+
+export interface KudosWallet {
+  userId: string;
+  balance: number;
+  cap: number;
+  earnedTotal: number;
+  spentTotal: number;
+  refundedTotal: number;
+  lastDecayDate?: string;
+  transactions: KudosTransaction[];
 }
 
 export interface LeaderboardUser {
@@ -571,6 +635,40 @@ export interface XpEvent {
   amount: number;
   reason: string;
   timestamp: number;
+}
+
+export type AdventurePathId = 'system_admin' | 'customer_support' | 'developer' | 'hr';
+
+export interface AdventureStage {
+  id: string;
+  stageNumber: number;
+  title: string;
+  subtitle: string;
+  lore: string;
+  objective: string;
+  targetCount: number;
+  xpReward: number;
+  badgeTitle: string;
+  badgeIcon: string;
+  imageUrl?: string;
+}
+
+export interface AdventurePathDefinition {
+  id: AdventurePathId;
+  roleName: string;
+  sagaTitle: string;
+  tagline: string;
+  lore: string;
+  themeColor: {
+    text: string;
+    border: string;
+    bg: string;
+    gradient: string;
+    badgeBg: string;
+    badgeText: string;
+    glow: string;
+  };
+  stages: AdventureStage[];
 }
 
 export interface MetricsVisibility {
@@ -739,6 +837,78 @@ export interface RestoreResult {
     id: string;
     name: string;
   };
+}
+
+// -------------------------------------------------------------
+// Form Builder & Responses Types
+// -------------------------------------------------------------
+export type FormFieldType =
+  | 'text'        // text input
+  | 'textarea'    // text area
+  | 'number'      // number
+  | 'date'        // date
+  | 'time'        // time
+  | 'file'        // upload file
+  | 'radio'       // single choice
+  | 'checkbox'    // multi choice
+  | 'select';     // drop list
+
+export interface FormField {
+  id: string;
+  type: FormFieldType;
+  label: string;
+  placeholder?: string;
+  helpText?: string;
+  required: boolean;
+  options?: string[]; // For single choice, multi choice, drop list
+  min?: number;
+  max?: number;
+  step?: number;
+  allowedExtensions?: string[]; // e.g. ['pdf', 'txt', 'csv', 'png', 'jpg', 'jpeg']
+  maxFileSizeKb?: number;
+  defaultValue?: any;
+}
+
+export interface FormAttachedFile {
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  downloadUrl?: string;
+  base64Data?: string;
+}
+
+export interface Form {
+  id: string;
+  title: string;
+  description: string;
+  fields: FormField[];
+  createdBy: string;
+  createdByName: string;
+  createdByAvatar?: string;
+  createdAt: string;
+  updatedAt: string;
+  status: 'draft' | 'published' | 'closed';
+  targetAudience: 'all' | 'specific';
+  assignedUserIds: string[]; // Specific users invited/assigned to answer the form
+  dueDate?: string;
+  category?: string;
+  allowMultipleSubmissions?: boolean;
+  responsesCount?: number;
+  hasUserSubmitted?: boolean;
+}
+
+export interface FormResponse {
+  id: string;
+  formId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  userEmail?: string;
+  userRole?: string;
+  submittedAt: string;
+  updatedAt?: string;
+  answers: Record<string, any>; // fieldId -> value (string | number | string[] | FormAttachedFile)
 }
 
 

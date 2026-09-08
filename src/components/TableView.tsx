@@ -8,18 +8,29 @@ import {
   Clock,
   User as UserIcon,
   CheckSquare,
-  ExternalLink
+  ExternalLink,
+  Layers,
+  Table as TableIcon,
+  Plus,
+  ShieldCheck
 } from 'lucide-react';
 import { Task, Priority } from '../types';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
 import { TagBadge } from './TagBadge';
+import { AdminBatchTaskCreator } from './AdminBatchTaskCreator';
 
 export const TableView: React.FC = () => {
   const { filteredTasks, statuses, setSelectedTaskId, updateTask } = useTasks();
   const { users, isAdmin, currentUser } = useAuth();
+  const [activeTab, setActiveTab] = useState<'table' | 'create-batch'>('table');
   const [sortField, setSortField] = useState<'title' | 'status' | 'priority' | 'dueDate'>('priority');
   const [sortAsc, setSortAsc] = useState(false);
+
+  // If in create-batch mode, render the AdminBatchTaskCreator page
+  if (activeTab === 'create-batch') {
+    return <AdminBatchTaskCreator onBackToTable={() => setActiveTab('table')} />;
+  }
 
   const priorityWeight: Record<Priority, number> = {
     urgent: 4,
@@ -63,7 +74,60 @@ export const TableView: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 p-4 sm:p-6 bg-[#0d0d0d] dark:bg-[#0d0d0d] overflow-y-auto transition-colors duration-200">
+    <div className="flex-1 p-4 sm:p-6 bg-[#0d0d0d] dark:bg-[#0d0d0d] overflow-y-auto transition-colors duration-200 space-y-4">
+      {/* Table View Top Navigation Bar */}
+      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#141414] border border-[#262626] rounded-xl p-3 sm:px-4 sm:py-3 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 p-1 bg-[#1a1a1a] rounded-lg border border-[#2c2c2c]">
+            <button
+              type="button"
+              id="tab-task-table-list"
+              onClick={() => setActiveTab('table')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                activeTab === 'table'
+                  ? 'bg-blue-600 text-white shadow-xs font-semibold'
+                  : 'text-neutral-400 hover:text-white hover:bg-[#222222]'
+              }`}
+            >
+              <TableIcon className="w-3.5 h-3.5" />
+              <span>Task List</span>
+              <span className="ml-1 text-[10px] bg-black/30 px-1.5 py-0.2 rounded font-mono">
+                {filteredTasks.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              id="tab-create-multiple-tasks"
+              onClick={() => setActiveTab('create-batch')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                activeTab === 'create-batch'
+                  ? 'bg-blue-600 text-white shadow-xs font-semibold'
+                  : 'text-neutral-400 hover:text-white hover:bg-[#222222]'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-blue-400" />
+              <span>Create Multiple Tasks</span>
+              <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded font-bold uppercase tracking-wider">
+                Admin
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            id="btn-open-batch-task-creator"
+            onClick={() => setActiveTab('create-batch')}
+            className="w-full sm:w-auto px-3.5 py-1.5 bg-blue-600/90 hover:bg-blue-600 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>+ Create Multiple Tasks</span>
+          </button>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto bg-[#141414] dark:bg-[#141414] rounded border border-[#262626] shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">

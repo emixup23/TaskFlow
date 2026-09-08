@@ -15,12 +15,15 @@ import {
   Meeting,
   MeetingTopic,
   MeetingAttachment,
-  TaskTimeLog
+  TaskTimeLog,
+  SettingsTab
 } from '../types';
 import { api } from '../api/client';
 import { useAuth } from './AuthContext';
 import { useGamification } from './GamificationContext';
+import { useKudos } from './KudosContext';
 import confetti from 'canvas-confetti';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 export interface Toast {
   id: string;
@@ -95,6 +98,17 @@ interface TaskContextType {
     tags?: string[];
     subtasks?: { title: string }[];
   }) => Promise<Task | null>;
+  createBatchTasks: (tasks: {
+    title: string;
+    projectId?: string;
+    description?: string;
+    statusId: string;
+    priority: Priority;
+    assigneeIds: string[];
+    dueDate?: string;
+    tags?: string[];
+    subtasks?: { title: string }[];
+  }[]) => Promise<Task[] | null>;
   updateTask: (id: string, data: Partial<Task>) => Promise<Task | null>;
   deleteTask: (id: string) => Promise<boolean>;
   updateTaskCode: (id: string, data: { codeSnippets?: TaskCodeSnippet[]; codeSnippet?: string; codeLanguage?: CodeLanguage }) => Promise<Task | null>;
@@ -105,13 +119,21 @@ interface TaskContextType {
   addComment: (taskId: string, content: string, mentions?: string[]) => Promise<void>;
   deleteComment: (taskId: string, commentId: string) => Promise<void>;
   toggleCommentReaction: (taskId: string, commentId: string, emoji: string) => Promise<void>;
-  addAttachment: (taskId: string, data: { name: string; size: number; type: string; url?: string }) => Promise<void>;
+  addAttachment: (taskId: string, data: { name: string; size: number; type: string; url?: string; base64Data?: string }) => Promise<void>;
   deleteAttachment: (taskId: string, attachmentId: string) => Promise<void>;
   createStatus: (data: { name: string; color: string; description?: string; isDone?: boolean }) => Promise<boolean>;
   updateStatus: (id: string, data: Partial<Status>) => Promise<boolean>;
   reorderStatuses: (orderedIds: string[]) => Promise<boolean>;
   deleteStatus: (id: string, fallbackStatusId?: string) => Promise<boolean>;
   resetDemoData: () => Promise<void>;
+  clearDemoData: () => Promise<boolean>;
+  // Unified Settings Hub
+  isSettingsModalOpen: boolean;
+  setIsSettingsModalOpen: (open: boolean) => void;
+  settingsTab: SettingsTab;
+  setSettingsTab: (tab: SettingsTab) => void;
+  openSettings: (tab?: SettingsTab) => void;
+  closeSettings: () => void;
   // Meetings State & Handlers
   meetings: Meeting[];
   selectedMeeting: Meeting | null;
@@ -132,6 +154,9 @@ interface TaskContextType {
   addTimeLog: (taskId: string, data: { durationSeconds: number; description?: string; isBillable?: boolean; startTime?: string; endTime?: string }) => Promise<Task | null>;
   deleteTimeLog: (taskId: string, logId: string) => Promise<Task | null>;
   toggleTaskTimer: (taskId: string, action: 'start' | 'stop', description?: string, isBillable?: boolean) => Promise<Task | null>;
+  // Kudos Delegation
+  acceptDelegation: (taskId: string) => Promise<void>;
+  declineDelegation: (taskId: string, reason?: string) => Promise<void>;
 }
 
 const initialFilters: FilterState = {
@@ -152,8 +177,17 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     awardSubtaskCompleted,
     awardCommentPosted,
     awardAttachmentUploaded,
-    awardTaskCreated
+    awardTaskCreated,
+    userGamification
   } = useGamification();
+  const {
+    awardTaskCompletion,
+    calculateDelegationCost,
+    canAffordDelegation,
+    spendForDelegation,
+    refundDelegation,
+    calculateTaskReward
+  } = useKudos();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -166,8 +200,24 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [filters, setFilters] = useState<FilterState>(initialFilters);
   const [viewMode, setViewModeState] = useState<ViewMode>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('taskflow_view_mode') as ViewMode | null;
-      const validModes: ViewMode[] = ['kanban', 'tickets', 'list', 'timeline', 'graph', 'chat', 'meetings', 'dashboard', 'users', 'audit', 'rewards'];
+      const saved = localStorage.getItem(STORAGE_KEYS.VIEW_MODE) as ViewMode | null;
+      const validModes: ViewMode[] = [
+        'kanban',
+        'tickets',
+        'list',
+        'timeline',
+        'daily',
+        'meetings',
+        'forms',
+        'dashboard',
+        'audit',
+        'rewards',
+        'users',
+        'access',
+        'graph',
+        'chat',
+        'backup'
+      ];
       if (saved && validModes.includes(saved)) {
         return saved;
       }
@@ -178,13 +228,13 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setViewMode = useCallback((mode: ViewMode) => {
     setViewModeState(mode);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('taskflow_view_mode', mode);
+      localStorage.setItem(STORAGE_KEYS.VIEW_MODE, mode);
     }
   }, []);
 
   const [isSidebarOpen, setIsSidebarOpenState] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('taskflow_sidebar_open');
+      const saved = localStorage.getItem(STORAGE_KEYS.SIDEBAR_OPEN);
       if (saved !== null) {
         return saved === 'true';
       }
@@ -197,7 +247,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsSidebarOpenState((prev) => {
       const next = typeof action === 'function' ? (action as (p: boolean) => boolean)(prev) : action;
       if (typeof window !== 'undefined') {
-        localStorage.setItem('taskflow_sidebar_open', String(next));
+        localStorage.setItem(STORAGE_KEYS.SIDEBAR_OPEN, String(next));
       }
       return next;
     });
@@ -300,7 +350,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [metricsVisibility, setMetricsVisibility] = useState<MetricsVisibility>(() => {
     try {
-      const saved = localStorage.getItem('taskflow_metrics_visibility_v3');
+      const saved = localStorage.getItem(STORAGE_KEYS.METRICS_VISIBILITY);
       if (saved) {
         return { ...defaultMetricsVisibility, ...JSON.parse(saved) };
       }
@@ -312,7 +362,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     try {
-      localStorage.setItem('taskflow_metrics_visibility_v3', JSON.stringify(metricsVisibility));
+      localStorage.setItem(STORAGE_KEYS.METRICS_VISIBILITY, JSON.stringify(metricsVisibility));
     } catch (e) {
       // Ignore
     }
@@ -334,6 +384,22 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isStatusManagerOpen, setIsStatusManagerOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  
+  // Settings Hub Modal State
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>('appearance');
+
+  const openSettings = useCallback((tab?: SettingsTab) => {
+    if (tab) {
+      setSettingsTab(tab);
+    }
+    setIsSettingsModalOpen(true);
+  }, []);
+
+  const closeSettings = useCallback(() => {
+    setIsSettingsModalOpen(false);
+  }, []);
+
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   // Meetings State
@@ -371,21 +437,25 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         api.getMeetings().catch(() => [])
       ]);
 
+      const userProjects = (currentUser.role === 'admin')
+        ? fetchedProjects
+        : fetchedProjects.filter((p: Project) => p.ownerId === currentUser.id || (Array.isArray(p.memberIds) && p.memberIds.includes(currentUser.id)));
+
       setTasks(fetchedTasks);
       setStatuses(fetchedStatuses);
-      setProjects(fetchedProjects);
+      setProjects(userProjects);
       setActivityLogs(fetchedLogs);
       setMeetings(fetchedMeetings);
 
-      if (currentUser.role === 'admin') {
-        try {
-          const fetchedStats = await api.getStats();
-          setStats(fetchedStats);
-        } catch (err) {
-          console.warn('Could not fetch admin stats:', err);
-        }
-      } else {
-        setStats(null);
+      if (activeProjectId !== 'all' && !userProjects.some((p: Project) => p.id === activeProjectId)) {
+        setActiveProjectId('all');
+      }
+
+      try {
+        const fetchedStats = await api.getStats();
+        setStats(fetchedStats);
+      } catch (err) {
+        console.warn('Could not fetch stats:', err);
       }
     } catch (err: any) {
       console.error('Failed to load platform data:', err);
@@ -405,6 +475,17 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Filter tasks in memory for responsive UX
   const filteredTasks = tasks.filter((task) => {
+    // Non-admin users view only tasks and projects they are members in
+    if (currentUser && currentUser.role !== 'admin') {
+      const isTaskMember = Array.isArray(task.assigneeIds) && task.assigneeIds.includes(currentUser.id);
+      const isProjectMember = task.projectId
+        ? projects.some(
+            (p) => p.id === task.projectId && (p.ownerId === currentUser.id || (Array.isArray(p.memberIds) && p.memberIds.includes(currentUser.id)))
+          )
+        : false;
+      if (!isTaskMember && !isProjectMember) return false;
+    }
+
     // Project filter
     if (activeProjectId !== 'all') {
       if (task.projectId !== activeProjectId) return false;
@@ -517,11 +598,42 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     subtasks?: { title: string }[];
   }) => {
     try {
+      const creatorId = currentUser?.id || 'user-admin-1';
+      const delegationCost = calculateDelegationCost(data.assigneeIds || [], creatorId);
+
+      // Enforce strict non-negative Kudos balance
+      if (delegationCost > 0 && !canAffordDelegation(delegationCost, creatorId)) {
+        addToast('error', `Cannot assign task: Insufficient Kudos balance (Requires ${delegationCost} Kudos to delegate).`);
+        return null;
+      }
+
+      const rewardCalc = calculateTaskReward(
+        { priority: data.priority, dueDate: data.dueDate },
+        userGamification?.currentStreak || 1
+      );
+
       const taskData = {
         ...data,
-        projectId: data.projectId || (activeProjectId !== 'all' ? activeProjectId : undefined)
+        projectId: data.projectId || (activeProjectId !== 'all' ? activeProjectId : undefined),
+        kudosCost: delegationCost,
+        kudosReward: rewardCalc.total,
+        delegationStatus: delegationCost > 0 ? ('pending' as const) : undefined,
+        delegatedBy: delegationCost > 0 ? creatorId : undefined,
+        delegatedByName: delegationCost > 0 ? (currentUser?.name || 'Teammate') : undefined
       };
       const newTask = await api.createTask(taskData);
+
+      // Spend Kudos for delegation
+      if (delegationCost > 0) {
+        spendForDelegation(
+          newTask.id,
+          newTask.title,
+          data.assigneeIds || [],
+          creatorId,
+          currentUser?.name
+        );
+      }
+
       setTasks((prev) => [newTask, ...prev]);
       addToast('success', `Task "${newTask.title}" created successfully`);
       awardTaskCreated();
@@ -529,6 +641,47 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return newTask;
     } catch (err: any) {
       addToast('error', err.message || 'Failed to create task');
+      return null;
+    }
+  };
+
+  const createBatchTasks = async (tasksData: {
+    title: string;
+    projectId?: string;
+    description?: string;
+    statusId: string;
+    priority: Priority;
+    assigneeIds: string[];
+    dueDate?: string;
+    tags?: string[];
+    subtasks?: { title: string }[];
+  }[]) => {
+    try {
+      const creatorId = currentUser?.id || 'user-admin-1';
+      const prepared = tasksData.map((t) => {
+        const dCost = calculateDelegationCost(t.assigneeIds || [], creatorId);
+        const rCalc = calculateTaskReward(
+          { priority: t.priority, dueDate: t.dueDate },
+          userGamification?.currentStreak || 1
+        );
+        return {
+          ...t,
+          projectId: t.projectId || (activeProjectId !== 'all' ? activeProjectId : undefined),
+          kudosCost: dCost,
+          kudosReward: rCalc.total,
+          delegationStatus: dCost > 0 ? ('pending' as const) : undefined,
+          delegatedBy: dCost > 0 ? creatorId : undefined,
+          delegatedByName: dCost > 0 ? (currentUser?.name || 'Teammate') : undefined
+        };
+      });
+      const created = await api.createBatchTasks(prepared);
+      setTasks((prev) => [...created, ...prev]);
+      addToast('success', `Successfully created ${created.length} tasks!`);
+      awardTaskCreated();
+      refreshData();
+      return created;
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to create multiple tasks');
       return null;
     }
   };
@@ -545,6 +698,15 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const targetStatus = statuses.find((s) => s.id === data.statusId);
         if (targetStatus?.isDone) {
           awardTaskCompleted(updated);
+          const completerId = currentUser?.id || 'user-admin-1';
+          const completerName = currentUser?.name || 'Teammate';
+          const streak = userGamification?.currentStreak || 1;
+          const kEarn = awardTaskCompletion(updated, completerId, completerName, streak);
+          if (kEarn.earned > 0) {
+            addToast('success', `🪙 +${kEarn.earned} Kudos earned for completing task!`);
+          } else if (kEarn.capped) {
+            addToast('info', '🪙 Wallet cap reached (500 Kudos). Spend Kudos by delegating tasks!');
+          }
         }
       }
 
@@ -601,6 +763,15 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         origin: { y: 0.7 }
       });
       awardTaskCompleted(task);
+      const completerId = currentUser?.id || 'user-admin-1';
+      const completerName = currentUser?.name || 'Teammate';
+      const streak = userGamification?.currentStreak || 1;
+      const kEarn = awardTaskCompletion(task, completerId, completerName, streak);
+      if (kEarn.earned > 0) {
+        addToast('success', `🪙 +${kEarn.earned} Kudos earned for completing task!`);
+      } else if (kEarn.capped) {
+        addToast('info', '🪙 Wallet cap reached (500 Kudos). Spend Kudos by delegating tasks!');
+      }
     }
 
     try {
@@ -613,6 +784,63 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         prev.map((t) => (t.id === taskId ? { ...t, statusId: task.statusId } : t))
       );
       addToast('error', err.message || 'Failed to move task');
+    }
+  };
+
+  const acceptDelegation = async (taskId: string) => {
+    try {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+      await api.updateTask(taskId, { delegationStatus: 'accepted' });
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, delegationStatus: 'accepted' } : t))
+      );
+      addToast('success', 'Task accepted! Earn Kudos upon completion.');
+      refreshData();
+    } catch (err: any) {
+      addToast('error', 'Failed to accept delegation');
+    }
+  };
+
+  const declineDelegation = async (taskId: string, reason?: string) => {
+    try {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+      const currentUserId = currentUser?.id || '';
+      const currentUserName = currentUser?.name || 'Teammate';
+      const creatorId = task.delegatedBy || task.createdBy;
+
+      // 100% Refund guarantee: Refund 20 Kudos to the delegator
+      refundDelegation(taskId, task.title, currentUserId, currentUserName, creatorId, reason);
+
+      const remainingAssignees = (task.assigneeIds || []).filter((id) => id !== currentUserId);
+      const declinedList = [...(task.declinedBy || []), currentUserId];
+
+      await api.updateTask(taskId, {
+        assigneeIds: remainingAssignees,
+        delegationStatus: 'declined',
+        declinedBy: declinedList,
+        declinedReason: reason
+      });
+
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                assigneeIds: remainingAssignees,
+                delegationStatus: 'declined',
+                declinedBy: declinedList,
+                declinedReason: reason
+              }
+            : t
+        )
+      );
+
+      addToast('info', `Task declined. 🪙 20 Kudos refunded to ${task.delegatedByName || 'the creator'}.`);
+      refreshData();
+    } catch (err: any) {
+      addToast('error', 'Failed to decline delegation');
     }
   };
 
@@ -726,7 +954,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const addAttachment = async (taskId: string, data: { name: string; size: number; type: string; url?: string }) => {
+  const addAttachment = async (taskId: string, data: { name: string; size: number; type: string; url?: string; base64Data?: string }) => {
     try {
       const updated = await api.addAttachment(taskId, data);
       setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
@@ -813,6 +1041,21 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await refreshData();
     } catch (err: any) {
       addToast('error', err.message || 'Failed to reset demo data');
+    }
+  };
+
+  const clearDemoData = async () => {
+    try {
+      setIsLoading(true);
+      const res = await api.clearDemoData();
+      addToast('success', res.message || 'All demo data has been removed.');
+      await refreshData();
+      return true;
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to remove demo data');
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -1034,6 +1277,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         removeToast,
         refreshData,
         createTask,
+        createBatchTasks,
         updateTask,
         deleteTask,
         updateTaskCode,
@@ -1051,6 +1295,14 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         reorderStatuses,
         deleteStatus,
         resetDemoData,
+        clearDemoData,
+        // Settings Hub
+        isSettingsModalOpen,
+        setIsSettingsModalOpen,
+        settingsTab,
+        setSettingsTab,
+        openSettings,
+        closeSettings,
         // Meetings
         meetings,
         selectedMeeting,
@@ -1070,7 +1322,10 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Time Tracker
         addTimeLog,
         deleteTimeLog,
-        toggleTaskTimer
+        toggleTaskTimer,
+        // Kudos Delegation
+        acceptDelegation,
+        declineDelegation
       }}
     >
       {children}

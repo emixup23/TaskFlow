@@ -11,13 +11,15 @@ import {
   Sparkles,
   Users,
   Target,
-  ArrowUpRight
+  ArrowUpRight,
+  Compass
 } from 'lucide-react';
+import { AdventurePathTab } from './AdventurePathTab';
 
 export const GamificationView: React.FC = () => {
-  const { userGamification, levelInfo, leaderboard, quests, claimQuestReward } = useGamification();
+  const { userGamification, levelInfo, leaderboard, quests, claimQuestReward, awardXP } = useGamification();
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'quests' | 'leaderboard' | 'badges' | 'rules'>('quests');
+  const [activeTab, setActiveTab] = useState<'quests' | 'adventure' | 'leaderboard' | 'badges' | 'rules'>('quests');
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[#0d0d0d] space-y-6">
@@ -94,11 +96,11 @@ export const GamificationView: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[#262626] gap-2">
+      <div className="flex border-b border-[#262626] gap-2 overflow-x-auto scrollbar-none">
         <button
           type="button"
           onClick={() => setActiveTab('quests')}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'quests'
               ? 'border-amber-500 text-amber-400 bg-[#161616]'
               : 'border-transparent text-neutral-400 hover:text-neutral-200'
@@ -110,8 +112,22 @@ export const GamificationView: React.FC = () => {
 
         <button
           type="button"
+          id="tab-adventure-path-view"
+          onClick={() => setActiveTab('adventure')}
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'adventure'
+              ? 'border-amber-500 text-amber-400 bg-[#161616]'
+              : 'border-transparent text-neutral-400 hover:text-neutral-200'
+          }`}
+        >
+          <Compass className="w-4 h-4 text-amber-400" />
+          <span>Advanture Path</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab('leaderboard')}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'leaderboard'
               ? 'border-amber-500 text-amber-400 bg-[#161616]'
               : 'border-transparent text-neutral-400 hover:text-neutral-200'
@@ -124,7 +140,7 @@ export const GamificationView: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('badges')}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'badges'
               ? 'border-amber-500 text-amber-400 bg-[#161616]'
               : 'border-transparent text-neutral-400 hover:text-neutral-200'
@@ -137,7 +153,7 @@ export const GamificationView: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('rules')}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'rules'
               ? 'border-amber-500 text-amber-400 bg-[#161616]'
               : 'border-transparent text-neutral-400 hover:text-neutral-200'
@@ -147,6 +163,11 @@ export const GamificationView: React.FC = () => {
           <span>XP Multipliers</span>
         </button>
       </div>
+
+      {/* Advanture Path */}
+      {activeTab === 'adventure' && (
+        <AdventurePathTab currentUser={currentUser} awardXP={awardXP} />
+      )}
 
       {/* 1. Quests */}
       {activeTab === 'quests' && (

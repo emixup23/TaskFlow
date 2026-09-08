@@ -9,11 +9,14 @@ import {
   CheckCircle2,
   AlertCircle,
   Layers,
-  Briefcase
+  Briefcase,
+  Coins,
+  Sparkles
 } from 'lucide-react';
 import { Priority } from '../types';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
+import { useKudos } from '../context/KudosContext';
 import { TagBadge } from './TagBadge';
 import { UserAvatar } from './UserAvatar';
 
@@ -28,6 +31,13 @@ export const CreateTaskModal: React.FC = () => {
     addToast
   } = useTasks();
   const { users, currentUser, isAdmin } = useAuth();
+  const {
+    wallet,
+    calculateDelegationCost,
+    calculateTaskReward,
+    canAffordDelegation,
+    setIsKudosModalOpen
+  } = useKudos();
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -325,6 +335,74 @@ export const CreateTaskModal: React.FC = () => {
                 );
               })}
             </div>
+
+            {/* Kudos Economy Delegation Preview */}
+            {(() => {
+              const currentUserId = currentUser?.id || '';
+              const delegationCost = calculateDelegationCost(assigneeIds, currentUserId);
+              const canAfford = canAffordDelegation(delegationCost, currentUserId);
+              const externalCount = assigneeIds.filter((id) => id !== currentUserId).length;
+              const rewardPreview = calculateTaskReward({ priority, dueDate });
+
+              return (
+                <div className="space-y-2 pt-1">
+                  {delegationCost > 0 ? (
+                    <div
+                      className={`p-2.5 rounded border text-xs flex flex-col gap-1.5 transition-all ${
+                        canAfford
+                          ? 'bg-amber-950/20 border-amber-500/30 text-amber-200'
+                          : 'bg-rose-950/30 border-rose-500/40 text-rose-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <Coins className="w-4 h-4 text-amber-400 shrink-0" />
+                          <span>
+                            Delegation Stake: <strong className="text-amber-300 font-bold">{delegationCost} Kudos</strong> ({externalCount} teammate{externalCount > 1 ? 's' : ''} &times; 20)
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-neutral-400">
+                          Wallet: <span className="font-semibold text-white">{wallet.balance} Kudos</span>
+                        </span>
+                      </div>
+
+                      {!canAfford ? (
+                        <div className="flex items-start gap-1.5 text-[11px] text-rose-300 bg-rose-900/30 p-2 rounded border border-rose-800/40">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-400" />
+                          <span>
+                            <strong>Insufficient Kudos Balance.</strong> You need {delegationCost} Kudos to delegate, but only have {wallet.balance} Kudos. Assign yourself for 0 Kudos, complete pending tasks to earn more, or adjust assignees.
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between text-[11px] text-amber-400/80">
+                          <span>Balance after creating: <strong>{wallet.balance - delegationCost} Kudos</strong></span>
+                          <span className="text-neutral-400 text-[10px]">✨ 100% refunded if assignee declines</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between px-2.5 py-1.5 bg-[#181818] border border-[#262626] rounded text-[11px] text-neutral-400">
+                      <div className="flex items-center gap-1.5">
+                        <Coins className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Self-assignment: <strong>0 Kudos spent</strong></span>
+                      </div>
+                      <span className="text-neutral-400">Wallet: {wallet.balance} Kudos</span>
+                    </div>
+                  )}
+
+                  {/* Task Completion Reward Preview */}
+                  <div className="flex items-center justify-between px-2.5 py-1.5 bg-blue-950/20 border border-blue-900/30 rounded text-[11px] text-blue-300">
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Completion Reward: <strong className="text-white">+{rewardPreview.total} Kudos</strong></span>
+                    </div>
+                    <span className="text-neutral-400 text-[10px]">
+                      Base {rewardPreview.base} + {priority.toUpperCase()} ({rewardPreview.difficultyMultiplier}x) {rewardPreview.speedBonus ? '+ on-time' : ''}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Description */}
@@ -395,13 +473,29 @@ export const CreateTaskModal: React.FC = () => {
               Cancel
             </button>
 
-            <button
-              type="submit"
-              disabled={isSubmitting || !title.trim()}
-              className="px-5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded shadow-xs disabled:opacity-40 transition-colors cursor-pointer"
-            >
-              {isSubmitting ? 'Creating...' : 'Create Task'}
-            </button>
+            {(() => {
+              const currentUserId = currentUser?.id || '';
+              const delegationCost = calculateDelegationCost(assigneeIds, currentUserId);
+              const cannotAfford = delegationCost > 0 && !canAffordDelegation(delegationCost, currentUserId);
+
+              return (
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !title.trim() || cannotAfford}
+                  className={`px-5 py-2 text-xs font-semibold text-white rounded shadow-xs transition-colors cursor-pointer ${
+                    cannotAfford
+                      ? 'bg-rose-800 opacity-60 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700 disabled:opacity-40'
+                  }`}
+                >
+                  {isSubmitting
+                    ? 'Creating...'
+                    : cannotAfford
+                    ? `Insufficient Kudos (${delegationCost} Required)`
+                    : 'Create Task'}
+                </button>
+              );
+            })()}
           </div>
         </form>
       </div>

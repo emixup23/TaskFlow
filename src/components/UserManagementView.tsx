@@ -743,15 +743,17 @@ export const UserManagementView: React.FC = () => {
                             <Network className="w-4 h-4" />
                           </button>
 
-                          {/* Switch To session */}
-                          <button
-                            type="button"
-                            onClick={() => switchUser(user.id)}
-                            title={`Switch active view session to ${user.name}`}
-                            className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-[#222222] rounded transition-colors cursor-pointer"
-                          >
-                            <UserCheck className="w-4 h-4" />
-                          </button>
+                          {/* Switch To session (Admin Only) */}
+                          {isAdmin && user.id !== currentUser?.id && (
+                            <button
+                              type="button"
+                              onClick={() => switchUser(user.id)}
+                              title={`Switch active view session to ${user.name} (Admin only)`}
+                              className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-[#222222] rounded transition-colors cursor-pointer"
+                            >
+                              <UserCheck className="w-4 h-4" />
+                            </button>
+                          )}
 
                           {/* Send Direct Message */}
                           {user.id !== currentUser?.id && (

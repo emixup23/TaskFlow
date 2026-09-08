@@ -32,15 +32,21 @@ import {
   Play,
   StopCircle,
   Timer,
-  DollarSign
+  DollarSign,
+  Coins,
+  Eye,
+  FileSpreadsheet,
+  FileCode
 } from 'lucide-react';
 import { Task, Status, Priority, User, CodeLanguage } from '../types';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../context/ChatContext';
+import { useKudos } from '../context/KudosContext';
 import { TagBadge } from './TagBadge';
 import { CodeEditorTab } from './CodeEditorTab';
 import { UserAvatar } from './UserAvatar';
+import { FileViewerModal, FileViewerItem } from './FileViewerModal';
 import { MessengerComments } from './MessengerComments';
 
 export const TaskDetailModal: React.FC = () => {
@@ -65,10 +71,13 @@ export const TaskDetailModal: React.FC = () => {
     toggleTaskTimer,
     activityLogs,
     addToast,
-    setViewMode
+    setViewMode,
+    acceptDelegation,
+    declineDelegation
   } = useTasks();
 
   const { currentUser, users, isAdmin } = useAuth();
+  const { setIsKudosModalOpen } = useKudos();
   const { setPendingTaskShare } = useChat();
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -84,6 +93,7 @@ export const TaskDetailModal: React.FC = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [viewerFile, setViewerFile] = useState<FileViewerItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Time tracking local state
@@ -188,7 +198,7 @@ export const TaskDetailModal: React.FC = () => {
     setUploadError(null);
 
     // 1. Check extension whitelist & block executables
-    const allowedExtensions = ['txt', 'csv', 'png', 'jpg', 'jpeg'];
+    const allowedExtensions = ['txt', 'csv', 'png', 'jpg', 'jpeg', 'pdf'];
     const blockedExecutables = [
       'exe', 'bat', 'cmd', 'sh', 'bash', 'bin', 'msi', 'js', 'py', 'vbs', 'com', 'scr', 'app', 'apk'
     ];
@@ -202,7 +212,7 @@ export const TaskDetailModal: React.FC = () => {
     }
 
     if (!allowedExtensions.includes(ext)) {
-      setUploadError(`Invalid file type: .${ext}. Only validated files (txt, csv, png, jpg, jpeg) up to 1024 KB are allowed.`);
+      setUploadError(`Invalid file type: .${ext}. Only validated files (PDF, TXT, CSV, PNG, JPG, JPEG) up to 1024 KB are allowed.`);
       return;
     }
 
@@ -221,13 +231,14 @@ export const TaskDetailModal: React.FC = () => {
       reader.onload = async () => {
         try {
           const base64Data = reader.result as string;
+          const mimeType = file.type || (ext === 'pdf' ? 'application/pdf' : ext === 'csv' ? 'text/csv' : ext === 'txt' ? 'text/plain' : `application/${ext}`);
+          const rawBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
           await addAttachment(task.id, {
             name: file.name,
             size: file.size,
-            type: file.type || `application/${ext}`,
-            url: file.type.startsWith('image/')
-              ? base64Data
-              : `data:application/octet-stream;base64,${base64Data.split(',')[1] || ''}`
+            type: mimeType,
+            url: base64Data,
+            base64Data: rawBase64
           });
           setIsUploading(false);
           setUploadError(null);
@@ -390,7 +401,63 @@ export const TaskDetailModal: React.FC = () => {
                   Read-Only (Not Assigned)
                 </span>
               )}
+
+              {/* Kudos Reward Pill */}
+              <button
+                type="button"
+                onClick={() => setIsKudosModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 transition-colors cursor-pointer"
+                title="Kudos reward awarded upon completing this task"
+              >
+                <Coins className="w-3.5 h-3.5 text-amber-400" />
+                <span>+{task.kudosReward || 15} Kudos</span>
+              </button>
+
+              {task.delegationStatus === 'declined' && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-neutral-400 bg-neutral-800 px-2 py-0.5 rounded border border-neutral-700">
+                  Delegation Declined (Kudos Refunded)
+                </span>
+              )}
             </div>
+
+            {/* Delegation Accept/Decline Banner */}
+            {task.delegatedBy &&
+              task.delegatedBy !== currentUser?.id &&
+              task.assigneeIds.includes(currentUser?.id || '') &&
+              task.delegationStatus === 'pending' && (
+                <div className="p-3 bg-gradient-to-r from-amber-950/40 to-[#1e1e1e] border border-amber-500/40 rounded flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <Coins className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-amber-300">
+                        Task Delegated to You (Stake: {task.kudosCost || 20} Kudos)
+                      </p>
+                      <p className="text-[11px] text-neutral-300 leading-snug">
+                        Assigned by <strong className="text-white">{task.delegatedByName || 'Teammate'}</strong>. You will earn <strong className="text-amber-300">+{task.kudosReward || 15} Kudos</strong> when completed. If you cannot take this on, you can decline to instantly refund 100% of their Kudos stake.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    <button
+                      type="button"
+                      onClick={() => acceptDelegation(task.id)}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded text-xs transition-colors cursor-pointer shadow-xs"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const reason = window.prompt('Optional: Reason for declining this task delegation:');
+                        declineDelegation(task.id, reason || undefined);
+                      }}
+                      className="px-3 py-1.5 bg-[#252525] hover:bg-rose-950/60 hover:text-rose-300 hover:border-rose-700/60 text-neutral-300 border border-neutral-700 font-semibold rounded text-xs transition-colors cursor-pointer"
+                    >
+                      Decline (Refund)
+                    </button>
+                  </div>
+                </div>
+              )}
 
             {/* Editable Task Title */}
             <input
@@ -1072,7 +1139,7 @@ export const TaskDetailModal: React.FC = () => {
                       onChange={handleFileUpload}
                       className="hidden"
                       id="attachment-file-input"
-                      accept=".txt,.csv,.png,.jpg,.jpeg"
+                      accept=".pdf,.txt,.csv,.png,.jpg,.jpeg"
                     />
                     <label
                       htmlFor="attachment-file-input"
@@ -1086,7 +1153,7 @@ export const TaskDetailModal: React.FC = () => {
                           {isUploading ? 'Validating & uploading file...' : 'Drop files here or click to browse'}
                         </span>
                         <span className="text-[11px] text-neutral-400 block mt-0.5">
-                          TXT, CSV, PNG, JPG up to 1024 KB
+                          PDF, TXT, CSV, PNG, JPG up to 1024 KB
                         </span>
                       </div>
                     </label>
@@ -1104,6 +1171,9 @@ export const TaskDetailModal: React.FC = () => {
 
                   {task.attachments?.length > 0 ? (
                     task.attachments.map((att) => {
+                      const isPdf = att.name.toLowerCase().endsWith('.pdf') || att.type === 'application/pdf';
+                      const isCsv = att.name.toLowerCase().endsWith('.csv') || att.type === 'text/csv';
+                      const isTxt = att.name.toLowerCase().endsWith('.txt') || att.type === 'text/plain';
                       const isImage = att.type?.startsWith('image/') || /\.(png|jpg|jpeg)$/i.test(att.name);
                       const sizeInKb = (att.size / 1024).toFixed(1);
                       const formattedDate = att.uploadedAt
@@ -1129,21 +1199,46 @@ export const TaskDetailModal: React.FC = () => {
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex items-start gap-3 min-w-0">
                               {/* File icon / Thumbnail */}
-                              <div className="w-10 h-10 rounded bg-blue-950/50 border border-blue-800/60 flex items-center justify-center text-blue-400 shrink-0 overflow-hidden">
+                              <div
+                                onClick={() => setViewerFile(att)}
+                                className="w-10 h-10 rounded flex items-center justify-center shrink-0 overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500/50 transition-all select-none"
+                                title="Click to view file in app"
+                              >
                                 {isImage && att.url ? (
                                   <img
                                     src={att.url}
                                     alt={att.name}
                                     className="w-full h-full object-cover"
                                   />
+                                ) : isPdf ? (
+                                  <div className="w-full h-full bg-rose-950/60 border border-rose-800/80 flex flex-col items-center justify-center text-rose-400">
+                                    <FileText className="w-4 h-4" />
+                                    <span className="text-[8px] font-bold tracking-wider uppercase text-rose-300">PDF</span>
+                                  </div>
+                                ) : isCsv ? (
+                                  <div className="w-full h-full bg-emerald-950/60 border border-emerald-800/80 flex flex-col items-center justify-center text-emerald-400">
+                                    <FileSpreadsheet className="w-4 h-4" />
+                                    <span className="text-[8px] font-bold tracking-wider uppercase text-emerald-300">CSV</span>
+                                  </div>
+                                ) : isTxt ? (
+                                  <div className="w-full h-full bg-sky-950/60 border border-sky-800/80 flex flex-col items-center justify-center text-sky-400">
+                                    <FileCode className="w-4 h-4" />
+                                    <span className="text-[8px] font-bold tracking-wider uppercase text-sky-300">TXT</span>
+                                  </div>
                                 ) : (
-                                  <FileText className="w-5 h-5" />
+                                  <div className="w-full h-full bg-blue-950/60 border border-blue-800/80 flex flex-col items-center justify-center text-blue-400">
+                                    <FileText className="w-5 h-5" />
+                                  </div>
                                 )}
                               </div>
 
                               {/* File Details */}
                               <div className="min-w-0 space-y-0.5">
-                                <p className="text-xs font-bold text-white truncate" title={att.name}>
+                                <p
+                                  onClick={() => setViewerFile(att)}
+                                  className="text-xs font-bold text-white truncate cursor-pointer hover:text-blue-400 transition-colors"
+                                  title={`View ${att.name} in app`}
+                                >
                                   {att.name}
                                 </p>
                                 <div className="flex items-center gap-2 flex-wrap text-[11px] text-neutral-400">
@@ -1167,6 +1262,17 @@ export const TaskDetailModal: React.FC = () => {
 
                             {/* Action Buttons */}
                             <div className="flex items-center gap-1.5 shrink-0">
+                              {/* In-App View Button */}
+                              <button
+                                type="button"
+                                onClick={() => setViewerFile(att)}
+                                className="px-2.5 py-1.5 bg-[#222222] hover:bg-blue-600/20 text-neutral-300 hover:text-blue-400 border border-[#333333] hover:border-blue-500/40 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                                title="View file content inside app"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-blue-400" />
+                                <span className="hidden sm:inline">View in App</span>
+                              </button>
+
                               {/* Download Link/Button */}
                               <a
                                 href={att.downloadUrl || `/api/attachments/${att.id}/download`}
@@ -1184,7 +1290,7 @@ export const TaskDetailModal: React.FC = () => {
                                   target="_blank"
                                   rel="noreferrer"
                                   className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-[#262626] rounded transition-colors cursor-pointer"
-                                  title="Open / Preview"
+                                  title="Open in new tab"
                                 >
                                   <ExternalLink className="w-4 h-4" />
                                 </a>
@@ -1460,6 +1566,13 @@ export const TaskDetailModal: React.FC = () => {
         </div>
 
       </div>
+
+      {/* In-App File Viewer Modal */}
+      <FileViewerModal
+        isOpen={Boolean(viewerFile)}
+        file={viewerFile}
+        onClose={() => setViewerFile(null)}
+      />
     </div>
   );
 };

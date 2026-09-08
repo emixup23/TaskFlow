@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
-import { Priority } from '../types';
+import { Priority, Task } from '../types';
 
 export const AdminDashboard: React.FC = () => {
   const { stats, tasks, statuses, setSelectedTaskId, setViewMode } = useTasks();
@@ -37,16 +37,22 @@ export const AdminDashboard: React.FC = () => {
 
   const totalTasks = tasks.length;
   const doneStatuses = statuses.filter((s) => s.isDone).map((s) => s.id);
-  const completedTasks = tasks.filter((t) => doneStatuses.includes(t.statusId)).length;
+  const isTaskDone = (t: Task) =>
+    doneStatuses.includes(t.statusId) ||
+    Boolean((t as any).completed) ||
+    t.statusId === 'status-solved' ||
+    t.statusId === 'status-closed';
+
+  const completedTasks = tasks.filter(isTaskDone).length;
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   const todayStr = new Date().toISOString().split('T')[0];
   const overdueTasksList = tasks.filter(
-    (t) => !doneStatuses.includes(t.statusId) && t.dueDate && t.dueDate < todayStr
+    (t) => !isTaskDone(t) && t.dueDate && t.dueDate < todayStr
   );
 
   const dueTodayTasksList = tasks.filter(
-    (t) => !doneStatuses.includes(t.statusId) && t.dueDate === todayStr
+    (t) => !isTaskDone(t) && t.dueDate === todayStr
   );
 
   // Priority counts
@@ -132,7 +138,7 @@ export const AdminDashboard: React.FC = () => {
         <div className="bg-[#141414] p-5 rounded border border-[#262626] shadow-xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-              Sprint Completion
+              Completion Rate
             </span>
             <span className="p-2 rounded bg-emerald-950/60 text-emerald-400">
               <CheckCircle2 className="w-4 h-4" />
@@ -144,6 +150,9 @@ export const AdminDashboard: React.FC = () => {
               className="bg-emerald-500 h-full rounded transition-all duration-500"
               style={{ width: `${completionRate}%` }}
             />
+          </div>
+          <div className="text-xs text-neutral-400">
+            {completedTasks} of {totalTasks} tasks resolved
           </div>
         </div>
 
@@ -286,7 +295,7 @@ export const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {users.map((user) => {
             const userTasks = tasks.filter((t) => t.assigneeIds.includes(user.id));
-            const userDone = userTasks.filter((t) => doneStatuses.includes(t.statusId)).length;
+            const userDone = userTasks.filter(isTaskDone).length;
             const userActive = userTasks.length - userDone;
 
             return (

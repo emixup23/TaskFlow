@@ -36,12 +36,14 @@ import {
   KeyRound,
   Eye,
   EyeOff,
-  CalendarCheck2
+  CalendarCheck2,
+  Coins
 } from 'lucide-react';
 import { User, UserRole, UserPrivileges, Task } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
 import { useGamification } from '../context/GamificationContext';
+import { useKudos } from '../context/KudosContext';
 import { useChat } from '../context/ChatContext';
 import { UserAvatar } from './UserAvatar';
 import {
@@ -86,16 +88,19 @@ export const UserProfileModal: React.FC = () => {
     isProfileEditMode,
     setIsProfileEditMode,
     tasks,
+    statuses,
     setSelectedTaskId,
     setViewMode,
     navigateToGraph,
     addToast
   } = useTasks();
   const { getUserGamification } = useGamification();
+  const { getWallet } = useKudos();
   const { startDirectChat } = useChat();
 
   // Gamification stats for the selected user
   const userStats = selectedProfileUser ? getUserGamification(selectedProfileUser.id) : null;
+  const userWallet = selectedProfileUser ? getWallet(selectedProfileUser.id) : null;
   const achievements = userStats?.achievements || [];
 
   // Tab selection: 'overview' | 'tasks' | 'gamification' | 'edit' | 'security'
@@ -182,8 +187,15 @@ export const UserProfileModal: React.FC = () => {
     (t as any).assigneeId === selectedProfileUser.id
   );
 
-  const completedTasks = assignedTasks.filter((t) => t.statusId === 'done' || t.statusId.includes('done') || (t as any).completed);
-  const activeTasks = assignedTasks.filter((t) => !completedTasks.includes(t));
+  const doneStatusIds = statuses.filter((s) => s.isDone).map((s) => s.id);
+  const isTaskDone = (t: Task) =>
+    doneStatusIds.includes(t.statusId) ||
+    Boolean((t as any).completed) ||
+    t.statusId === 'status-solved' ||
+    t.statusId === 'status-closed';
+
+  const completedTasks = assignedTasks.filter(isTaskDone);
+  const activeTasks = assignedTasks.filter((t) => !isTaskDone(t));
   const completionRate = assignedTasks.length > 0 ? Math.round((completedTasks.length / assignedTasks.length) * 100) : 0;
 
   const displayTasks = taskFilter === 'active' ? activeTasks : taskFilter === 'completed' ? completedTasks : assignedTasks;
@@ -408,7 +420,7 @@ export const UserProfileModal: React.FC = () => {
                 </button>
               )}
 
-              {!isSelf && (
+              {!isSelf && isAdmin && (
                 <button
                   type="button"
                   id="user-profile-btn-switch-user"
@@ -417,7 +429,7 @@ export const UserProfileModal: React.FC = () => {
                     addToast('info', `Switched active session to ${selectedProfileUser.name}`);
                   }}
                   className="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                  title="Switch to this account for testing RBAC"
+                  title="Switch to this account (Admin only)"
                 >
                   <Zap className="w-3.5 h-3.5 text-blue-400" />
                   <span>Switch User</span>
@@ -533,7 +545,7 @@ export const UserProfileModal: React.FC = () => {
             <div className="space-y-6 animate-in fade-in duration-150">
               
               {/* Quick KPI Stats row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 <div className="p-3 bg-[#181818] rounded-lg border border-[#262626]">
                   <div className="text-[11px] text-neutral-400 font-medium">Assigned Tasks</div>
                   <div className="text-xl font-bold text-white mt-1">{assignedTasks.length}</div>
@@ -556,6 +568,15 @@ export const UserProfileModal: React.FC = () => {
                 </div>
 
                 <div className="p-3 bg-[#181818] rounded-lg border border-[#262626]">
+                  <div className="text-[11px] text-neutral-400 font-medium">Kudos Balance</div>
+                  <div className="text-xl font-bold text-amber-300 mt-1 flex items-center gap-1.5">
+                    <span>{userWallet?.balance ?? 100}</span>
+                    <Coins className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="text-[10px] text-neutral-500 mt-0.5">{userWallet?.earnedTotal ?? 100} earned total</div>
+                </div>
+
+                <div className="p-3 bg-[#181818] rounded-lg border border-[#262626] col-span-2 sm:col-span-1">
                   <div className="text-[11px] text-neutral-400 font-medium">Current Streak</div>
                   <div className="text-xl font-bold text-orange-400 mt-1 flex items-center gap-1.5">
                     <span>{userStats?.currentStreak || 0} Days</span>
@@ -806,7 +827,7 @@ export const UserProfileModal: React.FC = () => {
               ) : (
                 <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
                   {displayTasks.map((task) => {
-                    const isDone = task.statusId === 'done' || task.statusId.includes('done') || (task as any).completed;
+                    const isDone = isTaskDone(task);
 
                     return (
                       <div
@@ -952,9 +973,15 @@ export const UserProfileModal: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <h4 className="text-xs font-bold text-neutral-200">{ach.title}</h4>
                           {ach.unlocked && (
-                            <span className="text-[9px] font-bold text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-800">
-                              +{ach.xpReward} XP
-                            </span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[9px] font-bold text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-800">
+                                +{ach.xpReward} XP
+                              </span>
+                              <span className="text-[9px] font-bold text-amber-300 bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-800 flex items-center gap-0.5">
+                                <Coins className="w-2.5 h-2.5 text-amber-400" />
+                                +{ach.kudosReward || Math.round(ach.xpReward / 2)} Kudos
+                              </span>
+                            </div>
                           )}
                         </div>
                         <p className="text-[11px] text-neutral-400 mt-0.5 leading-relaxed">

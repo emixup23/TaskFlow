@@ -10,7 +10,8 @@ import {
   Edit2,
   Shield,
   Layers,
-  Sparkles
+  Sparkles,
+  ArrowUpDown
 } from 'lucide-react';
 import { Status } from '../types';
 import { useTasks } from '../context/TaskContext';
@@ -106,6 +107,38 @@ export const StatusManagerModal: React.FC = () => {
     if (!deletingStatusId) return;
     await deleteStatus(deletingStatusId, fallbackStatusId || undefined);
     setDeletingStatusId(null);
+  };
+
+  const handleQuickSortSequence = (type: 'az' | 'za' | 'tasks-desc' | 'done-last' | 'reverse') => {
+    const sorted = [...statuses].sort((a, b) => a.order - b.order);
+    switch (type) {
+      case 'az':
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'za':
+        sorted.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case 'tasks-desc':
+        sorted.sort((a, b) => {
+          const countA = tasks.filter((t) => t.statusId === a.id).length;
+          const countB = tasks.filter((t) => t.statusId === b.id).length;
+          if (countB !== countA) return countB - countA;
+          return a.order - b.order;
+        });
+        break;
+      case 'done-last':
+        sorted.sort((a, b) => {
+          const aDone = Boolean(a.isDone);
+          const bDone = Boolean(b.isDone);
+          if (aDone !== bDone) return aDone ? 1 : -1;
+          return a.order - b.order;
+        });
+        break;
+      case 'reverse':
+        sorted.reverse();
+        break;
+    }
+    reorderStatuses(sorted.map((s) => s.id));
   };
 
   const sortedStatuses = [...statuses].sort((a, b) => a.order - b.order);
@@ -258,9 +291,59 @@ export const StatusManagerModal: React.FC = () => {
 
           {/* Existing Statuses List & Reorder */}
           <div className="space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-300">
-              Active Workflow Sequence ({statuses.length} columns)
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-300">
+                Active Workflow Sequence ({statuses.length} columns)
+              </h3>
+              
+              {/* Quick Sort Options for Status Columns */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] text-neutral-500 font-medium flex items-center gap-1">
+                  <ArrowUpDown className="w-3 h-3 text-blue-400" />
+                  Sort Sequence:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleQuickSortSequence('az')}
+                  className="px-2 py-0.5 bg-[#1f1f1f] hover:bg-[#282828] text-neutral-300 hover:text-white rounded text-[10px] border border-[#333333] transition-colors cursor-pointer"
+                  title="Sort status names alphabetically A to Z"
+                >
+                  A → Z
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickSortSequence('za')}
+                  className="px-2 py-0.5 bg-[#1f1f1f] hover:bg-[#282828] text-neutral-300 hover:text-white rounded text-[10px] border border-[#333333] transition-colors cursor-pointer"
+                  title="Sort status names Z to A"
+                >
+                  Z → A
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickSortSequence('tasks-desc')}
+                  className="px-2 py-0.5 bg-[#1f1f1f] hover:bg-[#282828] text-neutral-300 hover:text-white rounded text-[10px] border border-[#333333] transition-colors cursor-pointer"
+                  title="Columns with most active tasks first"
+                >
+                  Most Tasks
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickSortSequence('done-last')}
+                  className="px-2 py-0.5 bg-[#1f1f1f] hover:bg-[#282828] text-neutral-300 hover:text-white rounded text-[10px] border border-[#333333] transition-colors cursor-pointer"
+                  title="Active workflow statuses first, completed statuses at the end"
+                >
+                  Done Last
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickSortSequence('reverse')}
+                  className="px-2 py-0.5 bg-[#1f1f1f] hover:bg-[#282828] text-neutral-300 hover:text-white rounded text-[10px] border border-[#333333] transition-colors cursor-pointer"
+                  title="Invert current column sequence"
+                >
+                  Reverse
+                </button>
+              </div>
+            </div>
 
             <div className="space-y-2">
               {sortedStatuses.map((status, index) => {

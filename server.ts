@@ -383,6 +383,105 @@ const ADMIN_DEFAULT_PRIVILEGES: UserPrivileges = {
   canManageChannels: true
 };
 
+export type NotificationType =
+  | 'chat_dm'
+  | 'chat_channel'
+  | 'mention'
+  | 'task_assign'
+  | 'ticket_assign'
+  | 'project_assign'
+  | 'task_comment'
+  | 'status_change'
+  | 'form_assigned'
+  | 'form_response';
+
+export interface NotificationItem {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  senderId?: string;
+  senderName?: string;
+  senderAvatar?: string;
+  channelId?: string;
+  channelName?: string;
+  taskId?: string;
+  taskTitle?: string;
+  projectId?: string;
+  projectName?: string;
+  isRead: boolean;
+  createdAt: string;
+  actionUrl?: string;
+}
+
+export type FormFieldType =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'date'
+  | 'time'
+  | 'file'
+  | 'radio'
+  | 'checkbox'
+  | 'select';
+
+export interface FormField {
+  id: string;
+  type: FormFieldType;
+  label: string;
+  placeholder?: string;
+  helpText?: string;
+  required: boolean;
+  options?: string[];
+  min?: number;
+  max?: number;
+  step?: number;
+  allowedExtensions?: string[];
+  maxFileSizeKb?: number;
+  defaultValue?: any;
+}
+
+export interface FormAttachedFile {
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  downloadUrl?: string;
+  base64Data?: string;
+}
+
+export interface Form {
+  id: string;
+  title: string;
+  description: string;
+  fields: FormField[];
+  createdBy: string;
+  createdByName: string;
+  createdByAvatar?: string;
+  createdAt: string;
+  updatedAt: string;
+  status: 'draft' | 'published' | 'closed';
+  targetAudience: 'all' | 'specific';
+  assignedUserIds: string[];
+  dueDate?: string;
+  category?: string;
+  allowMultipleSubmissions?: boolean;
+}
+
+export interface FormResponse {
+  id: string;
+  formId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  userEmail?: string;
+  userRole?: string;
+  submittedAt: string;
+  updatedAt?: string;
+  answers: Record<string, any>;
+}
+
 const BASIC_DEFAULT_PRIVILEGES: UserPrivileges = {
   canCreateTask: true,
   canEditAnyTask: false,
@@ -561,6 +660,80 @@ interface StoredFile {
 
 const secureFileStore = new Map<string, StoredFile>();
 
+export const SAMPLE_PDF_BASE64 = Buffer.from(`%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 5 0 R >> >> /MediaBox [0 0 612 792] /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 205 >>
+stream
+BT
+/F1 22 Tf
+50 720 Td
+(TaskFlow Sprint 14 Security Audit) Tj
+/F1 12 Tf
+0 -35 Td
+(Compliance Status: ISO-27001 & SOC-2 Certified) Tj
+0 -20 Td
+(Attachment Validation: PDF, CSV, TXT, PNG, JPG Allowed) Tj
+0 -20 Td
+(Maximum File Cap: 1024 KB Verified) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000010 00000 n 
+0000000060 00000 n 
+0000000117 00000 n 
+0000000249 00000 n 
+0000000507 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+586
+%%EOF`).toString('base64');
+
+export const SAMPLE_CSV_BASE64 = Buffer.from(`Role,Module,Permission,Access Level,Audit Required,Status
+admin,Security,manage_roles,Full Admin,Yes,Active
+admin,Tasks,delete_any_task,Full Admin,Yes,Active
+admin,Backup,export_full_system,Full Admin,Yes,Active
+manager,Tasks,assign_team,Management,No,Active
+manager,Reports,view_analytics,Read Only,No,Active
+developer,Tasks,edit_assigned,Standard,No,Active
+developer,Code,commit_push,Standard,Yes,Active
+tester,QA,log_defect,Standard,No,Active
+guest,Tasks,view_public,Read Only,No,Active`).toString('base64');
+
+export const SAMPLE_TXT_BASE64 = Buffer.from(`TaskFlow RBAC Architecture & Security Notes
+===========================================
+Version: 3.4.0 (Enterprise Sprint 14)
+Author: Security & Core Infrastructure Team
+Audit Status: PASSED (ISO 27001 & SOC-2 Compliant)
+
+Key Specifications:
+1. Token Verification:
+   - HMAC-SHA256 signature verification on all Authorization headers.
+   - Independent validation per API route to prevent IDOR attacks.
+2. Privilege Toggles:
+   - Granular flags: canCreateTask, canEditAnyTask, canDeleteTask, canUploadAttachments.
+   - Admin role bypasses granular restrictions by system rule.
+3. Attachment Security:
+   - Whitelist validation: .pdf, .txt, .csv, .png, .jpg, .jpeg.
+   - 1024 KB file size cap enforced with cryptographic checksum generation.
+   - Executable blacklist prevents malicious script execution.
+`).toString('base64');
+
 // Secure Authentication & Session Store
 export interface UserSession {
   token: string;
@@ -579,7 +752,7 @@ const DEFAULT_USERS: User[] = [
   {
     id: 'user-admin-1',
     name: 'Med Osman',
-    email: 'contac@abc.io',
+    email: 'contac@abc.fr',
     role: 'admin',
     avatar: 'https://medosman.com/src/assets/images/mohamed-osman-pro-photo.jpg',
     title: 'Director of Engineering',
@@ -593,6 +766,36 @@ const DEFAULT_USERS: User[] = [
   },
   {
     id: 'user-admin-2',
+    name: 'Meriam Heni',
+    email: 'Team2@techcorp.io',
+    role: 'manager',
+    avatar: 'https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg',    
+    title: 'RH Manager',
+    department: 'Customer Support',
+    bio: 'Lead customer support.',
+    phone: '+1 (555) 876-5432',
+    status: 'active',
+    privileges: {
+      canCreateTask: true,
+      canEditAnyTask: true,
+      canDeleteTask: true,
+      canManageStatuses: true,
+      canManageUsers: false,
+      canManageRoles: false,
+      canManageProjects: true,
+      canUploadAttachments: true,
+      canDeleteAttachments: true,
+      canViewAuditLogs: true,
+      canManageBackups: false,
+      canExportData: true,
+      canHostMeetings: true,
+      canManageChannels: true
+    },
+    lastLoginAt: new Date(Date.now() - 45 * 60000).toISOString(),
+    createdAt: new Date(Date.now() - 150 * 86400000).toISOString()
+  },
+  {
+    id: 'user-admin-3',
     name: 'Marcus Vance',
     email: 'marcus.vance@techcorp.io',
     role: 'manager',
@@ -775,6 +978,70 @@ let channels: ChatChannel[] = [];
 let chatMessages: ChatMessage[] = [];
 let channelReadState: Map<string, Map<string, string>> = new Map(); // channelId -> (userId -> isoString)
 let dailyTasks: DailyTask[] = [];
+let forms: Form[] = [];
+let formResponses: FormResponse[] = [];
+let notifications: NotificationItem[] = [];
+
+function extractMentions(text: string): string[] {
+  if (!text) return [];
+  const mentionedUserIds = new Set<string>();
+  for (const u of users) {
+    // Match @Name or @firstName or @username/email
+    const escapedName = u.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const nameRegex = new RegExp(`@${escapedName}\\b`, 'i');
+    const emailPrefix = u.email.split('@')[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const emailRegex = new RegExp(`@${emailPrefix}\\b`, 'i');
+    const firstName = u.name.split(' ')[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const firstNameRegex = new RegExp(`@${firstName}\\b`, 'i');
+    if (nameRegex.test(text) || emailRegex.test(text) || firstNameRegex.test(text)) {
+      mentionedUserIds.add(u.id);
+    }
+  }
+  return Array.from(mentionedUserIds);
+}
+
+function addNotification(
+  userId: string,
+  type: NotificationType,
+  title: string,
+  message: string,
+  sender?: { id: string; name: string; avatar?: string },
+  meta?: {
+    channelId?: string;
+    channelName?: string;
+    taskId?: string;
+    taskTitle?: string;
+    projectId?: string;
+    projectName?: string;
+    actionUrl?: string;
+  }
+): NotificationItem | null {
+  if (sender && sender.id === userId) return null;
+  const notif: NotificationItem = {
+    id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    userId,
+    type,
+    title,
+    message,
+    senderId: sender?.id,
+    senderName: sender?.name,
+    senderAvatar: sender?.avatar,
+    channelId: meta?.channelId,
+    channelName: meta?.channelName,
+    taskId: meta?.taskId,
+    taskTitle: meta?.taskTitle,
+    projectId: meta?.projectId,
+    projectName: meta?.projectName,
+    isRead: false,
+    createdAt: new Date().toISOString(),
+    actionUrl: meta?.actionUrl
+  };
+  notifications.unshift(notif);
+  if (notifications.length > 500) {
+    notifications = notifications.slice(0, 500);
+  }
+  return notif;
+}
 
 function generateSeedDailyTasks(): DailyTask[] {
   const today = formatDate(0);
@@ -1340,11 +1607,264 @@ function generateSeedDailyTasks(): DailyTask[] {
   ];
 }
 
+function wipeDemoData(adminUserId?: string) {
+  tasks = [];
+  projects = [];
+  meetings = [];
+  dailyTasks = [];
+  forms = [];
+  formResponses = [];
+  chatMessages = [];
+  activityLogs = [];
+
+  const adminUser = users.find((u) => u.id === adminUserId) || users.find((u) => u.role === 'admin') || users[0];
+  if (adminUser) {
+    addActivityLog(
+      adminUser.id,
+      adminUser.name,
+      adminUser.avatar,
+      'Demo Data Removed',
+      `${adminUser.name} removed demo tasks, projects, meetings, and activity logs for a clean workspace.`
+    );
+  }
+}
+
+function generateSeedForms(): { forms: Form[]; formResponses: FormResponse[] } {
+  const sarah = DEFAULT_USERS[0];
+  const alex = DEFAULT_USERS[2];
+  const maria = DEFAULT_USERS[3];
+  const james = DEFAULT_USERS[4];
+
+  const sprintRetroForm: Form = {
+    id: 'form-seed-retro',
+    title: 'Sprint Retrospective & Team Feedback',
+    description: 'Help the engineering leads evaluate our last sprint rhythm, code reviews, velocity, and delivery blockers.',
+    status: 'published',
+    targetAudience: 'specific',
+    assignedUserIds: [alex.id, maria.id, james.id, sarah.id],
+    dueDate: new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10),
+    category: 'Engineering',
+    allowMultipleSubmissions: false,
+    createdBy: sarah.id,
+    createdByName: sarah.name,
+    createdByAvatar: sarah.avatar,
+    createdAt: new Date(Date.now() - 48 * 3600000).toISOString(),
+    updatedAt: new Date(Date.now() - 48 * 3600000).toISOString(),
+    fields: [
+      {
+        id: 'field-name',
+        type: 'text',
+        label: 'Your Primary Module / Feature Area',
+        placeholder: 'e.g. Auth Service, Kanban Drag & Drop, API Gateway',
+        helpText: 'Specify which sub-system you contributed to most this sprint.',
+        required: true
+      },
+      {
+        id: 'field-satisfaction',
+        type: 'radio',
+        label: 'Overall Sprint Satisfaction',
+        helpText: 'Select the option that best summarizes your experience.',
+        required: true,
+        options: ['Exceptional - Ahead of Schedule', 'Good - Met Most Targets', 'Challenging - Many Blockers', 'Frustrating - Scope Creep']
+      },
+      {
+        id: 'field-blocker-hours',
+        type: 'number',
+        label: 'Hours Lost to Blockers or Stalled PRs',
+        placeholder: '0',
+        helpText: 'Approximate total hours waiting on CI/CD, reviews, or requirements.',
+        required: true,
+        min: 0,
+        max: 80,
+        step: 1
+      },
+      {
+        id: 'field-review-date',
+        type: 'date',
+        label: 'Proposed Retrospective Discussion Date',
+        helpText: 'Select your preferred day for the synchronous team retro meeting.',
+        required: true
+      },
+      {
+        id: 'field-review-time',
+        type: 'time',
+        label: 'Preferred Discussion Time Slot',
+        helpText: 'Pick your optimal window (e.g. 14:00).',
+        required: false
+      },
+      {
+        id: 'field-discipline',
+        type: 'select',
+        label: 'Primary Engineering Discipline',
+        helpText: 'Choose your main functional specialty.',
+        required: true,
+        options: ['Frontend (React / Tailwind)', 'Backend (Node / Express)', 'DevOps & Cloud Infrastructure', 'QA & Automation', 'UI/UX Design']
+      },
+      {
+        id: 'field-highlights',
+        type: 'checkbox',
+        label: 'Sprint Highlights & Wins',
+        helpText: 'Select all items that went smoothly for the team.',
+        required: false,
+        options: [
+          'High test coverage on new endpoints',
+          'Zero critical production regressions',
+          'Fast code review turnaround',
+          'Great cross-discipline pairing',
+          'Clean, readable documentation'
+        ]
+      },
+      {
+        id: 'field-improvements',
+        type: 'textarea',
+        label: 'What could we improve for next sprint?',
+        placeholder: 'Share actionable suggestions on grooming, ticket scopes, testing, or communication...',
+        helpText: 'Constructive recommendations are warmly welcomed.',
+        required: true
+      },
+      {
+        id: 'field-attachment',
+        type: 'file',
+        label: 'Supporting Metrics or Diagram (Optional)',
+        helpText: 'Upload a sprint burn-down screenshot, audit log, or benchmark file (PDF, TXT, CSV, PNG, JPG).',
+        required: false,
+        allowedExtensions: ['pdf', 'txt', 'csv', 'png', 'jpg', 'jpeg'],
+        maxFileSizeKb: 1024
+      }
+    ]
+  };
+
+  const hardwareRequisitionForm: Form = {
+    id: 'form-seed-hardware',
+    title: 'Hardware & Ergonomic Equipment Request',
+    description: 'Submit requisitions for developer peripherals, mechanical keyboards, 4K monitors, or laptop upgrades.',
+    status: 'published',
+    targetAudience: 'all',
+    assignedUserIds: [], // All team members
+    dueDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+    category: 'IT & Operations',
+    allowMultipleSubmissions: true,
+    createdBy: sarah.id,
+    createdByName: sarah.name,
+    createdByAvatar: sarah.avatar,
+    createdAt: new Date(Date.now() - 72 * 3600000).toISOString(),
+    updatedAt: new Date(Date.now() - 24 * 3600000).toISOString(),
+    fields: [
+      {
+        id: 'hw-applicant-title',
+        type: 'text',
+        label: 'Item / Peripherals Requested',
+        placeholder: 'e.g. Ultra-wide Monitor 34", Ergo Chair Armrest, USB-C Dock',
+        required: true
+      },
+      {
+        id: 'hw-category',
+        type: 'select',
+        label: 'Hardware Category',
+        required: true,
+        options: ['Display & Monitors', 'Input Devices (Mouse / Keyboard)', 'Audio / Headset', 'Power & Docking Stations', 'Ergonomic Furniture']
+      },
+      {
+        id: 'hw-urgency',
+        type: 'radio',
+        label: 'Urgency Level',
+        required: true,
+        options: ['Critical (Immediate blocker)', 'Standard (Within 2 weeks)', 'Nice-to-have (Quarterly budget)']
+      },
+      {
+        id: 'hw-cost',
+        type: 'number',
+        label: 'Estimated Cost in USD',
+        placeholder: '150',
+        required: true,
+        min: 10,
+        max: 5000,
+        step: 5
+      },
+      {
+        id: 'hw-needed-date',
+        type: 'date',
+        label: 'Needed By Date',
+        required: true
+      },
+      {
+        id: 'hw-preferred-time',
+        type: 'time',
+        label: 'Preferred Delivery / IT Setup Time',
+        required: false
+      },
+      {
+        id: 'hw-accessories',
+        type: 'checkbox',
+        label: 'Additional Accessories Needed',
+        required: false,
+        options: ['HDMI / DisplayPort 1.4 Cable', 'USB-C Charging Cable 100W', 'Anti-glare Screen Filter', 'Desk Cable Management Raceway']
+      },
+      {
+        id: 'hw-justification',
+        type: 'textarea',
+        label: 'Business Justification',
+        placeholder: 'Explain how this hardware improves daily workflow, engineering productivity, or ergonomics...',
+        required: true
+      },
+      {
+        id: 'hw-spec-quote',
+        type: 'file',
+        label: 'Product Spec Sheet or Price Quote (PDF, PNG, JPG)',
+        helpText: 'Attach official vendor quote or screenshot of specifications.',
+        required: false,
+        allowedExtensions: ['pdf', 'txt', 'csv', 'png', 'jpg'],
+        maxFileSizeKb: 1024
+      }
+    ]
+  };
+
+  const seedResponseMaria: FormResponse = {
+    id: 'resp-seed-1',
+    formId: sprintRetroForm.id,
+    userId: maria.id,
+    userName: maria.name,
+    userAvatar: maria.avatar,
+    userEmail: maria.email,
+    userRole: maria.role,
+    submittedAt: new Date(Date.now() - 12 * 3600000).toISOString(),
+    answers: {
+      'field-name': 'Kanban Board Drag & Drop and Daily Task Synchronization',
+      'field-satisfaction': 'Good - Met Most Targets',
+      'field-blocker-hours': 4,
+      'field-review-date': new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10),
+      'field-review-time': '15:30',
+      'field-discipline': 'Frontend (React / Tailwind)',
+      'field-highlights': [
+        'Zero critical production regressions',
+        'Clean, readable documentation',
+        'High test coverage on new endpoints'
+      ],
+      'field-improvements': 'The asynchronous task rollover worked really well, but we should make sure API contract changes are communicated before merging backend PRs to avoid local re-compiles.',
+      'field-attachment': {
+        name: 'kanban-benchmark-report.csv',
+        size: 1420,
+        type: 'text/csv',
+        url: '',
+        base64Data: 'data:text/csv;base64,' + Buffer.from('Metric,TargetMs,ActualMs,Status\nInitial Render,150,95,Passed\nCard Drag Latency,16,11,Passed\nBatch Column Update,300,180,Passed').toString('base64')
+      }
+    }
+  };
+
+  return {
+    forms: [sprintRetroForm, hardwareRequisitionForm],
+    formResponses: [seedResponseMaria]
+  };
+}
+
 function initializeSeedData() {
   users = [...DEFAULT_USERS];
   statuses = [...DEFAULT_STATUSES];
   projects = [...DEFAULT_PROJECTS];
   dailyTasks = generateSeedDailyTasks();
+  const seedFormsData = generateSeedForms();
+  forms = seedFormsData.forms;
+  formResponses = seedFormsData.formResponses;
   userPasswordHashes.clear();
   DEFAULT_USERS.forEach((u) => {
     userPasswordHashes.set(u.id, DEFAULT_DEMO_HASH);
@@ -1451,8 +1971,44 @@ function initializeSeedData() {
           type: 'image/png',
           url: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&auto=format&fit=crop&q=80',
           uploadedBy: 'user-admin-1',
-          uploadedByName: 'Sarah Chen',
+          uploadedByName: 'Med Osman',
           uploadedAt: new Date(Date.now() - 40 * 3600000).toISOString()
+        },
+        {
+          id: 'att-pdf-1',
+          name: 'Sprint_14_Security_Compliance_Audit.pdf',
+          size: 102400,
+          type: 'application/pdf',
+          url: '/api/attachments/att-pdf-1/view',
+          downloadUrl: '/api/attachments/att-pdf-1/download',
+          uploadedBy: 'user-admin-1',
+          uploadedByName: 'Med Osman',
+          uploadedAt: new Date(Date.now() - 20 * 3600000).toISOString(),
+          checksum: 'sha256-a94f83b271d4'
+        },
+        {
+          id: 'att-csv-1',
+          name: 'rbac_role_permission_matrix.csv',
+          size: 1840,
+          type: 'text/csv',
+          url: '/api/attachments/att-csv-1/view',
+          downloadUrl: '/api/attachments/att-csv-1/download',
+          uploadedBy: 'user-admin-2',
+          uploadedByName: 'Meriam Heni',
+          uploadedAt: new Date(Date.now() - 14 * 3600000).toISOString(),
+          checksum: 'sha256-c77e21a084bc'
+        },
+        {
+          id: 'att-txt-1',
+          name: 'security_implementation_notes.txt',
+          size: 920,
+          type: 'text/plain',
+          url: '/api/attachments/att-txt-1/view',
+          downloadUrl: '/api/attachments/att-txt-1/download',
+          uploadedBy: 'user-basic-1',
+          uploadedByName: 'Alex Rivera',
+          uploadedAt: new Date(Date.now() - 8 * 3600000).toISOString(),
+          checksum: 'sha256-d41d8cd98f00'
         }
       ],
       codeLanguage: 'javascript',
@@ -2762,6 +3318,80 @@ if __name__ == "__main__":
       ];
     }
   }
+
+  // Seed initial realistic notifications
+  notifications = [
+    {
+      id: 'notif-seed-1',
+      userId: 'user-admin-1',
+      type: 'mention',
+      title: 'Mentioned in Chat',
+      message: 'Alex Rivera mentioned you in #general: "@Sarah Chen can you review the production deployment pipeline?"',
+      senderId: 'user-basic-1',
+      senderName: 'Alex Rivera',
+      senderAvatar: DEFAULT_USERS[2].avatar,
+      channelId: 'channel-general',
+      channelName: 'general',
+      isRead: false,
+      createdAt: new Date(Date.now() - 25 * 60000).toISOString()
+    },
+    {
+      id: 'notif-seed-2',
+      userId: 'user-admin-1',
+      type: 'ticket_assign',
+      title: 'New Ticket Assigned',
+      message: 'Maria Garcia assigned you to ticket "API Rate Limiting 429 Incident Under Peak Load"',
+      senderId: 'user-basic-2',
+      senderName: 'Maria Garcia',
+      senderAvatar: DEFAULT_USERS[3].avatar,
+      taskId: tasks[0]?.id || 'task-seed-1',
+      taskTitle: tasks[0]?.title || 'API Rate Limiting 429 Incident',
+      isRead: false,
+      createdAt: new Date(Date.now() - 2 * 3600000).toISOString()
+    },
+    {
+      id: 'notif-seed-3',
+      userId: 'user-admin-1',
+      type: 'project_assign',
+      title: 'Added to Project',
+      message: 'Alex Rivera added you as lead of project "Enterprise AI Core Platform"',
+      senderId: 'user-basic-1',
+      senderName: 'Alex Rivera',
+      senderAvatar: DEFAULT_USERS[2].avatar,
+      projectId: projects[0]?.id || 'proj-seed-1',
+      projectName: projects[0]?.name || 'Enterprise AI Core Platform',
+      isRead: false,
+      createdAt: new Date(Date.now() - 5 * 3600000).toISOString()
+    },
+    {
+      id: 'notif-seed-4',
+      userId: 'user-basic-1',
+      type: 'task_assign',
+      title: 'New Task Assigned',
+      message: 'Sarah Chen assigned you to task "Build Container Metrics Ingress Exporter"',
+      senderId: 'user-admin-1',
+      senderName: 'Sarah Chen',
+      senderAvatar: DEFAULT_USERS[0].avatar,
+      taskId: tasks[1]?.id || 'task-seed-2',
+      taskTitle: tasks[1]?.title || 'Build Container Metrics Ingress Exporter',
+      isRead: false,
+      createdAt: new Date(Date.now() - 3 * 3600000).toISOString()
+    },
+    {
+      id: 'notif-seed-5',
+      userId: 'user-basic-1',
+      type: 'mention',
+      title: 'Mentioned in Task Comment',
+      message: 'Maria Garcia mentioned you on "Setup Automated E2E Cypress Tests": "Hey @Alex Rivera check the mock headers"',
+      senderId: 'user-basic-2',
+      senderName: 'Maria Garcia',
+      senderAvatar: DEFAULT_USERS[3].avatar,
+      taskId: tasks[0]?.id || 'task-seed-1',
+      taskTitle: tasks[0]?.title || 'Setup Automated E2E Cypress Tests',
+      isRead: false,
+      createdAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    }
+  ];
 }
 
 initializeSeedData();
@@ -3108,8 +3738,14 @@ async function startServer() {
     res.json({ success: true, message: 'Password updated successfully.' });
   });
 
-  // POST /api/auth/switch-demo-user - Switch user context for demo purposes and get new token
-  app.post('/api/auth/switch-demo-user', (req: Request, res: Response) => {
+  // POST /api/auth/switch-demo-user - Switch user context (Admin only)
+  app.post('/api/auth/switch-demo-user', (req: AuthenticatedRequest, res: Response) => {
+    // Only administrators can switch between users
+    if (req.currentUser && req.currentUser.role !== 'admin') {
+      res.status(403).json({ error: 'Access denied: Only administrators are authorized to switch between user accounts.' });
+      return;
+    }
+
     const { userId } = req.body;
     const targetUser = users.find((u) => u.id === userId);
     if (!targetUser) {
@@ -3790,9 +4426,17 @@ async function startServer() {
   // Projects API
   // -------------------------------------------------------------
 
-  // GET all projects
+  // GET projects: Admins view all; Non-admins view only projects they are members in
   app.get('/api/projects', (req: AuthenticatedRequest, res: Response) => {
-    res.json(projects);
+    const user = req.currentUser;
+    if (!user || user.role === 'admin') {
+      res.json(projects);
+    } else {
+      const userProjects = projects.filter(
+        (p) => p.ownerId === user.id || (Array.isArray(p.memberIds) && p.memberIds.includes(user.id))
+      );
+      res.json(userProjects);
+    }
   });
 
   // POST create a project (Admin or users with canManageProjects privilege)
@@ -3827,6 +4471,30 @@ async function startServer() {
     };
 
     projects.unshift(newProject);
+
+    // Notify assigned owner and members
+    if (assignedOwnerId !== req.currentUser!.id) {
+      addNotification(
+        assignedOwnerId,
+        'project_assign',
+        'Assigned as Project Lead',
+        `${req.currentUser!.name} assigned you as lead of project "${newProject.name}"`,
+        { id: req.currentUser!.id, name: req.currentUser!.name, avatar: req.currentUser!.avatar },
+        { projectId: newProject.id, projectName: newProject.name }
+      );
+    }
+    initialMembers.forEach((mId) => {
+      if (mId !== req.currentUser!.id && mId !== assignedOwnerId) {
+        addNotification(
+          mId,
+          'project_assign',
+          'Added to Project',
+          `${req.currentUser!.name} added you as a member of project "${newProject.name}"`,
+          { id: req.currentUser!.id, name: req.currentUser!.name, avatar: req.currentUser!.avatar },
+          { projectId: newProject.id, projectName: newProject.name }
+        );
+      }
+    });
 
     const ownerName = users.find((u) => u.id === newProject.ownerId)?.name || 'Team Lead';
     addActivityLog(
@@ -3880,6 +4548,29 @@ async function startServer() {
       status: status !== undefined ? status : existing.status,
       updatedAt: new Date().toISOString()
     };
+
+    if (updatedOwnerId && updatedOwnerId !== existing.ownerId && updatedOwnerId !== req.currentUser!.id) {
+      addNotification(
+        updatedOwnerId,
+        'project_assign',
+        'Assigned as Project Lead',
+        `${req.currentUser!.name} assigned you as lead of project "${projects[projectIndex].name}"`,
+        { id: req.currentUser!.id, name: req.currentUser!.name, avatar: req.currentUser!.avatar },
+        { projectId: projects[projectIndex].id, projectName: projects[projectIndex].name }
+      );
+    }
+    updatedMembers.forEach((mId) => {
+      if (!existing.memberIds.includes(mId) && mId !== req.currentUser!.id) {
+        addNotification(
+          mId,
+          'project_assign',
+          'Added to Project',
+          `${req.currentUser!.name} added you to project "${projects[projectIndex].name}"`,
+          { id: req.currentUser!.id, name: req.currentUser!.name, avatar: req.currentUser!.avatar },
+          { projectId: projects[projectIndex].id, projectName: projects[projectIndex].name }
+        );
+      }
+    });
 
     addActivityLog(
       req.currentUser!.id,
@@ -4064,14 +4755,21 @@ async function startServer() {
   // Tasks API with Role-Based Access Control
   // -------------------------------------------------------------
 
-  // GET /api/tasks: Basic users get only assigned tasks; Admins get all
+  // GET /api/tasks: Users view only tasks and projects they are members in; Admins get all
   app.get('/api/tasks', (req: AuthenticatedRequest, res: Response) => {
-    const user = req.currentUser!;
-    if (user.role === 'admin') {
+    const user = req.currentUser;
+    if (!user || user.role === 'admin') {
       res.json(tasks);
     } else {
-      // Basic User: ONLY see tasks where they are in assigneeIds
-      const userTasks = tasks.filter((t) => t.assigneeIds.includes(user.id));
+      const userProjects = projects.filter(
+        (p) => p.ownerId === user.id || (Array.isArray(p.memberIds) && p.memberIds.includes(user.id))
+      );
+      const userProjectIds = new Set(userProjects.map((p) => p.id));
+      const userTasks = tasks.filter(
+        (t) =>
+          (Array.isArray(t.assigneeIds) && t.assigneeIds.includes(user.id)) ||
+          (t.projectId && userProjectIds.has(t.projectId))
+      );
       res.json(userTasks);
     }
   });
@@ -4079,17 +4777,28 @@ async function startServer() {
   // GET /api/tasks/:id: Access enforcement
   app.get('/api/tasks/:id', (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
-    const user = req.currentUser!;
+    const user = req.currentUser;
     const task = tasks.find((t) => t.id === id);
     if (!task) {
       res.status(404).json({ error: 'Task not found' });
       return;
     }
 
-    // Role check: Admin can access any task; Basic user can only access if assigned
-    if (user.role !== 'admin' && !task.assigneeIds.includes(user.id)) {
+    if (!user || user.role === 'admin') {
+      res.json(task);
+      return;
+    }
+
+    const isTaskMember = Array.isArray(task.assigneeIds) && task.assigneeIds.includes(user.id);
+    const isProjectMember = task.projectId
+      ? projects.some(
+          (p) => p.id === task.projectId && (p.ownerId === user.id || (Array.isArray(p.memberIds) && p.memberIds.includes(user.id)))
+        )
+      : false;
+
+    if (!isTaskMember && !isProjectMember) {
       res.status(403).json({
-        error: 'Access Denied: You do not have permission to view this task. Basic users can only access tasks assigned to them.'
+        error: 'Access Denied: You do not have permission to view this task. Users can only access tasks and projects they are members in.'
       });
       return;
     }
@@ -4153,6 +4862,41 @@ async function startServer() {
 
     tasks.unshift(newTask);
 
+    const isTicket = (newTask.tags || []).some((t: string) =>
+      ['ticket', 'support', 'bug', 'issue', 'helpdesk', 'incident'].includes(t.toLowerCase())
+    );
+
+    // Notify all assigned users (except creator)
+    newTask.assigneeIds.forEach((assigneeId) => {
+      if (assigneeId !== user.id) {
+        addNotification(
+          assigneeId,
+          isTicket ? 'ticket_assign' : 'task_assign',
+          isTicket ? 'New Ticket Assigned' : 'New Task Assigned',
+          `${user.name} assigned you to ${isTicket ? 'ticket' : 'task'} "${newTask.title}"`,
+          { id: user.id, name: user.name, avatar: user.avatar },
+          { taskId: newTask.id, taskTitle: newTask.title, projectId: newTask.projectId }
+        );
+      }
+    });
+
+    // Check if any users were mentioned in description
+    if (newTask.description) {
+      const mentionedIds = extractMentions(newTask.description);
+      mentionedIds.forEach((mId) => {
+        if (mId !== user.id && !newTask.assigneeIds.includes(mId)) {
+          addNotification(
+            mId,
+            'mention',
+            'Mentioned in Task Description',
+            `${user.name} mentioned you in task "${newTask.title}"`,
+            { id: user.id, name: user.name, avatar: user.avatar },
+            { taskId: newTask.id, taskTitle: newTask.title, projectId: newTask.projectId }
+          );
+        }
+      });
+    }
+
     addActivityLog(
       user.id,
       user.name,
@@ -4164,6 +4908,94 @@ async function startServer() {
     );
 
     res.status(201).json(newTask);
+  });
+
+  // POST /api/tasks/batch: Batch create multiple tasks (Admin and privileged users)
+  app.post('/api/tasks/batch', (req: AuthenticatedRequest, res: Response) => {
+    const user = req.currentUser!;
+    if (user.role !== 'admin' && !user.privileges?.canCreateTask) {
+      res.status(403).json({ error: 'Access Denied: You do not have permission to create multiple tasks.' });
+      return;
+    }
+
+    const { tasks: incomingTasks } = req.body;
+    if (!Array.isArray(incomingTasks) || incomingTasks.length === 0) {
+      res.status(400).json({ error: 'At least one valid task must be provided.' });
+      return;
+    }
+
+    const createdTasks: Task[] = [];
+    const timestamp = Date.now();
+
+    incomingTasks.forEach((t: any, index: number) => {
+      if (!t.title || !t.title.trim()) return;
+
+      const targetStatusId = t.statusId || statuses[0]?.id || 'status-created-assigned';
+      const finalAssignees = Array.isArray(t.assigneeIds) ? t.assigneeIds : [];
+
+      if (user.role !== 'admin' && !finalAssignees.includes(user.id)) {
+        finalAssignees.push(user.id);
+      }
+
+      const newTask: Task = {
+        id: `task-${timestamp}-${index}-${Math.random().toString(36).substring(2, 7)}`,
+        projectId: t.projectId || undefined,
+        title: t.title.trim(),
+        description: t.description?.trim() || '',
+        statusId: targetStatusId,
+        priority: t.priority || 'medium',
+        assigneeIds: finalAssignees,
+        dueDate: t.dueDate || undefined,
+        tags: Array.isArray(t.tags) ? t.tags : [],
+        subtasks: Array.isArray(t.subtasks)
+          ? t.subtasks.map((st: { title: string }, i: number) => ({
+              id: `sub-${timestamp}-${index}-${i}`,
+              title: st.title,
+              completed: false
+            }))
+          : [],
+        comments: [],
+        attachments: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: user.id,
+        createdByName: user.name
+      };
+
+      tasks.unshift(newTask);
+      createdTasks.push(newTask);
+
+      const isTicket = (newTask.tags || []).some((tag: string) =>
+        ['ticket', 'support', 'bug', 'issue', 'helpdesk', 'incident'].includes(tag.toLowerCase())
+      );
+
+      newTask.assigneeIds.forEach((assigneeId) => {
+        if (assigneeId !== user.id) {
+          addNotification(
+            assigneeId,
+            isTicket ? 'ticket_assign' : 'task_assign',
+            isTicket ? 'New Ticket Assigned' : 'New Task Assigned',
+            `${user.name} assigned you to ${isTicket ? 'ticket' : 'task'} "${newTask.title}"`,
+            { id: user.id, name: user.name, avatar: user.avatar },
+            { taskId: newTask.id, taskTitle: newTask.title, projectId: newTask.projectId }
+          );
+        }
+      });
+    });
+
+    if (createdTasks.length > 0) {
+      addActivityLog(
+        user.id,
+        user.name,
+        user.avatar,
+        'Batch Created Tasks',
+        `Admin batch-created ${createdTasks.length} tasks`,
+        undefined,
+        `${createdTasks.length} tasks`
+      );
+    }
+
+    res.status(201).json(createdTasks);
   });
 
   // PUT /api/tasks/:id: Update task fields (RBAC enforced)
@@ -4252,6 +5084,25 @@ async function startServer() {
       // Basic users can update tasks but admin has full control over assignees
       // If a basic user is editing, ensure they don't accidentally remove themselves unless they intend to
       changes.push('assignees updated');
+
+      const currentTags = tags !== undefined && Array.isArray(tags) ? tags : existingTask.tags;
+      const isTicket = (currentTags || []).some((t: string) =>
+        ['ticket', 'support', 'bug', 'issue', 'helpdesk', 'incident'].includes(t.toLowerCase())
+      );
+      const newlyAssigned = (assigneeIds as string[]).filter((aId) => !existingTask.assigneeIds.includes(aId));
+      newlyAssigned.forEach((aId) => {
+        if (aId !== user.id) {
+          addNotification(
+            aId,
+            isTicket ? 'ticket_assign' : 'task_assign',
+            isTicket ? 'Ticket Assigned' : 'Task Assigned',
+            `${user.name} assigned you to ${isTicket ? 'ticket' : 'task'} "${existingTask.title}"`,
+            { id: user.id, name: user.name, avatar: user.avatar },
+            { taskId: existingTask.id, taskTitle: existingTask.title, projectId: existingTask.projectId }
+          );
+        }
+      });
+
       addActivityLog(
         user.id,
         user.name,
@@ -4278,6 +5129,21 @@ async function startServer() {
 
     if (description !== undefined && description !== existingTask.description) {
       changes.push('description updated');
+
+      const newMentions = extractMentions(description);
+      const oldMentions = extractMentions(existingTask.description || '');
+      const newlyMentioned = newMentions.filter((mId) => !oldMentions.includes(mId) && mId !== user.id);
+      newlyMentioned.forEach((mId) => {
+        addNotification(
+          mId,
+          'mention',
+          'Mentioned in Task Description',
+          `${user.name} mentioned you in task "${existingTask.title}"`,
+          { id: user.id, name: user.name, avatar: user.avatar },
+          { taskId: existingTask.id, taskTitle: existingTask.title, projectId: existingTask.projectId }
+        );
+      });
+
       addActivityLog(
         user.id,
         user.name,
@@ -4550,6 +5416,32 @@ async function startServer() {
     task.comments.push(newComment);
     task.updatedAt = new Date().toISOString();
 
+    // Notify mentioned users in comments
+    const mentionedUserIds = new Set<string>();
+    if (Array.isArray(mentions)) {
+      mentions.forEach((m: string) => {
+        const userMatch = users.find((u) => u.id === m || u.name.toLowerCase() === m.toLowerCase());
+        if (userMatch) mentionedUserIds.add(userMatch.id);
+        else mentionedUserIds.add(m);
+      });
+    }
+    const extracted = extractMentions(content);
+    extracted.forEach((id) => mentionedUserIds.add(id));
+
+    const commentSnippet = content.trim().length > 60 ? content.trim().substring(0, 60) + '...' : content.trim();
+    mentionedUserIds.forEach((mId) => {
+      if (mId !== user.id) {
+        addNotification(
+          mId,
+          'mention',
+          'Mentioned in Task Comment',
+          `${user.name} mentioned you on "${task.title}": "${commentSnippet}"`,
+          { id: user.id, name: user.name, avatar: user.avatar },
+          { taskId: task.id, taskTitle: task.title, projectId: task.projectId }
+        );
+      }
+    });
+
     addActivityLog(
       user.id,
       user.name,
@@ -4696,11 +5588,11 @@ async function startServer() {
       return;
     }
 
-    // Security Check: Allowed Extensions (txt, csv, png, jpg/jpeg)
-    const ALLOWED_EXTENSIONS = ['txt', 'csv', 'png', 'jpg', 'jpeg'];
+    // Security Check: Allowed Extensions (txt, csv, png, jpg/jpeg, pdf)
+    const ALLOWED_EXTENSIONS = ['txt', 'csv', 'png', 'jpg', 'jpeg', 'pdf'];
     if (!ALLOWED_EXTENSIONS.includes(fileExt)) {
       res.status(400).json({
-        error: `Invalid file format ".${fileExt}". Only .txt, .csv, .png, and .jpg files are permitted.`
+        error: `Invalid file format ".${fileExt}". Only .pdf, .txt, .csv, .png, and .jpg files are permitted.`
       });
       return;
     }
@@ -4718,7 +5610,8 @@ async function startServer() {
 
     // Determine safe MIME type
     let mimeType = type || 'application/octet-stream';
-    if (fileExt === 'txt') mimeType = 'text/plain; charset=utf-8';
+    if (fileExt === 'pdf') mimeType = 'application/pdf';
+    else if (fileExt === 'txt') mimeType = 'text/plain; charset=utf-8';
     else if (fileExt === 'csv') mimeType = 'text/csv; charset=utf-8';
     else if (fileExt === 'png') mimeType = 'image/png';
     else if (fileExt === 'jpg' || fileExt === 'jpeg') mimeType = 'image/jpeg';
@@ -4777,11 +5670,84 @@ async function startServer() {
     res.status(201).json(task);
   });
 
+  // Helper to find or restore file from tasks/meetings if missing in secureFileStore
+  function resolveStoredFile(id: string): StoredFile | null {
+    let file = secureFileStore.get(id);
+    if (file) return file;
+
+    // Search tasks
+    for (const t of tasks) {
+      const att = t.attachments?.find((a) => a.id === id);
+      if (att) {
+        let contentPayload = '';
+        if (att.url && att.url.startsWith('data:')) {
+          contentPayload = att.url.split(',')[1] || '';
+        } else if (id === 'att-pdf-1' || att.name.endsWith('.pdf')) {
+          contentPayload = SAMPLE_PDF_BASE64;
+        } else if (id === 'att-csv-1' || att.name.endsWith('.csv')) {
+          contentPayload = SAMPLE_CSV_BASE64;
+        } else if (id === 'att-txt-1' || att.name.endsWith('.txt')) {
+          contentPayload = SAMPLE_TXT_BASE64;
+        } else {
+          contentPayload = Buffer.from(`TaskFlow Attachment: ${att.name}`).toString('base64');
+        }
+        file = {
+          id: att.id,
+          name: att.name,
+          size: att.size,
+          mimeType: att.type,
+          dataBase64: contentPayload,
+          checksum: att.checksum || `sha256-${id}`,
+          token: (att as any).token || '',
+          uploadedBy: att.uploadedBy,
+          uploadedAt: att.uploadedAt,
+          taskId: t.id
+        };
+        secureFileStore.set(id, file);
+        return file;
+      }
+    }
+
+    // Search meetings
+    for (const m of meetings) {
+      const matt = m.attachments?.find((a) => a.id === id);
+      if (matt) {
+        let contentPayload = '';
+        if (matt.url && matt.url.startsWith('data:')) {
+          contentPayload = matt.url.split(',')[1] || '';
+        } else if (matt.name.endsWith('.pdf')) {
+          contentPayload = SAMPLE_PDF_BASE64;
+        } else if (matt.name.endsWith('.csv')) {
+          contentPayload = SAMPLE_CSV_BASE64;
+        } else if (matt.name.endsWith('.txt')) {
+          contentPayload = SAMPLE_TXT_BASE64;
+        } else {
+          contentPayload = Buffer.from(`TaskFlow Meeting Document: ${matt.name}`).toString('base64');
+        }
+        file = {
+          id: matt.id,
+          name: matt.name,
+          size: matt.size,
+          mimeType: matt.type,
+          dataBase64: contentPayload,
+          checksum: `sha256-${id}`,
+          token: '',
+          uploadedBy: matt.uploadedBy,
+          uploadedAt: matt.uploadedAt
+        };
+        secureFileStore.set(id, file);
+        return file;
+      }
+    }
+
+    return null;
+  }
+
   // GET /api/attachments/:id/download: Secure download handler
   app.get('/api/attachments/:id/download', (req: Request, res: Response) => {
     const { id } = req.params;
     const { token } = req.query;
-    const file = secureFileStore.get(id);
+    const file = resolveStoredFile(id);
 
     if (!file) {
       res.status(404).send('File not found or expired.');
@@ -4806,7 +5772,7 @@ async function startServer() {
   // GET /api/attachments/:id/view: Secure inline preview handler
   app.get('/api/attachments/:id/view', (req: Request, res: Response) => {
     const { id } = req.params;
-    const file = secureFileStore.get(id);
+    const file = resolveStoredFile(id);
 
     if (!file) {
       res.status(404).send('File not found or expired.');
@@ -4820,6 +5786,28 @@ async function startServer() {
     res.setHeader('Content-Length', buffer.length.toString());
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.send(buffer);
+  });
+
+  // GET /api/attachments/:id/data: Secure json data handler for in-app viewer
+  app.get('/api/attachments/:id/data', (req: Request, res: Response) => {
+    const { id } = req.params;
+    const file = resolveStoredFile(id);
+
+    if (!file) {
+      res.status(404).json({ error: 'File not found or expired.' });
+      return;
+    }
+
+    res.json({
+      id: file.id,
+      name: file.name,
+      size: file.size,
+      mimeType: file.mimeType,
+      dataBase64: file.dataBase64,
+      checksum: file.checksum,
+      uploadedBy: file.uploadedBy,
+      uploadedAt: file.uploadedAt
+    });
   });
 
   // DELETE /api/tasks/:id/attachments/:attId: Remove attachment with permission check
@@ -5646,20 +6634,26 @@ async function startServer() {
     }
   });
 
-  // GET /api/stats: Real-time administrator dashboard statistics & insights (Admin only)
-  app.get('/api/stats', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  // GET /api/stats: Real-time dashboard statistics & insights
+  app.get('/api/stats', requireAuth, (req: AuthenticatedRequest, res: Response) => {
     const totalTasks = tasks.length;
     const doneStatusIds = statuses.filter((s) => s.isDone).map((s) => s.id);
-    const completedTasks = tasks.filter((t) => doneStatusIds.includes(t.statusId)).length;
+    const isTaskDone = (t: Task) =>
+      doneStatusIds.includes(t.statusId) ||
+      Boolean((t as any).completed) ||
+      t.statusId === 'status-solved' ||
+      t.statusId === 'status-closed';
+
+    const completedTasks = tasks.filter(isTaskDone).length;
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     const todayStr = new Date().toISOString().split('T')[0];
     const overdueTasks = tasks.filter(
-      (t) => !doneStatusIds.includes(t.statusId) && t.dueDate && t.dueDate < todayStr
+      (t) => !isTaskDone(t) && t.dueDate && t.dueDate < todayStr
     ).length;
 
     const tasksDueToday = tasks.filter(
-      (t) => !doneStatusIds.includes(t.statusId) && t.dueDate === todayStr
+      (t) => !isTaskDone(t) && t.dueDate === todayStr
     ).length;
 
     const tasksByStatus = statuses.map((status) => ({
@@ -5685,7 +6679,7 @@ async function startServer() {
 
     const userWorkload = users.map((u) => {
       const assigned = tasks.filter((t) => t.assigneeIds.includes(u.id));
-      const completed = assigned.filter((t) => doneStatusIds.includes(t.statusId)).length;
+      const completed = assigned.filter(isTaskDone).length;
       return {
         userId: u.id,
         userName: u.name,
@@ -6116,6 +7110,48 @@ async function startServer() {
 
     chatMessages.push(newMsg);
 
+    // Notify mentioned users in chat
+    const mentionedUserIds = new Set<string>();
+    if (Array.isArray(mentions)) {
+      mentions.forEach((m: string) => {
+        const userMatch = users.find((u) => u.id === m || u.name.toLowerCase() === m.toLowerCase());
+        if (userMatch) mentionedUserIds.add(userMatch.id);
+        else mentionedUserIds.add(m);
+      });
+    }
+    const extracted = extractMentions(newMsg.content);
+    extracted.forEach((id) => mentionedUserIds.add(id));
+
+    const chatSnippet = newMsg.content.length > 60 ? newMsg.content.substring(0, 60) + '...' : newMsg.content;
+    mentionedUserIds.forEach((mId) => {
+      if (mId !== user.id) {
+        addNotification(
+          mId,
+          'mention',
+          'Mentioned in Chat',
+          `${user.name} mentioned you in #${channel.name}: "${chatSnippet}"`,
+          { id: user.id, name: user.name, avatar: user.avatar },
+          { channelId: channel.id, channelName: channel.name }
+        );
+      }
+    });
+
+    // If direct message, notify the other recipient
+    if (channel.type === 'direct' && Array.isArray(channel.memberIds)) {
+      channel.memberIds.forEach((mId) => {
+        if (mId !== user.id && !mentionedUserIds.has(mId)) {
+          addNotification(
+            mId,
+            'chat_dm',
+            'New Direct Message',
+            `${user.name}: "${chatSnippet || 'Sent an attachment'}"`,
+            { id: user.id, name: user.name, avatar: user.avatar },
+            { channelId: channel.id, channelName: channel.name }
+          );
+        }
+      });
+    }
+
     // Update channel metadata
     channel.updatedAt = newMsg.createdAt;
     channel.lastMessage = {
@@ -6508,6 +7544,81 @@ async function startServer() {
       rolledOverIds,
       message: `Successfully rolled over ${pendingTasks.length} task(s) to today.`
     });
+  });
+
+  // -------------------------------------------------------------
+  // Notification Management API
+  // -------------------------------------------------------------
+
+  // GET /api/notifications: Get current user notifications
+  app.get('/api/notifications', (req: AuthenticatedRequest, res: Response) => {
+    const user = req.currentUser;
+    if (!user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    const unreadOnly = req.query.unreadOnly === 'true';
+    let userNotifs = notifications.filter((n) => n.userId === user.id);
+    const unreadCount = userNotifs.filter((n) => !n.isRead).length;
+    if (unreadOnly) {
+      userNotifs = userNotifs.filter((n) => !n.isRead);
+    }
+    res.json({ notifications: userNotifs, unreadCount });
+  });
+
+  // PUT /api/notifications/:id/read: Mark single notification as read
+  app.put('/api/notifications/:id/read', (req: AuthenticatedRequest, res: Response) => {
+    const user = req.currentUser;
+    if (!user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    const { id } = req.params;
+    const notif = notifications.find((n) => n.id === id && n.userId === user.id);
+    if (notif) {
+      notif.isRead = true;
+    }
+    res.json({ success: true, id });
+  });
+
+  // PUT /api/notifications/read-all: Mark all as read for user
+  app.put('/api/notifications/read-all', (req: AuthenticatedRequest, res: Response) => {
+    const user = req.currentUser;
+    if (!user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    let count = 0;
+    for (const n of notifications) {
+      if (n.userId === user.id && !n.isRead) {
+        n.isRead = true;
+        count++;
+      }
+    }
+    res.json({ success: true, count });
+  });
+
+  // DELETE /api/notifications/:id: Delete single notification
+  app.delete('/api/notifications/:id', (req: AuthenticatedRequest, res: Response) => {
+    const user = req.currentUser;
+    if (!user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    const { id } = req.params;
+    notifications = notifications.filter((n) => !(n.id === id && n.userId === user.id));
+    res.json({ success: true, id });
+  });
+
+  // DELETE /api/notifications/clear-all: Clear all notifications for user
+  app.delete('/api/notifications/clear-all', (req: AuthenticatedRequest, res: Response) => {
+    const user = req.currentUser;
+    if (!user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    notifications = notifications.filter((n) => n.userId !== user.id);
+    res.json({ success: true });
   });
 
   // -------------------------------------------------------------
@@ -6987,10 +8098,441 @@ async function startServer() {
     res.json({ success: true, message: 'Snapshot deleted.' });
   });
 
+  // -------------------------------------------------------------
+  // Form Builder & User Responses API Endpoints
+  // -------------------------------------------------------------
+
+  // GET /api/forms: List all forms with computed stats and user submission status
+  app.get('/api/forms', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+    const currentUserId = req.currentUser?.id;
+    const enrichedForms = forms.map((f) => {
+      const formResps = formResponses.filter((r) => r.formId === f.id);
+      const hasUserSubmitted = currentUserId ? formResps.some((r) => r.userId === currentUserId) : false;
+      return {
+        ...f,
+        responsesCount: formResps.length,
+        hasUserSubmitted
+      };
+    });
+
+    res.json(enrichedForms.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+  });
+
+  // GET /api/forms/:id: Get single form
+  app.get('/api/forms/:id', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const form = forms.find((f) => f.id === id);
+    if (!form) {
+      res.status(404).json({ error: 'Form not found.' });
+      return;
+    }
+    const currentUserId = req.currentUser?.id;
+    const formResps = formResponses.filter((r) => r.formId === form.id);
+    const hasUserSubmitted = currentUserId ? formResps.some((r) => r.userId === currentUserId) : false;
+
+    res.json({
+      ...form,
+      responsesCount: formResps.length,
+      hasUserSubmitted
+    });
+  });
+
+  // POST /api/forms: Create a new form
+  app.post('/api/forms', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+    const {
+      title,
+      description,
+      fields,
+      status,
+      targetAudience,
+      assignedUserIds,
+      dueDate,
+      category,
+      allowMultipleSubmissions
+    } = req.body;
+
+    if (!title?.trim()) {
+      res.status(400).json({ error: 'Form title is required.' });
+      return;
+    }
+
+    if (!Array.isArray(fields) || fields.length === 0) {
+      res.status(400).json({ error: 'Form must have at least one field.' });
+      return;
+    }
+
+    const sanitizedFields: FormField[] = fields.map((f: any, index: number) => ({
+      id: f.id || `field-${Date.now()}-${index}`,
+      type: f.type || 'text',
+      label: f.label?.trim() || `Field ${index + 1}`,
+      placeholder: f.placeholder || undefined,
+      helpText: f.helpText || undefined,
+      required: Boolean(f.required),
+      options: Array.isArray(f.options) ? f.options.filter((opt: any) => typeof opt === 'string' && opt.trim().length > 0) : undefined,
+      min: typeof f.min === 'number' ? f.min : undefined,
+      max: typeof f.max === 'number' ? f.max : undefined,
+      step: typeof f.step === 'number' ? f.step : undefined,
+      allowedExtensions: Array.isArray(f.allowedExtensions) ? f.allowedExtensions : undefined,
+      maxFileSizeKb: typeof f.maxFileSizeKb === 'number' ? f.maxFileSizeKb : 1024,
+      defaultValue: f.defaultValue
+    }));
+
+    const newForm: Form = {
+      id: `form-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      title: title.trim(),
+      description: description?.trim() || '',
+      fields: sanitizedFields,
+      createdBy: req.currentUser!.id,
+      createdByName: req.currentUser!.name,
+      createdByAvatar: req.currentUser!.avatar,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: status === 'published' ? 'published' : 'draft',
+      targetAudience: targetAudience === 'all' ? 'all' : 'specific',
+      assignedUserIds: Array.isArray(assignedUserIds) ? assignedUserIds : [],
+      dueDate: dueDate || undefined,
+      category: category?.trim() || 'General',
+      allowMultipleSubmissions: Boolean(allowMultipleSubmissions)
+    };
+
+    forms.unshift(newForm);
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Created Form',
+      `Created form "${newForm.title}" with ${newForm.fields.length} fields (${newForm.status}).`
+    );
+
+    // If published, notify assigned users
+    if (newForm.status === 'published') {
+      const recipientIds = newForm.targetAudience === 'all'
+        ? users.filter((u) => u.id !== req.currentUser!.id).map((u) => u.id)
+        : newForm.assignedUserIds.filter((id) => id !== req.currentUser!.id);
+
+      recipientIds.forEach((uid) => {
+        addNotification(
+          uid,
+          'form_assigned',
+          'New Form to Answer',
+          `${req.currentUser!.name} assigned you to complete "${newForm.title}".`,
+          { id: req.currentUser!.id, name: req.currentUser!.name, avatar: req.currentUser!.avatar },
+          { actionUrl: `/forms` }
+        );
+      });
+    }
+
+    res.status(201).json({
+      ...newForm,
+      responsesCount: 0,
+      hasUserSubmitted: false
+    });
+  });
+
+  // PUT /api/forms/:id: Update existing form
+  app.put('/api/forms/:id', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const formIndex = forms.findIndex((f) => f.id === id);
+    if (formIndex === -1) {
+      res.status(404).json({ error: 'Form not found.' });
+      return;
+    }
+
+    const existing = forms[formIndex];
+    const updates = req.body;
+
+    let sanitizedFields = existing.fields;
+    if (Array.isArray(updates.fields)) {
+      sanitizedFields = updates.fields.map((f: any, index: number) => ({
+        id: f.id || `field-${Date.now()}-${index}`,
+        type: f.type || 'text',
+        label: f.label?.trim() || `Field ${index + 1}`,
+        placeholder: f.placeholder || undefined,
+        helpText: f.helpText || undefined,
+        required: Boolean(f.required),
+        options: Array.isArray(f.options) ? f.options.filter((opt: any) => typeof opt === 'string' && opt.trim().length > 0) : undefined,
+        min: typeof f.min === 'number' ? f.min : undefined,
+        max: typeof f.max === 'number' ? f.max : undefined,
+        step: typeof f.step === 'number' ? f.step : undefined,
+        allowedExtensions: Array.isArray(f.allowedExtensions) ? f.allowedExtensions : undefined,
+        maxFileSizeKb: typeof f.maxFileSizeKb === 'number' ? f.maxFileSizeKb : 1024,
+        defaultValue: f.defaultValue
+      }));
+    }
+
+    const wasPublished = existing.status === 'published';
+    const isNowPublished = updates.status === 'published';
+
+    const updatedForm: Form = {
+      ...existing,
+      title: updates.title !== undefined ? updates.title.trim() : existing.title,
+      description: updates.description !== undefined ? updates.description.trim() : existing.description,
+      fields: sanitizedFields,
+      status: updates.status || existing.status,
+      targetAudience: updates.targetAudience || existing.targetAudience,
+      assignedUserIds: Array.isArray(updates.assignedUserIds) ? updates.assignedUserIds : existing.assignedUserIds,
+      dueDate: updates.dueDate !== undefined ? updates.dueDate : existing.dueDate,
+      category: updates.category !== undefined ? updates.category : existing.category,
+      allowMultipleSubmissions: updates.allowMultipleSubmissions !== undefined ? updates.allowMultipleSubmissions : existing.allowMultipleSubmissions,
+      updatedAt: new Date().toISOString()
+    };
+
+    forms[formIndex] = updatedForm;
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Updated Form',
+      `Updated form "${updatedForm.title}".`
+    );
+
+    // If newly published or new users assigned, notify them
+    if (!wasPublished && isNowPublished) {
+      const recipientIds = updatedForm.targetAudience === 'all'
+        ? users.filter((u) => u.id !== req.currentUser!.id).map((u) => u.id)
+        : updatedForm.assignedUserIds.filter((uid) => uid !== req.currentUser!.id);
+
+      recipientIds.forEach((uid) => {
+        addNotification(
+          uid,
+          'form_assigned',
+          'Form Published to Answer',
+          `${req.currentUser!.name} published "${updatedForm.title}" for you to complete.`,
+          { id: req.currentUser!.id, name: req.currentUser!.name, avatar: req.currentUser!.avatar },
+          { actionUrl: `/forms` }
+        );
+      });
+    }
+
+    const formResps = formResponses.filter((r) => r.formId === updatedForm.id);
+    const hasUserSubmitted = req.currentUser ? formResps.some((r) => r.userId === req.currentUser.id) : false;
+
+    res.json({
+      ...updatedForm,
+      responsesCount: formResps.length,
+      hasUserSubmitted
+    });
+  });
+
+  // DELETE /api/forms/:id: Delete form and its responses
+  app.delete('/api/forms/:id', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const formIndex = forms.findIndex((f) => f.id === id);
+    if (formIndex === -1) {
+      res.status(404).json({ error: 'Form not found.' });
+      return;
+    }
+
+    const deletedForm = forms.splice(formIndex, 1)[0];
+    // Delete associated responses
+    formResponses = formResponses.filter((r) => r.formId !== id);
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Deleted Form',
+      `Deleted form "${deletedForm.title}" and its submissions.`
+    );
+
+    res.json({ success: true, id });
+  });
+
+  // GET /api/forms/:id/my-response: Get current user's own response for a form
+  app.get('/api/forms/:id/my-response', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const currentUserId = req.currentUser!.id;
+    const myResp = formResponses.find((r) => r.formId === id && r.userId === currentUserId);
+    if (!myResp) {
+      res.status(404).json({ error: 'No response found for current user.' });
+      return;
+    }
+    res.json(myResp);
+  });
+
+  // GET /api/forms/:id/responses: List all responses/answers for a form (Admin only)
+  app.get('/api/forms/:id/responses', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const form = forms.find((f) => f.id === id);
+    if (!form) {
+      res.status(404).json({ error: 'Form not found.' });
+      return;
+    }
+
+    const resps = formResponses
+      .filter((r) => r.formId === id)
+      .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+
+    res.json(resps);
+  });
+
+  // POST /api/forms/:id/responses: Submit or update a response to a form
+  app.post('/api/forms/:id/responses', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const form = forms.find((f) => f.id === id);
+    if (!form) {
+      res.status(404).json({ error: 'Form not found.' });
+      return;
+    }
+
+    if (form.status === 'closed') {
+      res.status(400).json({ error: 'This form is closed and is no longer accepting responses.' });
+      return;
+    }
+
+    const { answers } = req.body;
+    if (!answers || typeof answers !== 'object') {
+      res.status(400).json({ error: 'Answers object is required.' });
+      return;
+    }
+
+    // Validate required fields
+    for (const field of form.fields) {
+      if (field.required) {
+        const val = answers[field.id];
+        if (val === undefined || val === null || val === '') {
+          res.status(400).json({ error: `Field "${field.label}" is required.` });
+          return;
+        }
+        if (field.type === 'checkbox' && (!Array.isArray(val) || val.length === 0)) {
+          res.status(400).json({ error: `Please select at least one option for "${field.label}".` });
+          return;
+        }
+        if (field.type === 'file' && typeof val === 'object' && !val.name && !val.url && !val.base64Data) {
+          res.status(400).json({ error: `Please upload a file for "${field.label}".` });
+          return;
+        }
+      }
+    }
+
+    const currentUserId = req.currentUser!.id;
+    const existingIndex = formResponses.findIndex((r) => r.formId === id && r.userId === currentUserId);
+
+    let savedResponse: FormResponse;
+    if (existingIndex !== -1 && !form.allowMultipleSubmissions) {
+      // Update existing response
+      savedResponse = {
+        ...formResponses[existingIndex],
+        answers,
+        updatedAt: new Date().toISOString()
+      };
+      formResponses[existingIndex] = savedResponse;
+    } else {
+      // New response
+      savedResponse = {
+        id: `resp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        formId: id,
+        userId: currentUserId,
+        userName: req.currentUser!.name,
+        userAvatar: req.currentUser!.avatar,
+        userEmail: req.currentUser!.email,
+        userRole: req.currentUser!.role,
+        submittedAt: new Date().toISOString(),
+        answers
+      };
+      formResponses.unshift(savedResponse);
+    }
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Submitted Form Response',
+      `${req.currentUser!.name} submitted a response to form "${form.title}".`
+    );
+
+    // Notify form creator if not the same person
+    if (form.createdBy !== currentUserId) {
+      addNotification(
+        form.createdBy,
+        'form_response',
+        'New Form Response Received',
+        `${req.currentUser!.name} submitted a response to "${form.title}".`,
+        { id: req.currentUser!.id, name: req.currentUser!.name, avatar: req.currentUser!.avatar },
+        { actionUrl: `/forms` }
+      );
+    }
+
+    res.status(201).json(savedResponse);
+  });
+
+  // POST /api/forms/:id/remind: Send reminder notifications to pending assigned users
+  app.post('/api/forms/:id/remind', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const form = forms.find((f) => f.id === id);
+    if (!form) {
+      res.status(404).json({ error: 'Form not found.' });
+      return;
+    }
+
+    const completedUserIds = new Set(
+      formResponses.filter((r) => r.formId === id).map((r) => r.userId)
+    );
+
+    const targetUserIds = form.targetAudience === 'all'
+      ? users.map((u) => u.id).filter((uid) => uid !== form.createdBy)
+      : form.assignedUserIds;
+
+    const pendingUserIds = targetUserIds.filter((uid) => !completedUserIds.has(uid));
+    const pendingUsers = users.filter((u) => pendingUserIds.includes(u.id));
+
+    pendingUsers.forEach((u) => {
+      addNotification(
+        u.id,
+        'form_assigned',
+        'Reminder: Complete Form',
+        `Gentle reminder: Please submit your answers for "${form.title}"${form.dueDate ? ` by ${form.dueDate}` : ''}.`,
+        { id: req.currentUser!.id, name: req.currentUser!.name, avatar: req.currentUser!.avatar },
+        { actionUrl: `/forms` }
+      );
+    });
+
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Sent Form Reminder',
+      `Sent reminder for "${form.title}" to ${pendingUsers.length} pending team member(s).`
+    );
+
+    res.json({
+      success: true,
+      remindedCount: pendingUsers.length,
+      pendingUsers: pendingUsers.map((u) => ({ id: u.id, name: u.name, email: u.email }))
+    });
+  });
+
+  // DELETE /api/forms/:formId/responses/:responseId: Delete a single response (Admin only)
+  app.delete('/api/forms/:formId/responses/:responseId', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+    const { formId, responseId } = req.params;
+    const respIndex = formResponses.findIndex((r) => r.id === responseId && r.formId === formId);
+    if (respIndex === -1) {
+      res.status(404).json({ error: 'Response not found.' });
+      return;
+    }
+
+    formResponses.splice(respIndex, 1);
+    res.json({ success: true, id: responseId });
+  });
+
+
   // POST /api/reset-data: Reset data for testing demo
   app.post('/api/reset-data', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
     initializeSeedData();
     res.json({ success: true, message: 'Database reset to initial demo state.' });
+  });
+
+  // POST /api/clear-demo-data: Remove all demo data (Admin only)
+  app.post('/api/clear-demo-data', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+    wipeDemoData(req.currentUser?.id);
+    res.json({
+      success: true,
+      message: 'All demo data has been removed. You now have a clean workspace ready for production use.',
+      tasksCount: tasks.length,
+      projectsCount: projects.length
+    });
   });
 
   // -------------------------------------------------------------

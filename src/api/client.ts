@@ -27,7 +27,10 @@ import {
   UserPrivileges,
   BatchAccessUpdatePayload,
   AccessSummaryStats,
-  DailyTask
+  DailyTask,
+  NotificationItem,
+  Form,
+  FormResponse
 } from '../types';
 
 let currentUserId = localStorage.getItem('taskflow_user_id') || 'user-admin-1';
@@ -192,6 +195,21 @@ export const api = {
     request<Task>('/api/tasks', {
       method: 'POST',
       body: JSON.stringify(data)
+    }),
+  createBatchTasks: (tasks: {
+    title: string;
+    projectId?: string;
+    description?: string;
+    statusId: string;
+    priority: Priority;
+    assigneeIds: string[];
+    dueDate?: string;
+    tags?: string[];
+    subtasks?: { title: string }[];
+  }[]) =>
+    request<Task[]>('/api/tasks/batch', {
+      method: 'POST',
+      body: JSON.stringify({ tasks })
     }),
   updateTask: (id: string, data: Partial<Task>) =>
     request<Task>(`/api/tasks/${id}`, {
@@ -549,5 +567,82 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ userId, fromDate })
       }
-    )
+    ),
+
+  // Demo Data Management (Admin only)
+  clearDemoData: () =>
+    request<{ success: boolean; message: string; tasksCount: number; projectsCount: number }>(
+      '/api/clear-demo-data',
+      { method: 'POST' }
+    ),
+
+  // Notifications API
+  getNotifications: (unreadOnly?: boolean) => {
+    const qs = unreadOnly ? '?unreadOnly=true' : '';
+    return request<{ notifications: NotificationItem[]; unreadCount: number }>(`/api/notifications${qs}`);
+  },
+
+  markNotificationRead: (id: string) =>
+    request<{ success: boolean; id: string }>(`/api/notifications/${id}/read`, {
+      method: 'PUT'
+    }),
+
+  markAllNotificationsRead: () =>
+    request<{ success: boolean; count: number }>('/api/notifications/read-all', {
+      method: 'PUT'
+    }),
+
+  deleteNotification: (id: string) =>
+    request<{ success: boolean; id: string }>(`/api/notifications/${id}`, {
+      method: 'DELETE'
+    }),
+
+  clearAllNotifications: () =>
+    request<{ success: boolean }>('/api/notifications/clear-all', {
+      method: 'DELETE'
+    }),
+
+  // Form Builder & Responses API
+  getForms: () => request<Form[]>('/api/forms'),
+
+  getForm: (id: string) => request<Form>(`/api/forms/${id}`),
+
+  createForm: (data: Partial<Form>) =>
+    request<Form>('/api/forms', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
+  updateForm: (id: string, data: Partial<Form>) =>
+    request<Form>(`/api/forms/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+
+  deleteForm: (id: string) =>
+    request<{ success: boolean; id: string }>(`/api/forms/${id}`, {
+      method: 'DELETE'
+    }),
+
+  getFormResponses: (formId: string) => request<FormResponse[]>(`/api/forms/${formId}/responses`),
+  getMyFormResponse: (formId: string) => request<FormResponse>(`/api/forms/${formId}/my-response`),
+
+  submitFormResponse: (formId: string, answers: Record<string, any>) =>
+    request<FormResponse>(`/api/forms/${formId}/responses`, {
+      method: 'POST',
+      body: JSON.stringify({ answers })
+    }),
+
+  remindFormPendingUsers: (formId: string) =>
+    request<{ success: boolean; remindedCount: number; pendingUsers: { id: string; name: string; email?: string }[] }>(
+      `/api/forms/${formId}/remind`,
+      {
+        method: 'POST'
+      }
+    ),
+
+  deleteFormResponse: (formId: string, responseId: string) =>
+    request<{ success: boolean; id: string }>(`/api/forms/${formId}/responses/${responseId}`, {
+      method: 'DELETE'
+    })
 };
