@@ -48,6 +48,7 @@ import { CodeEditorTab } from './CodeEditorTab';
 import { UserAvatar } from './UserAvatar';
 import { FileViewerModal, FileViewerItem } from './FileViewerModal';
 import { MessengerComments } from './MessengerComments';
+import { VoiceToTextButton } from './VoiceToTextButton';
 
 export const TaskDetailModal: React.FC = () => {
   const {
@@ -324,14 +325,90 @@ export const TaskDetailModal: React.FC = () => {
   const totalSnippets = task.codeSnippets?.length || (task.codeSnippet ? 1 : 0);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 lg:p-8 animate-in fade-in duration-150">
+    <div
+      id="task-detail-modal-backdrop"
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-6 lg:p-8 animate-in fade-in duration-150"
+      onClick={() => setSelectedTaskId(null)}
+    >
       <div
         id="task-detail-modal"
-        className="relative bg-[#141414] w-full md:w-[90vw] md:max-w-[90vw] lg:w-[90vw] lg:max-w-[90vw] xl:w-[90vw] xl:max-w-[90vw] rounded shadow-2xl border border-[#262626] overflow-hidden flex flex-col max-h-[92vh] h-[90vh] md:h-[88vh] transition-all duration-200"
+        onClick={(e) => e.stopPropagation()}
+        className="relative bg-[#141414] w-full md:w-[90vw] md:max-w-[90vw] lg:w-[90vw] lg:max-w-[90vw] xl:w-[90vw] xl:max-w-[90vw] rounded shadow-2xl border border-[#262626] overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[92vh] h-[94vh] sm:h-[90vh] md:h-[88vh] transition-all duration-200"
       >
+        {/* Mobile-Only Dedicated Header Bar with Direct Close Button */}
+        <div className="flex sm:hidden items-center justify-between px-3.5 py-2.5 bg-[#181818] border-b border-[#262626] shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs font-mono font-bold text-blue-400 bg-blue-950/50 border border-blue-800/40 px-2 py-0.5 rounded truncate">
+              {task.code || `TASK-${task.id.slice(0, 6)}`}
+            </span>
+            <span className="text-xs font-semibold text-neutral-300 truncate max-w-[110px]">
+              {statuses.find((s) => s.id === task.statusId)?.name || 'Task'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Share / Copy Task Link */}
+            <button
+              type="button"
+              id="btn-copy-task-link-mobile"
+              onClick={handleCopyLink}
+              title={copiedLink ? 'Link copied!' : 'Share task link'}
+              aria-label="Share task link"
+              className="p-2 rounded-lg bg-[#222222] hover:bg-[#2c2c2c] border border-[#333333] text-neutral-200 transition-colors cursor-pointer active:scale-95"
+            >
+              {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Link2 className="w-4 h-4 text-blue-400" />}
+            </button>
+
+            {/* Discuss in Chat */}
+            <button
+              type="button"
+              id="btn-discuss-in-chat-mobile"
+              onClick={() => {
+                setPendingTaskShare(task);
+                setSelectedTaskId(null);
+                setViewMode('chat');
+              }}
+              title="Discuss in Chat"
+              aria-label="Discuss in Chat"
+              className="p-2 rounded-lg bg-[#222222] hover:bg-[#2c2c2c] border border-[#333333] text-emerald-400 transition-colors cursor-pointer active:scale-95"
+            >
+              <MessageSquare className="w-4 h-4" />
+            </button>
+
+            {canDelete && (
+              <button
+                type="button"
+                id="btn-delete-task-mobile"
+                onClick={() => {
+                  if (confirm(`Are you sure you want to delete "${task.title}"?`)) {
+                    deleteTask(task.id);
+                  }
+                }}
+                title="Delete Task"
+                aria-label="Delete Task"
+                className="p-2 rounded-lg text-rose-400 hover:bg-rose-950/50 border border-transparent hover:border-rose-800 transition-colors cursor-pointer active:scale-95"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* PROMINENT MOBILE CLOSE BUTTON */}
+            <button
+              type="button"
+              id="btn-close-task-modal-mobile"
+              onClick={() => setSelectedTaskId(null)}
+              aria-label="Close task window"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-white font-bold text-xs border border-neutral-600 shadow-sm transition-all cursor-pointer active:scale-95"
+            >
+              <X className="w-4 h-4 text-neutral-200" />
+              <span>Close</span>
+            </button>
+          </div>
+        </div>
+
         {/* Header Bar */}
-        <div className="p-4 sm:p-5 border-b border-[#262626] bg-[#1a1a1a] flex items-start justify-between gap-4">
-          <div className="flex-1 space-y-2">
+        <div className="p-3.5 sm:p-5 border-b border-[#262626] bg-[#1a1a1a] flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0 space-y-2">
             
             {/* Top Meta: Status, Priority, Due Date Pills */}
             <div className="flex flex-wrap items-center gap-2">
@@ -472,8 +549,8 @@ export const TaskDetailModal: React.FC = () => {
             />
           </div>
 
-          {/* Close & Privilege-gated Actions */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Desktop Close & Privilege-gated Actions */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
             {/* Share / Copy Task Link */}
             <button
               type="button"
@@ -531,6 +608,7 @@ export const TaskDetailModal: React.FC = () => {
               type="button"
               id="btn-close-task-modal"
               onClick={() => setSelectedTaskId(null)}
+              aria-label="Close task window"
               className="p-2 rounded text-neutral-400 hover:text-neutral-200 hover:bg-[#262626] transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
@@ -673,9 +751,24 @@ export const TaskDetailModal: React.FC = () => {
               <div className="space-y-6">
                 {/* Description */}
                 <div className="space-y-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400">
-                    Description & Specifications
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400">
+                      Description & Specifications
+                    </label>
+                    {canEdit && (
+                      <VoiceToTextButton
+                        id="task-detail-voice-btn"
+                        value={description}
+                        onChange={setDescription}
+                        onDone={(finalVal) => {
+                          if (task && finalVal !== task.description && canEdit) {
+                            updateTask(task.id, { description: finalVal });
+                          }
+                        }}
+                        title="Dictate or update task description with microphone"
+                      />
+                    )}
+                  </div>
                   <textarea
                     id="task-description-textarea"
                     rows={4}
@@ -683,7 +776,7 @@ export const TaskDetailModal: React.FC = () => {
                     disabled={!canEdit}
                     onChange={(e) => setDescription(e.target.value)}
                     onBlur={handleDescriptionBlur}
-                    placeholder="Add detailed task instructions, acceptance criteria, or requirements..."
+                    placeholder="Add detailed task instructions, acceptance criteria, or requirements (type or use voice-to-text)..."
                     className="w-full p-3 text-sm text-neutral-200 bg-[#1f1f1f] border border-[#333333] rounded focus:ring-1 focus:ring-blue-500 transition-all disabled:bg-[#181818] disabled:cursor-not-allowed leading-relaxed"
                   />
                 </div>
@@ -1563,6 +1656,22 @@ export const TaskDetailModal: React.FC = () => {
 
           </div>
 
+        </div>
+
+        {/* Sticky Mobile Bottom Bar with Close Button */}
+        <div className="sm:hidden px-4 py-2.5 bg-[#181818] border-t border-[#262626] flex items-center justify-between gap-3 shrink-0 z-10">
+          <span className="text-xs text-neutral-400 truncate max-w-[180px]">
+            {task.title || 'Untitled Task'}
+          </span>
+          <button
+            type="button"
+            id="btn-close-task-modal-mobile-bottom"
+            onClick={() => setSelectedTaskId(null)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-white text-xs font-bold border border-neutral-600 shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
+          >
+            <X className="w-4 h-4" />
+            <span>Close Task</span>
+          </button>
         </div>
 
       </div>

@@ -9,6 +9,7 @@ import { RelationshipGraphView } from '../RelationshipGraphView';
 import { ChatView } from '../ChatView';
 import { MeetingsView } from '../MeetingsView';
 import { FormBuilderView } from '../FormBuilderView';
+import { NotepadView } from '../NotepadView';
 import { AdminDashboard } from '../AdminDashboard';
 import { UserManagementView } from '../UserManagementView';
 import { AccessManagerView } from '../AccessManagerView';
@@ -36,7 +37,11 @@ export const WorkspaceViewRouter: React.FC<WorkspaceViewRouterProps> = ({ viewMo
       case 'tickets':
         return <TicketSystemView />;
       case 'list':
-        return <TableView />;
+        return (
+          <ProtectedRoute requiredRole="admin" title="Bulk Tasks Workspace">
+            <TableView />
+          </ProtectedRoute>
+        );
       case 'timeline':
         return <TimelineView />;
       case 'graph':
@@ -47,6 +52,8 @@ export const WorkspaceViewRouter: React.FC<WorkspaceViewRouterProps> = ({ viewMo
         return <MeetingsView />;
       case 'forms':
         return <FormBuilderView />;
+      case 'notes':
+        return <NotepadView />;
       case 'dashboard':
         return (
           <ProtectedRoute requiredRole="admin" title="Executive Analytics & Dashboard">

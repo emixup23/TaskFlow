@@ -62,7 +62,7 @@ const LEVEL_THRESHOLDS = [
   { level: 3, minXp: 500, title: 'Agile Specialist', icon: '🥇' },
   { level: 4, minXp: 1000, title: 'Task Champion', icon: '⚡' },
   { level: 5, minXp: 1700, title: 'Workflow Wizard', icon: '🔮' },
-  { level: 6, minXp: 2600, title: 'Sprint Commander', icon: '🛡️' },
+  { level: 6, minXp: 2600, title: 'Sprint Commander', icon: '/shiled.svg' },
   { level: 7, minXp: 3800, title: 'Velocity Grandmaster', icon: '👑' },
   { level: 8, minXp: 5500, title: 'Legendary Producer', icon: '🌟' }
 ];

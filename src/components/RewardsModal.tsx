@@ -75,7 +75,13 @@ export const RewardsModal: React.FC = () => {
         <div className="p-4 bg-[#161616] border-b border-[#262626] grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Level & Title */}
           <div className="p-2.5 bg-[#1c1c1c] border border-[#2a2a2a] rounded flex items-center gap-2.5">
-            <div className="text-2xl">{levelInfo.levelIcon}</div>
+            <div className="text-2xl w-8 h-8 flex items-center justify-center shrink-0">
+              {levelInfo.levelIcon?.startsWith('/') || levelInfo.levelIcon?.endsWith('.svg') || levelInfo.levelIcon?.endsWith('.png') ? (
+                <img src={levelInfo.levelIcon} alt="level icon" className="w-7 h-7 object-contain" />
+              ) : (
+                levelInfo.levelIcon
+              )}
+            </div>
             <div className="min-w-0">
               <span className="text-[10px] uppercase font-bold text-amber-400 block leading-tight">
                 Level {levelInfo.level}
@@ -135,27 +141,28 @@ export const RewardsModal: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-[#262626] bg-[#141414] px-4 overflow-x-auto scrollbar-none">
+        <div className="flex items-center border-b border-[#262626] bg-[#141414] px-4 gap-1 sm:gap-2 pb-1">
           <button
             type="button"
+            id="tab-modal-active-quests"
             onClick={() => setActiveTab('quests')}
-            className={`flex items-center gap-1.5 py-3 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-1.5 py-2.5 px-3.5 text-xs font-semibold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'quests'
-                ? 'border-amber-500 text-amber-400'
+                ? 'border-amber-500 text-amber-400 bg-[#1c1c1c]'
                 : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >
             <Target className="w-3.5 h-3.5" />
-            <span>Active Quests ({quests.filter((q) => q.completed).length} ready)</span>
+            <span>Active Quests</span>
           </button>
 
           <button
             type="button"
             id="tab-adventure-path"
             onClick={() => setActiveTab('adventure')}
-            className={`flex items-center gap-1.5 py-3 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-1.5 py-2.5 px-3.5 text-xs font-semibold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'adventure'
-                ? 'border-amber-500 text-amber-400'
+                ? 'border-amber-500 text-amber-400 bg-[#1c1c1c]'
                 : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >
@@ -165,10 +172,11 @@ export const RewardsModal: React.FC = () => {
 
           <button
             type="button"
+            id="tab-modal-team-leaderboard"
             onClick={() => setActiveTab('leaderboard')}
-            className={`flex items-center gap-1.5 py-3 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-1.5 py-2.5 px-3.5 text-xs font-semibold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'leaderboard'
-                ? 'border-amber-500 text-amber-400'
+                ? 'border-amber-500 text-amber-400 bg-[#1c1c1c]'
                 : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >
@@ -178,26 +186,25 @@ export const RewardsModal: React.FC = () => {
 
           <button
             type="button"
+            id="tab-modal-badges"
             onClick={() => setActiveTab('badges')}
-            className={`flex items-center gap-1.5 py-3 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-1.5 py-2.5 px-3.5 text-xs font-semibold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'badges'
-                ? 'border-amber-500 text-amber-400'
+                ? 'border-amber-500 text-amber-400 bg-[#1c1c1c]'
                 : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >
             <Award className="w-3.5 h-3.5" />
-            <span>
-              Badges ({userGamification.achievements?.filter((a) => a.unlocked).length || 0}/
-              {userGamification.achievements?.length || 0})
-            </span>
+            <span>Badges</span>
           </button>
 
           <button
             type="button"
+            id="tab-modal-xp-rules"
             onClick={() => setActiveTab('rules')}
-            className={`flex items-center gap-1.5 py-3 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-1.5 py-2.5 px-3.5 text-xs font-semibold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
               activeTab === 'rules'
-                ? 'border-amber-500 text-amber-400'
+                ? 'border-amber-500 text-amber-400 bg-[#1c1c1c]'
                 : 'border-transparent text-neutral-400 hover:text-neutral-200'
             }`}
           >

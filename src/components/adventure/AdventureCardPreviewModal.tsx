@@ -58,7 +58,11 @@ export const AdventureCardPreviewModal: React.FC<AdventureCardPreviewModalProps>
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-5xl bg-neutral-900">
-                {stage.badgeIcon}
+                {stage.badgeIcon?.startsWith('/') || stage.badgeIcon?.endsWith('.svg') || stage.badgeIcon?.endsWith('.png') ? (
+                  <img src={stage.badgeIcon} alt={stage.title} className="w-20 h-20 object-contain" />
+                ) : (
+                  stage.badgeIcon
+                )}
               </div>
             )}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 text-center">
@@ -117,7 +121,11 @@ export const AdventureCardPreviewModal: React.FC<AdventureCardPreviewModalProps>
                   Unlocked Title
                 </span>
                 <span className="text-xs font-semibold text-white flex items-center gap-1">
-                  <span>{stage.badgeIcon}</span>
+                  {stage.badgeIcon?.startsWith('/') || stage.badgeIcon?.endsWith('.svg') || stage.badgeIcon?.endsWith('.png') ? (
+                    <img src={stage.badgeIcon} alt="badge" className="w-4 h-4 object-contain inline-block" />
+                  ) : (
+                    <span>{stage.badgeIcon}</span>
+                  )}
                   <span>{stage.badgeTitle}</span>
                 </span>
               </div>

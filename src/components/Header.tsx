@@ -76,30 +76,41 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
   return (
     <header className="h-16 bg-[#121212] dark:bg-[#121212] border-b border-[#262626] px-3 sm:px-6 lg:px-8 flex items-center justify-between shrink-0 z-20 sticky top-0 transition-colors duration-200">
       
-      {/* Left: Brand (if sidebar is collapsed), Sidebar Toggle & Quick Search */}
-      <div className="flex items-center gap-2.5 sm:gap-3.5 flex-1 min-w-0 pr-3">
-        {/* Brand logo shown in header when sidebar is collapsed */}
-        {!isSidebarOpen && (
-          <div className="flex items-center gap-2.5 pr-2.5 border-r border-[#262626] animate-in fade-in duration-150 shrink-0">
-            <Logo className="w-7 h-7 drop-shadow-xs shrink-0" />
-          </div>
-        )}
-
+      {/* Left: Sidebar Toggle, Brand & Quick Search */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 pr-2 sm:pr-3">
         {onToggleSidebar && (
           <button
             type="button"
             id="btn-toggle-sidebar"
             onClick={onToggleSidebar}
-            className={`w-8 h-8 rounded transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+            aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+            className={`w-9 h-9 sm:w-8 sm:h-8 rounded-lg transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${
               !isSidebarOpen
-                ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30 hover:bg-blue-600/25 hover:text-white'
-                : 'text-neutral-400 hover:text-white hover:bg-[#222222] border border-transparent'
+                ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40 hover:bg-blue-600/30 hover:text-white'
+                : 'text-neutral-300 hover:text-white hover:bg-[#222222] border border-[#2d2d2d]'
             }`}
             title={isSidebarOpen ? 'Collapse sidebar (Ctrl+B)' : 'Expand sidebar (Ctrl+B)'}
           >
-            {isSidebarOpen ? <PanelLeftClose className="w-4.5 h-4.5" /> : <PanelLeft className="w-4.5 h-4.5" />}
+            {isSidebarOpen ? (
+              <PanelLeftClose className="w-5 h-5" />
+            ) : (
+              <>
+                <Menu className="w-5 h-5 sm:hidden" />
+                <PanelLeft className="w-5 h-5 hidden sm:block" />
+              </>
+            )}
           </button>
         )}
+
+        {/* Brand logo shown in header: always on mobile (< lg), and on desktop only when sidebar is collapsed */}
+        <div
+          className={`items-center gap-2 pr-2 border-r border-[#262626] animate-in fade-in duration-150 shrink-0 ${
+            isSidebarOpen ? 'flex lg:hidden' : 'flex'
+          }`}
+        >
+          <Logo className="w-7 h-7 drop-shadow-xs shrink-0" />
+          <span className="font-bold text-sm text-white tracking-tight hidden xs:inline sm:hidden">TaskFlow</span>
+        </div>
 
         {/* Quick Search */}
         <div className="relative hidden sm:block w-48 md:w-120 lg:w-72">

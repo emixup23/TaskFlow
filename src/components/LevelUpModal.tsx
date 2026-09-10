@@ -26,7 +26,11 @@ export const LevelUpModal: React.FC = () => {
 
         {/* Level Badge Icon */}
         <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-b from-amber-500/30 to-amber-600/10 border-2 border-amber-400 rounded-full flex items-center justify-center text-4xl shadow-lg shadow-amber-500/20">
-          <span>{activeLevelUp.icon}</span>
+          {activeLevelUp.icon?.startsWith('/') || activeLevelUp.icon?.endsWith('.svg') || activeLevelUp.icon?.endsWith('.png') ? (
+            <img src={activeLevelUp.icon} alt="level icon" className="w-12 h-12 object-contain" />
+          ) : (
+            <span>{activeLevelUp.icon}</span>
+          )}
         </div>
 
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-bold uppercase tracking-wider mb-2">

@@ -29,8 +29,12 @@ export const GamificationView: React.FC = () => {
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded bg-gradient-to-tr from-amber-500/30 to-amber-600/10 border-2 border-amber-400 flex items-center justify-center text-3xl shadow-xl shadow-amber-500/20">
-              {levelInfo.levelIcon}
+            <div className="w-16 h-16 rounded bg-gradient-to-tr from-amber-500/30 to-amber-600/10 border-2 border-amber-400 flex items-center justify-center text-3xl shadow-xl shadow-amber-500/20 p-2 overflow-hidden">
+              {levelInfo.levelIcon?.startsWith('/') || levelInfo.levelIcon?.endsWith('.svg') || levelInfo.levelIcon?.endsWith('.png') ? (
+                <img src={levelInfo.levelIcon} alt="level icon" className="w-12 h-12 object-contain" />
+              ) : (
+                levelInfo.levelIcon
+              )}
             </div>
             <div>
               <div className="flex items-center gap-2.5 mb-1">
@@ -96,25 +100,26 @@ export const GamificationView: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[#262626] gap-2 overflow-x-auto scrollbar-none">
+      <div className="flex border-b border-[#262626] gap-2 pb-1">
         <button
           type="button"
+          id="tab-active-quests"
           onClick={() => setActiveTab('quests')}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             activeTab === 'quests'
               ? 'border-amber-500 text-amber-400 bg-[#161616]'
               : 'border-transparent text-neutral-400 hover:text-neutral-200'
           }`}
         >
           <Target className="w-4 h-4" />
-          <span>Active Quests ({quests.filter((q) => q.completed).length} ready)</span>
+          <span>Active Quests</span>
         </button>
 
         <button
           type="button"
           id="tab-adventure-path-view"
           onClick={() => setActiveTab('adventure')}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             activeTab === 'adventure'
               ? 'border-amber-500 text-amber-400 bg-[#161616]'
               : 'border-transparent text-neutral-400 hover:text-neutral-200'
@@ -126,8 +131,9 @@ export const GamificationView: React.FC = () => {
 
         <button
           type="button"
+          id="tab-team-leaderboard"
           onClick={() => setActiveTab('leaderboard')}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             activeTab === 'leaderboard'
               ? 'border-amber-500 text-amber-400 bg-[#161616]'
               : 'border-transparent text-neutral-400 hover:text-neutral-200'
@@ -139,28 +145,30 @@ export const GamificationView: React.FC = () => {
 
         <button
           type="button"
+          id="tab-badges"
           onClick={() => setActiveTab('badges')}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             activeTab === 'badges'
               ? 'border-amber-500 text-amber-400 bg-[#161616]'
               : 'border-transparent text-neutral-400 hover:text-neutral-200'
           }`}
         >
           <Award className="w-4 h-4" />
-          <span>Badges & Trophies</span>
+          <span>Badges</span>
         </button>
 
         <button
           type="button"
+          id="tab-xp-rules"
           onClick={() => setActiveTab('rules')}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             activeTab === 'rules'
               ? 'border-amber-500 text-amber-400 bg-[#161616]'
               : 'border-transparent text-neutral-400 hover:text-neutral-200'
           }`}
         >
           <Zap className="w-4 h-4" />
-          <span>XP Multipliers</span>
+          <span>XP Rules</span>
         </button>
       </div>
 

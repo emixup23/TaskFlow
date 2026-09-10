@@ -23,7 +23,7 @@ const WorkspaceContent: React.FC = () => {
   });
 
   // Global initial loading state
-  if (isAuthLoading || isLoading) {
+  if (isAuthLoading || (isAuthenticated && isLoading)) {
     return (
       <div className="h-screen w-full bg-[#0d0d0d] flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />

@@ -39,40 +39,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const allUsers = await api.getUsers();
       setUsers(allUsers);
 
-      const token = getApiAuthToken();
-      const storedUserId = getApiUserId();
-
-      if (token) {
-        try {
-          const authMe = await api.getAuthMe();
-          if (authMe?.user) {
-            setCurrentUser(authMe.user);
-            setApiUserId(authMe.user.id);
-            return;
-          }
-        } catch {
-          // Token expired or invalid
-          setApiAuthToken('');
-        }
-      }
-
-      // Check if stored user exists
-      if (storedUserId) {
-        const found = allUsers.find((u) => u.id === storedUserId);
-        if (found) {
-          setCurrentUser(found);
-          return;
-        }
-      }
-
-      // Fallback: pick first admin user or first active user
-      if (allUsers.length > 0) {
-        const defaultUser = allUsers.find((u) => u.role === 'admin') || allUsers[0];
-        setCurrentUser(defaultUser);
-        setApiUserId(defaultUser.id);
-      } else {
-        setCurrentUser(null);
-      }
+      // Explicit requirement: the app should load and users deauthenticated
+      setCurrentUser(null);
+      setApiUserId('');
+      setApiAuthToken('');
     } catch (err) {
       console.error('Failed to load user auth context:', err);
     } finally {
@@ -120,13 +90,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Ignore network errors on logout
     } finally {
       setApiAuthToken('');
+      setApiUserId('');
       setCurrentUser(null);
       setIsLoading(false);
     }
   };
 
   const switchUser = async (userId: string) => {
-    // Only administrators can switch between user accounts
+    // Only administrators can switch between user accounts when authenticated
     if (currentUser && currentUser.role !== 'admin') {
       console.warn('Access denied: Only administrators are authorized to switch between user accounts.');
       return;
@@ -141,6 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await refreshUsers();
     } catch (err) {
       console.error('Failed to switch user:', err);
+      throw err;
     } finally {
       setIsLoading(false);
     }

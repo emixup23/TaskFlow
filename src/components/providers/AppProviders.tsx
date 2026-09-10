@@ -6,6 +6,7 @@ import { KudosProvider } from '../../context/KudosContext';
 import { TaskProvider } from '../../context/TaskContext';
 import { ChatProvider } from '../../context/ChatContext';
 import { NotificationProvider } from '../../context/NotificationContext';
+import { NotepadProvider } from '../../context/NotepadContext';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 
 interface AppProvidersProps {
@@ -26,7 +27,9 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
               <TaskProvider>
                 <ChatProvider>
                   <NotificationProvider>
-                    {children}
+                    <NotepadProvider>
+                      {children}
+                    </NotepadProvider>
                   </NotificationProvider>
                 </ChatProvider>
               </TaskProvider>

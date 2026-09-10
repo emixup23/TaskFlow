@@ -426,7 +426,10 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const refreshData = useCallback(async () => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
       const [fetchedTasks, fetchedStatuses, fetchedProjects, fetchedLogs, fetchedMeetings] = await Promise.all([
@@ -466,6 +469,10 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [currentUser, addToast]);
 
   useEffect(() => {
+    if (!currentUser) {
+      setIsLoading(false);
+      return;
+    }
     refreshData();
   }, [refreshData, currentUser?.id]);
 

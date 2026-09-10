@@ -1,6 +1,6 @@
 {
   "name": "TaskFlow",
-  "description": "A collaborative task management platform with dynamic form builder and user response collection, real-time chat, gamification, role-based access control, customizable workflows, and analytics.",
-  "requestFramePermissions": [],
+  "description": "A collaborative task management platform with personal & shared notepad spaces, dynamic forms, real-time chat, gamification, role-based access control, workflows, and analytics.",
+  "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

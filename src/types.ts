@@ -299,6 +299,7 @@ export type ViewMode =
   | 'daily'
   | 'meetings'
   | 'forms'
+  | 'notes'
   | 'dashboard'
   | 'audit'
   | 'rewards'
@@ -407,6 +408,16 @@ export interface ChatMessageAttachment {
   base64Data?: string;
 }
 
+export interface VoiceNoteData {
+  id: string;
+  audioUrl: string; // base64 data URI or blob URL
+  duration: number; // in seconds
+  waveform?: number[]; // array of normalized amplitude values (0.1 to 1.0)
+  mimeType?: string;
+  transcript?: string;
+  fileSize?: number;
+}
+
 export interface ChatMessage {
   id: string;
   channelId: string;
@@ -427,6 +438,7 @@ export interface ChatMessage {
   };
   mentions?: string[];
   attachments?: ChatMessageAttachment[];
+  voiceNote?: VoiceNoteData;
   reactions?: Record<string, string[]>; // emoji -> array of userIds
   linkedTaskId?: string;
   linkedTaskTitle?: string;
@@ -910,5 +922,29 @@ export interface FormResponse {
   updatedAt?: string;
   answers: Record<string, any>; // fieldId -> value (string | number | string[] | FormAttachedFile)
 }
+
+export type NoteColor = 'amber' | 'blue' | 'emerald' | 'purple' | 'rose' | 'slate';
+
+export interface Note {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  authorRole?: string;
+  title: string;
+  content: string;
+  color?: NoteColor;
+  isPinned?: boolean;
+  isPrivate: boolean; // true = private to author, false = shared
+  isSharedWithAll?: boolean; // true = visible to everyone in workspace
+  sharedWithUserIds: string[]; // specific user IDs if not shared with all
+  allowCollaboration?: boolean; // if true, shared recipients can edit content
+  tags?: string[];
+  linkedTaskId?: string;
+  linkedTaskTitle?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 

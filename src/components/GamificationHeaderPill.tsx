@@ -57,7 +57,11 @@ export const GamificationHeaderPill: React.FC = () => {
         {/* Level Icon / Avatar */}
         <div className="flex items-center gap-1">
           <span className="text-sm leading-none filter drop-shadow-xs group-hover:scale-110 transition-transform">
-            {levelInfo.levelIcon || '🏆'}
+            {levelInfo.levelIcon?.startsWith('/') || levelInfo.levelIcon?.endsWith('.svg') || levelInfo.levelIcon?.endsWith('.png') ? (
+              <img src={levelInfo.levelIcon} alt="level icon" className="w-4 h-4 object-contain inline-block" />
+            ) : (
+              levelInfo.levelIcon || '🏆'
+            )}
           </span>
           <span className="font-extrabold text-amber-400 text-xs tracking-tight">
             Lv.{levelInfo.level}
@@ -85,9 +89,9 @@ export const GamificationHeaderPill: React.FC = () => {
           />
         </div>
 
-        {/* Kudos Balance Badge */}
+        {/* Kudos Balance Badge (shown on sm+ screens to preserve mobile header space) */}
         <div
-          className="flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-amber-950/70 hover:bg-amber-900/60 px-2 py-0.5 rounded border border-amber-500/50 shrink-0 transition-colors shadow-xs"
+          className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-amber-950/70 hover:bg-amber-900/60 px-2 py-0.5 rounded border border-amber-500/50 shrink-0 transition-colors shadow-xs"
           title={`Kudos Balance: ${wallet.balance} / ${wallet.cap} Kudos available`}
         >
           <Coins className="w-3.5 h-3.5 text-amber-400" />
@@ -97,10 +101,10 @@ export const GamificationHeaderPill: React.FC = () => {
           </span>
         </div>
 
-        {/* Streak Flame */}
+        {/* Streak Flame (shown on md+ screens to preserve mobile header space) */}
         {(userGamification.currentStreak || 0) > 0 && (
           <div
-            className="flex items-center gap-0.5 text-[10px] font-bold text-orange-400 bg-orange-950/40 px-1 sm:px-1.5 py-0.5 rounded border border-orange-800/30 shrink-0"
+            className="hidden md:flex items-center gap-0.5 text-[10px] font-bold text-orange-400 bg-orange-950/40 px-1 sm:px-1.5 py-0.5 rounded border border-orange-800/30 shrink-0"
             title={`${userGamification.currentStreak} day contribution streak!`}
           >
             <Flame className="w-3 h-3 fill-orange-500 text-orange-400 animate-pulse" />
@@ -118,8 +122,12 @@ export const GamificationHeaderPill: React.FC = () => {
           {/* Header with Title & Level Badge */}
           <div className="flex items-center justify-between border-b border-[#262626] pb-2.5">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-amber-500/30 to-amber-600/10 border border-amber-500/40 flex items-center justify-center text-lg shadow-sm shadow-amber-500/10">
-                {levelInfo.levelIcon || '🏆'}
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-amber-500/30 to-amber-600/10 border border-amber-500/40 flex items-center justify-center text-lg shadow-sm shadow-amber-500/10 overflow-hidden p-1">
+                {levelInfo.levelIcon?.startsWith('/') || levelInfo.levelIcon?.endsWith('.svg') || levelInfo.levelIcon?.endsWith('.png') ? (
+                  <img src={levelInfo.levelIcon} alt="level icon" className="w-6 h-6 object-contain" />
+                ) : (
+                  levelInfo.levelIcon || '🏆'
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-1.5">

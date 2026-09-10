@@ -294,12 +294,12 @@ export const UserProfileModal: React.FC = () => {
     >
       <div
         id="user-profile-modal"
-        className="relative bg-[#121212] w-full max-w-3xl rounded-xl shadow-2xl border border-[#262626] overflow-hidden flex flex-col max-h-[92vh] text-slate-100 animate-in zoom-in-95 duration-150"
+        className="relative bg-[#121212] w-full max-w-3xl rounded-xl shadow-2xl border border-[#262626] flex flex-col max-h-[92vh] text-slate-100 animate-in zoom-in-95 duration-150"
       >
         {/* =========================================================================
             Profile Cover Header & Hero Banner
             ========================================================================= */}
-        <div className="relative bg-gradient-to-r from-blue-900/60 via-indigo-900/40 to-purple-900/50 border-b border-[#262626] p-6 pt-7 overflow-hidden">
+        <div className="relative bg-gradient-to-r from-blue-900/60 via-indigo-900/40 to-purple-900/50 border-b border-[#262626] p-6 pt-7">
           {/* Subtle geometric pattern overlay */}
           <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
 
@@ -453,12 +453,12 @@ export const UserProfileModal: React.FC = () => {
           </div>
 
           {/* Navigation Sub-tabs */}
-          <div className="flex items-center gap-1 mt-6 border-t border-white/10 pt-3 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 mt-6 border-t border-white/10 pt-3 pb-1">
             <button
               type="button"
               id="user-profile-tab-overview"
               onClick={() => setActiveTab('overview')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                 activeTab === 'overview'
                   ? 'bg-white/15 text-white font-semibold shadow-xs'
                   : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
@@ -472,7 +472,7 @@ export const UserProfileModal: React.FC = () => {
               type="button"
               id="user-profile-tab-tasks"
               onClick={() => setActiveTab('tasks')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                 activeTab === 'tasks'
                   ? 'bg-white/15 text-white font-semibold shadow-xs'
                   : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
@@ -489,7 +489,7 @@ export const UserProfileModal: React.FC = () => {
               type="button"
               id="user-profile-tab-gamification"
               onClick={() => setActiveTab('gamification')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                 activeTab === 'gamification'
                   ? 'bg-white/15 text-white font-semibold shadow-xs'
                   : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
@@ -499,37 +499,33 @@ export const UserProfileModal: React.FC = () => {
               <span>XP & Badges</span>
             </button>
 
-            {canEdit && (
-              <button
-                type="button"
-                id="user-profile-tab-edit"
-                onClick={() => setActiveTab('edit')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === 'edit'
-                    ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                    : 'text-blue-400 hover:text-blue-300 hover:bg-blue-600/10'
-                }`}
-              >
-                <Camera className="w-3.5 h-3.5" />
-                <span>Avatar & Settings</span>
-              </button>
-            )}
+            <button
+              type="button"
+              id="user-profile-tab-edit"
+              onClick={() => setActiveTab('edit')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                activeTab === 'edit'
+                  ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                  : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Avatar & Settings</span>
+            </button>
 
-            {isSelf && (
-              <button
-                type="button"
-                id="user-profile-tab-security"
-                onClick={() => setActiveTab('security')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === 'security'
-                    ? 'bg-emerald-600 text-white font-semibold shadow-xs'
-                    : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-600/10'
-                }`}
-              >
-                <Lock className="w-3.5 h-3.5" />
-                <span>Security & Password</span>
-              </button>
-            )}
+            <button
+              type="button"
+              id="user-profile-tab-security"
+              onClick={() => setActiveTab('security')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                activeTab === 'security'
+                  ? 'bg-emerald-600 text-white font-semibold shadow-xs'
+                  : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
+              }`}
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>Security & Password</span>
+            </button>
           </div>
         </div>
 
@@ -998,7 +994,8 @@ export const UserProfileModal: React.FC = () => {
           {/* =====================================================================
               TAB 4: EDIT PROFILE & AVATAR CUSTOMIZER
               ===================================================================== */}
-          {activeTab === 'edit' && canEdit && (
+          {activeTab === 'edit' && (
+            canEdit ? (
             <form onSubmit={handleSaveProfile} className="space-y-6 animate-in fade-in duration-150">
               
               {/* =================================================================
@@ -1410,16 +1407,28 @@ export const UserProfileModal: React.FC = () => {
                 </button>
               </div>
             </form>
+            ) : (
+              <div className="p-6 bg-[#161616] border border-[#262626] rounded-xl text-center space-y-4 max-w-md mx-auto animate-in fade-in duration-150">
+                <UserAvatar user={{ name: selectedProfileUser?.name || 'User', avatar: selectedProfileUser?.avatar }} size="xl" className="w-20 h-20 mx-auto ring-2 ring-neutral-700" />
+                <div>
+                  <h4 className="text-base font-bold text-white">{selectedProfileUser?.name}</h4>
+                  <p className="text-xs text-neutral-400 font-mono">{selectedProfileUser?.email}</p>
+                </div>
+                <div className="p-3 bg-neutral-900 border border-neutral-800 rounded-lg text-xs text-neutral-300 leading-relaxed">
+                  Avatar customization and account settings for this profile can only be modified by <span className="font-semibold text-white">{selectedProfileUser?.name}</span> or an Administrator.
+                </div>
+              </div>
+            )
           )}
 
           {/* =====================================================================
               TAB 5: SECURITY & PASSWORD CHANGE
               ===================================================================== */}
-          {activeTab === 'security' && isSelf && (
+          {activeTab === 'security' && (
             <div className="max-w-xl mx-auto space-y-5">
               <div className="p-4 bg-[#161616] border border-[#262626] rounded-xl flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-emerald-950/60 border border-emerald-800/80 text-emerald-400">
-                  <Shield className="w-5 h-5" />
+                <div className="p-2 rounded-lg bg-emerald-950/60 border border-emerald-800/80 text-emerald-400 shrink-0">
+                  <img src="/shiled.svg" alt="Security" className="w-5 h-5 object-contain" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-white">Account Security &amp; Credentials</h3>
@@ -1429,21 +1438,23 @@ export const UserProfileModal: React.FC = () => {
                 </div>
               </div>
 
-              {passError && (
-                <div className="p-3 bg-rose-950/80 border border-rose-800 rounded-xl text-xs text-rose-200 flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                  <div>{passError}</div>
-                </div>
-              )}
+              {isSelf ? (
+                <>
+                  {passError && (
+                    <div className="p-3 bg-rose-950/80 border border-rose-800 rounded-xl text-xs text-rose-200 flex items-start gap-2.5">
+                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                      <div>{passError}</div>
+                    </div>
+                  )}
 
-              {passSuccess && (
-                <div className="p-3 bg-emerald-950/80 border border-emerald-800 rounded-xl text-xs text-emerald-200 flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <div>{passSuccess}</div>
-                </div>
-              )}
+                  {passSuccess && (
+                    <div className="p-3 bg-emerald-950/80 border border-emerald-800 rounded-xl text-xs text-emerald-200 flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <div>{passSuccess}</div>
+                    </div>
+                  )}
 
-              <form
+                  <form
                 onSubmit={async (e) => {
                   e.preventDefault();
                   setPassError(null);
@@ -1561,8 +1572,20 @@ export const UserProfileModal: React.FC = () => {
                   </button>
                 </div>
               </form>
+            </>
+          ) : (
+            <div className="p-6 bg-[#141414] border border-[#262626] rounded-xl text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center mx-auto text-emerald-400">
+                <Lock className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-white">Protected Security Settings</h4>
+              <p className="text-xs text-neutral-400 max-w-sm mx-auto leading-relaxed">
+                Password update controls for <strong className="text-white">{selectedProfileUser?.name}</strong> are private to the account holder. Log in as this user to change credentials.
+              </p>
             </div>
           )}
+        </div>
+      )}
 
         </div>
       </div>

@@ -2,10 +2,12 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
-import { ChatMessage, ChatMessageAttachment, Priority } from '../types';
+import { ChatMessage, ChatMessageAttachment, Priority, VoiceNoteData } from '../types';
 import { UserAvatar } from './UserAvatar';
 import { CreateChannelModal } from './CreateChannelModal';
 import { NewDirectMessageModal } from './NewDirectMessageModal';
+import { VoiceMessagePlayer } from './chat/VoiceMessagePlayer';
+import { VoiceMessageRecorder } from './chat/VoiceMessageRecorder';
 import {
   Hash,
   Lock,
@@ -16,6 +18,7 @@ import {
   Smile,
   Paperclip,
   Send,
+  Mic,
   MoreVertical,
   Reply,
   Edit2,
@@ -47,8 +50,30 @@ import {
 import { FileViewerModal, FileViewerItem } from './FileViewerModal';
 
 
-//const POPULAR_EMOJIS = ['👍', '❤️', '🚀', '🎉', '🔥', '👀', '✅', '👏', '💡', '💯', '🙌', '⭐', '😀', '😄', '😁', '😅', '😂', '🤣', '😇', '😊', '🙂', '😍', '😘', '🥰', '😗', '😋', '😝', '😛', '😭', '😐', '🤫', '🤔', '😴', '😰', '😥', '😱', '🥵', '😳', '🤯', '🤬', '😡', '🤕', '🤑', '🤒', '😷', '🤧', '🤮', '🤢', '🤐', '😵‍', '😵', '😮‍', '🤤', '😪', '😴', '👾', '☠️', '👽', '🥱', '💀', '👻', '💩', '🤡', '👺', '👹', '👿', '😈', '🎃', '👾', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '👆', '👌', '👈', '👈', '👉', '👉', '🤜', '🤛', '✊', '👊', '👊', '👎', '👍', '🤝', '👏', '🙌', '🤲', '👐', '🦻', '👃', '👀', '👁️', '🧠', '👤', '🗣️', '👴', '👵', '🧓', '👨‍🦽‍', '🧑‍', '👨‍🦼', '👩‍❤️‍💋‍👨', '🧶', '🧤', '🕴', '💃', '🕺', '💃', '🤳', '💅', '🧚', '🧜‍', '🧞‍', '🧟‍', '🧛‍'];
-const POPULAR_EMOJIS = ['🌍', '💨', '⛄', '☔', '🔥', '🌪️', '☀️', '🌧️', '❄️', '🐉', '🐲', '🐮', '🐜', '🐞', '🐌', '🦋', '🐛', '🐈', '🦦', '🦝', '🐇', '🍎', '🍉', '🍓', '🥕', '🌶️', '🏆', '🥇', '🥈', '🥉', '🏅', '🎖️', '🎫', '🎯', '⚽', '🚗', '🦯', '🚜', '🛴', '🚀', '🌅', '📸', '☎️', '📺', '🖱️', '💾', '❤️', '☢️', '🇹🇳', '🇨🇮', '🇫🇷', '🇮🇹', '🇺🇲', '🇭🇲', '🇦🇺', '🇪🇸', '😀', '😄', '😁', '😅', '😂', '🤣', '😇', '😊', '🙂', '😍', '😘', '🥰', '😗', '😋', '😝', '😛', '😭', '😐', '🤫', '🤔', '😴', '😰', '😥', '😱', '🥵', '😳', '🤯', '🤬', '😡', '🤕', '🤑', '🤒', '😷', '🤧', '🤮', '🤢', '🤐', '😵‍', '😵', '😮‍', '🤤', '😪', '😴', '👾', '☠️', '👽', '🥱', '💀', '👻', '💩', '🤡', '👺', '👹', '😈', '🎃', '👾', '🤖', '😺', '😸', '😹', '😻', '😿', '😾', '👆', '👌', '👈', '👉', '🤜', '🤛', '✊', '👊', '👊', '👎', '👍', '🤝', '👏', '🦻', '👃', '👀', '🧠', '👤', '🗣️', '👴', '👵', '👨‍🦽‍', '🧑‍', '👨‍🦼', '👩‍❤️‍💋‍👨', '🧶', '🧤', '🕴', '🕺', '💃', '🤳', '💅', '🧚', '🧜‍', '🧞‍', '🧟‍', '🧛‍'];
+const POPULAR_EMOJIS = [
+  '🌍', '💨', '⛄', '☔', '🔥', '🌪️', '☀️', '🌧️', '❄️', '🐉',
+  '🐲', '🐮', '🐜', '🐞', '🐌', '🦋', '🐛', '🐈', '🦦', '🦝',
+  '🐇', '🍎', '🍉', '🍓', '🥕', '🌶️', '🏆', '🥇', '🥈', '🥉',
+  '🏅', '🎖️', '🎫', '🎯', '⚽', '🚗', '🦯', '🚜', '🛴', '🚀',
+  '🌅', '📸', '☎️', '📺', '🖱️', '💾', '❤️', '☢️', '🇹🇳', '🇨🇮',
+  '🇫🇷', '🇮🇹', '🇺🇲', '🇭🇲', '🇦🇺', '🇪🇸', '😀', '😄', '😁', '😅',
+  '😂', '🤣', '😇', '😊', '🙂', '😍', '😘', '🥰', '😗', '😋',
+  '😝', '😛', '😭', '😐', '🤫', '🤔', '😴', '😰', '😥', '😱',
+  '🥵', '😳', '🤯', '🤬', '😡', '🤕', '🤑', '🤒', '😷', '🤧',
+  '🤮', '🤢', '🤐', '😵‍', '😵', '😮‍', '🤤', '😪', '👾', '☠️',
+  '👽', '🥱', '💀', '👻', '💩', '🤡', '👺', '👹', '😈', '🎃',
+  '🤖', '😺', '😸', '😹', '😻', '😿', '😾', '👆', '👌', '👈',
+  '👉', '🤜', '🤛', '✊', '👊', '👎', '👍', '🤝', '👏', '🦻',
+  '👃', '👀', '🧠', '👤', '🗣️', '👴', '👵', '👨‍🦽‍', '🧑‍', '👨‍🦼',
+  '👩‍❤️‍💋‍👨', '🧶', '🧤', '🕴', '🕺', '💃', '🤳', '💅', '🧚', '🧜‍',
+  '🧞‍', '🧟‍', '🧛‍'
+];
+
+const isOnlyEmojis = (str: string) => {
+  const trimmed = str.trim();
+  if (!trimmed || trimmed.length > 20) return false;
+  return /^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji_Modifier}|\u200d|\ufe0f|\s)+$/u.test(trimmed);
+};
 export const ChatView: React.FC = () => {
   const {
     channels,
@@ -57,12 +82,14 @@ export const ChatView: React.FC = () => {
     messages,
     isLoading,
     isMessagesLoading,
+    messagesError,
     totalUnreadCount,
     searchQuery,
     setSearchQuery,
     channelCategoryFilter,
     setChannelCategoryFilter,
     setActiveChannelId,
+    refreshMessages,
     sendMessage,
     editMessage,
     deleteMessage,
@@ -108,15 +135,54 @@ export const ChatView: React.FC = () => {
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
   const [isNewDmModalOpen, setIsNewDmModalOpen] = useState(false);
   const [viewerFile, setViewerFile] = useState<FileViewerItem | null>(null);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const emojiPickerContainerRef = useRef<HTMLDivElement>(null);
+  const taskPickerContainerRef = useRef<HTMLDivElement>(null);
+  const mentionPickerContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, activeChannelId]);
+
+  // Close emoji picker, task picker, and mention picker when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (emojiPickerContainerRef.current && !emojiPickerContainerRef.current.contains(target)) {
+        setIsEmojiPickerOpen(false);
+      }
+      if (taskPickerContainerRef.current && !taskPickerContainerRef.current.contains(target)) {
+        setIsTaskPickerOpen(false);
+      }
+      if (mentionPickerContainerRef.current && !mentionPickerContainerRef.current.contains(target)) {
+        setIsMentionPickerOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsEmojiPickerOpen(false);
+        setIsTaskPickerOpen(false);
+        setIsMentionPickerOpen(false);
+      }
+    };
+
+    if (isEmojiPickerOpen || isTaskPickerOpen || isMentionPickerOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isEmojiPickerOpen, isTaskPickerOpen, isMentionPickerOpen]);
 
   // Filter channels in sidebar
   const filteredChannels = useMemo(() => {
@@ -239,6 +305,31 @@ export const ChatView: React.FC = () => {
     setIsEmojiPickerOpen(false);
     setIsTaskPickerOpen(false);
     setIsMentionPickerOpen(false);
+  };
+
+  // Handle Send Voice Message
+  const handleSendVoiceMessage = async (voiceNote: VoiceNoteData, textCaption?: string) => {
+    // Detect mentions if caption is provided
+    const mentions: string[] = [];
+    if (textCaption) {
+      users.forEach((u) => {
+        if (textCaption.includes(`@${u.name}`)) {
+          mentions.push(u.id);
+        }
+      });
+    }
+
+    await sendMessage({
+      content: textCaption || undefined,
+      voiceNote,
+      replyToId: replyingTo?.id,
+      linkedTaskId: stagedTask?.id,
+      mentions: mentions.length > 0 ? mentions : undefined
+    });
+
+    setIsRecordingVoice(false);
+    setReplyingTo(null);
+    setStagedTask(null);
   };
 
   // Handle File Attachment Upload
@@ -723,6 +814,25 @@ export const ChatView: React.FC = () => {
                   <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                   <span>Loading messages...</span>
                 </div>
+              ) : messagesError ? (
+                <div className="flex flex-col items-center justify-center h-64 text-center text-neutral-400 gap-3">
+                  <div className="w-12 h-12 rounded-full bg-red-950/40 border border-red-800/40 flex items-center justify-center text-red-400">
+                    <AlertCircle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-neutral-200">Unable to load messages</h3>
+                    <p className="text-xs text-neutral-400 mt-1 max-w-sm">
+                      {messagesError}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => refreshMessages()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                  >
+                    <span>Retry</span>
+                  </button>
+                </div>
               ) : groupedMessages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 text-center text-neutral-400">
                   <div className="w-12 h-12 rounded-full bg-[#181818] flex items-center justify-center mb-3 text-neutral-500">
@@ -859,10 +969,28 @@ export const ChatView: React.FC = () => {
                                 </div>
                               </div>
                             ) : (
-                              /* Standard Message Text */
-                              <p className="text-xs text-neutral-200 leading-relaxed break-words whitespace-pre-wrap">
-                                {msg.content}
-                              </p>
+                              <>
+                                {/* Voice Note Player */}
+                                {msg.voiceNote && (
+                                  <VoiceMessagePlayer
+                                    voiceNote={msg.voiceNote}
+                                    isSelf={msg.senderId === currentUser?.id}
+                                  />
+                                )}
+
+                                {/* Standard or Big Emoji Message Text */}
+                                {msg.content && (!msg.voiceNote || msg.content !== '🎤 Voice message') && (
+                                  isOnlyEmojis(msg.content) ? (
+                                    <p className="text-3xl sm:text-4xl py-1 select-none leading-relaxed break-words">
+                                      {msg.content}
+                                    </p>
+                                  ) : (
+                                    <p className="text-xs text-neutral-200 leading-relaxed break-words whitespace-pre-wrap">
+                                      {msg.content}
+                                    </p>
+                                  )
+                                )}
+                              </>
                             )}
 
                             {/* Attachments Display */}
@@ -958,15 +1086,15 @@ export const ChatView: React.FC = () => {
                                       key={emoji}
                                       type="button"
                                       onClick={() => toggleReaction(msg.id, emoji)}
-                                      className={`px-2 py-0.5 text-xs rounded-full border flex items-center gap-1 transition-all cursor-pointer ${
+                                      className={`px-2.5 py-1 text-xs rounded-full border flex items-center gap-1.5 transition-all cursor-pointer ${
                                         hasReacted
                                           ? 'bg-blue-600/20 border-blue-500/40 text-blue-300 font-semibold'
                                           : 'bg-[#181818] border-[#262626] text-neutral-300 hover:bg-[#222]'
                                       }`}
                                       title={userIds.join(', ')}
                                     >
-                                      <span>{emoji}</span>
-                                      <span className="text-[10px]">{userIds.length}</span>
+                                      <span className="text-base leading-none">{emoji}</span>
+                                      <span className="text-[11px] font-medium">{userIds.length}</span>
                                     </button>
                                   );
                                 })}
@@ -984,7 +1112,7 @@ export const ChatView: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => toggleReaction(msg.id, '👍')}
-                              className="p-1 hover:bg-[#262626] rounded text-xs transition-colors cursor-pointer"
+                              className="p-1 hover:bg-[#262626] rounded text-base hover:scale-125 transition-transform cursor-pointer"
                               title="React 👍"
                             >
                               👍
@@ -992,7 +1120,7 @@ export const ChatView: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => toggleReaction(msg.id, '❤️')}
-                              className="p-1 hover:bg-[#262626] rounded text-xs transition-colors cursor-pointer"
+                              className="p-1 hover:bg-[#262626] rounded text-base hover:scale-125 transition-transform cursor-pointer"
                               title="React ❤️"
                             >
                               ❤️
@@ -1000,7 +1128,7 @@ export const ChatView: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => toggleReaction(msg.id, '🚀')}
-                              className="p-1 hover:bg-[#262626] rounded text-xs transition-colors cursor-pointer"
+                              className="p-1 hover:bg-[#262626] rounded text-base hover:scale-125 transition-transform cursor-pointer"
                               title="React 🚀"
                             >
                               🚀
@@ -1150,189 +1278,223 @@ export const ChatView: React.FC = () => {
                 </div>
               )}
 
-              {/* Main Composer Box */}
-              <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl focus-within:border-blue-500 transition-colors">
-                <textarea
-                  ref={textareaRef}
-                  rows={2}
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  placeholder={`Message #${activeChannel.name}...`}
-                  className="w-full bg-transparent px-3.5 py-2.5 text-xs sm:text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none resize-none"
+              {/* Main Composer or Voice Recorder */}
+              {isRecordingVoice ? (
+                <VoiceMessageRecorder
+                  onClose={() => setIsRecordingVoice(false)}
+                  onSendVoice={handleSendVoiceMessage}
                 />
+              ) : (
+                <div className="bg-[#181818] border border-[#2a2a2a] rounded-xl focus-within:border-blue-500 transition-colors">
+                  <textarea
+                    ref={textareaRef}
+                    rows={2}
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    placeholder={`Message #${activeChannel.name}...`}
+                    className="w-full bg-transparent px-3.5 py-2.5 text-xs sm:text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none resize-none"
+                  />
 
-                {/* Composer Toolbar */}
-                <div className="px-3 py-2 border-t border-[#222222] flex items-center justify-between gap-2">
-                  {/* Left: Formatting & Media Actions */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => wrapSelection('**')}
-                      className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
-                      title="Bold"
-                    >
-                      <Bold className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => wrapSelection('*')}
-                      className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
-                      title="Italic"
-                    >
-                      <Italic className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => wrapSelection('`')}
-                      className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
-                      title="Code snippet"
-                    >
-                      <Code className="w-3.5 h-3.5" />
-                    </button>
-
-                    <div className="w-[1px] h-3.5 bg-[#2a2a2a] mx-1" />
-
-                    {/* Emoji Popover Button */}
-                    <div className="relative">
+                  {/* Composer Toolbar */}
+                  <div className="px-3 py-2 border-t border-[#222222] flex items-center justify-between gap-2">
+                    {/* Left: Formatting & Media Actions */}
+                    <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
-                        className={`p-1.5 rounded transition-colors cursor-pointer ${
-                          isEmojiPickerOpen ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-[#262626]'
-                        }`}
-                        title="Add emoji"
+                        onClick={() => wrapSelection('**')}
+                        className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
+                        title="Bold"
                       >
-                        <Smile className="w-4 h-4" />
+                        <Bold className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => wrapSelection('*')}
+                        className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
+                        title="Italic"
+                      >
+                        <Italic className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => wrapSelection('`')}
+                        className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
+                        title="Code snippet"
+                      >
+                        <Code className="w-3.5 h-3.5" />
                       </button>
 
-                      {isEmojiPickerOpen && (
-                        <div className="absolute bottom-full left-0 mb-2 p-2 bg-[#181818] border border-[#2a2a2a] rounded-xl shadow-xl z-30 grid grid-cols-6 gap-1 w-52">
-                          {POPULAR_EMOJIS.map((em) => (
-                            <button
-                              key={em}
-                              type="button"
-                              onClick={() => {
-                                setMessageInput((prev) => prev + em);
-                                setIsEmojiPickerOpen(false);
-                                textareaRef.current?.focus();
-                              }}
-                              className="p-1.5 hover:bg-[#262626] rounded text-base text-center transition-colors cursor-pointer"
-                            >
-                              {em}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                      <div className="w-[1px] h-3.5 bg-[#2a2a2a] mx-1" />
+
+                      {/* Emoji Popover Button */}
+                      <div ref={emojiPickerContainerRef} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                          className={`p-1.5 rounded transition-colors cursor-pointer ${
+                            isEmojiPickerOpen ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-[#262626]'
+                          }`}
+                          title="Add emoji"
+                        >
+                          <Smile className="w-4 h-4" />
+                        </button>
+
+                        {isEmojiPickerOpen && (
+                          <div className="absolute bottom-full left-0 mb-2 p-3 bg-[#181818] border border-[#2a2a2a] rounded-2xl shadow-2xl z-30 w-80 sm:w-96 max-h-72 overflow-y-auto scrollbar-thin">
+                            <div className="grid grid-cols-7 sm:grid-cols-8 gap-1.5">
+                              {POPULAR_EMOJIS.map((em, idx) => (
+                                <button
+                                  key={`emoji-${idx}-${em}`}
+                                  type="button"
+                                  onClick={() => {
+                                    setMessageInput((prev) => prev + em);
+                                    setIsEmojiPickerOpen(false);
+                                    textareaRef.current?.focus();
+                                  }}
+                                  className="h-10 w-10 flex items-center justify-center hover:bg-[#262626] hover:scale-125 rounded-xl text-2xl transition-all cursor-pointer select-none"
+                                >
+                                  {em}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* File Attachment */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf,.txt,.csv,.png,.jpg,.jpeg"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
+                        title="Attach file (PDF, TXT, CSV, PNG, JPG up to 1024 KB)"
+                      >
+                        <Paperclip className="w-4 h-4" />
+                      </button>
+
+                      {/* Voice Message Quick Toolbar Button */}
+                      <button
+                        type="button"
+                        id="btn-record-voice-toolbar"
+                        onClick={() => setIsRecordingVoice(true)}
+                        className="p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 rounded transition-colors cursor-pointer"
+                        title="Record Voice Message"
+                      >
+                        <Mic className="w-4 h-4" />
+                      </button>
+
+                      {/* Link Task Dropdown */}
+                      <div ref={taskPickerContainerRef} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setIsTaskPickerOpen(!isTaskPickerOpen)}
+                          className={`p-1.5 rounded transition-colors cursor-pointer ${
+                            isTaskPickerOpen ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-[#262626]'
+                          }`}
+                          title="Share / Link a Task"
+                        >
+                          <LinkIcon className="w-4 h-4" />
+                        </button>
+
+                        {isTaskPickerOpen && (
+                          <div className="absolute bottom-full left-0 mb-2 p-2 bg-[#181818] border border-[#2a2a2a] rounded-xl shadow-xl z-30 w-64 max-h-48 overflow-y-auto space-y-1">
+                            <p className="text-[11px] font-semibold text-neutral-400 px-2 py-1 uppercase tracking-wider">
+                              Select Task to Share
+                            </p>
+                            {tasks.map((t) => (
+                              <button
+                                key={t.id}
+                                type="button"
+                                onClick={() => {
+                                  setStagedTask({ id: t.id, title: t.title, priority: t.priority });
+                                  setIsTaskPickerOpen(false);
+                                }}
+                                className="w-full text-left p-1.5 hover:bg-[#262626] rounded text-xs text-neutral-200 truncate transition-colors cursor-pointer"
+                              >
+                                <span className="font-mono text-blue-400">#{t.id}</span> {t.title}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Mention User Dropdown */}
+                      <div ref={mentionPickerContainerRef} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setIsMentionPickerOpen(!isMentionPickerOpen)}
+                          className={`p-1.5 rounded transition-colors cursor-pointer ${
+                            isMentionPickerOpen ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-[#262626]'
+                          }`}
+                          title="Mention user (@)"
+                        >
+                          <AtSign className="w-4 h-4" />
+                        </button>
+
+                        {isMentionPickerOpen && (
+                          <div className="absolute bottom-full left-0 mb-2 p-2 bg-[#181818] border border-[#2a2a2a] rounded-xl shadow-xl z-30 w-56 max-h-48 overflow-y-auto space-y-1">
+                            <p className="text-[11px] font-semibold text-neutral-400 px-2 py-1 uppercase tracking-wider">
+                              Mention Team Member
+                            </p>
+                            {users.map((u) => (
+                              <button
+                                key={u.id}
+                                type="button"
+                                onClick={() => {
+                                  setMessageInput((prev) => `${prev}@${u.name} `);
+                                  setIsMentionPickerOpen(false);
+                                  textareaRef.current?.focus();
+                                }}
+                                className="w-full flex items-center gap-2 p-1.5 hover:bg-[#262626] rounded text-xs text-neutral-200 transition-colors cursor-pointer"
+                              >
+                                <UserAvatar name={u.name} avatar={u.avatar} size="xs" />
+                                <span className="truncate">{u.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* File Attachment */}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".pdf,.txt,.csv,.png,.jpg,.jpeg"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
-                      title="Attach file (PDF, TXT, CSV, PNG, JPG up to 1024 KB)"
-                    >
-                      <Paperclip className="w-4 h-4" />
-                    </button>
-
-                    {/* Link Task Dropdown */}
-                    <div className="relative">
+                    {/* Right: Voice Quick Action & Send Button */}
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setIsTaskPickerOpen(!isTaskPickerOpen)}
-                        className={`p-1.5 rounded transition-colors cursor-pointer ${
-                          isTaskPickerOpen ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-[#262626]'
-                        }`}
-                        title="Share / Link a Task"
+                        id="btn-voice-message-record-action"
+                        onClick={() => setIsRecordingVoice(true)}
+                        className="px-2.5 py-1.5 bg-rose-950/30 hover:bg-rose-900/40 text-rose-400 hover:text-rose-300 border border-rose-800/40 rounded-lg flex items-center gap-1.5 text-xs font-semibold transition-all cursor-pointer shadow-sm shadow-rose-950/30"
+                        title="Record Voice Message"
                       >
-                        <LinkIcon className="w-4 h-4" />
+                        <Mic className="w-3.5 h-3.5 text-rose-400" />
+                        <span className="hidden sm:inline text-[11px]">Voice</span>
                       </button>
 
-                      {isTaskPickerOpen && (
-                        <div className="absolute bottom-full left-0 mb-2 p-2 bg-[#181818] border border-[#2a2a2a] rounded-xl shadow-xl z-30 w-64 max-h-48 overflow-y-auto space-y-1">
-                          <p className="text-[11px] font-semibold text-neutral-400 px-2 py-1 uppercase tracking-wider">
-                            Select Task to Share
-                          </p>
-                          {tasks.map((t) => (
-                            <button
-                              key={t.id}
-                              type="button"
-                              onClick={() => {
-                                setStagedTask({ id: t.id, title: t.title, priority: t.priority });
-                                setIsTaskPickerOpen(false);
-                              }}
-                              className="w-full text-left p-1.5 hover:bg-[#262626] rounded text-xs text-neutral-200 truncate transition-colors cursor-pointer"
-                            >
-                              <span className="font-mono text-blue-400">#{t.id}</span> {t.title}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Mention User Dropdown */}
-                    <div className="relative">
                       <button
                         type="button"
-                        onClick={() => setIsMentionPickerOpen(!isMentionPickerOpen)}
-                        className={`p-1.5 rounded transition-colors cursor-pointer ${
-                          isMentionPickerOpen ? 'bg-blue-600/20 text-blue-400' : 'text-neutral-400 hover:text-white hover:bg-[#262626]'
-                        }`}
-                        title="Mention user (@)"
+                        id="btn-send-chat-message"
+                        onClick={() => handleSendMessage()}
+                        disabled={!messageInput.trim() && stagedAttachments.length === 0 && !stagedTask}
+                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg shadow-sm shadow-blue-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
                       >
-                        <AtSign className="w-4 h-4" />
+                        <span>Send</span>
+                        <Send className="w-3.5 h-3.5" />
                       </button>
-
-                      {isMentionPickerOpen && (
-                        <div className="absolute bottom-full left-0 mb-2 p-2 bg-[#181818] border border-[#2a2a2a] rounded-xl shadow-xl z-30 w-56 max-h-48 overflow-y-auto space-y-1">
-                          <p className="text-[11px] font-semibold text-neutral-400 px-2 py-1 uppercase tracking-wider">
-                            Mention Team Member
-                          </p>
-                          {users.map((u) => (
-                            <button
-                              key={u.id}
-                              type="button"
-                              onClick={() => {
-                                setMessageInput((prev) => `${prev}@${u.name} `);
-                                setIsMentionPickerOpen(false);
-                                textareaRef.current?.focus();
-                              }}
-                              className="w-full flex items-center gap-2 p-1.5 hover:bg-[#262626] rounded text-xs text-neutral-200 transition-colors cursor-pointer"
-                            >
-                              <UserAvatar name={u.name} avatar={u.avatar} size="xs" />
-                              <span className="truncate">{u.name}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </div>
-
-                  {/* Right: Send Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleSendMessage()}
-                    disabled={!messageInput.trim() && stagedAttachments.length === 0 && !stagedTask}
-                    className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg shadow-sm shadow-blue-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <span>Send</span>
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
                 </div>
-              </div>
+              )}
             </div>
           </>
         ) : (

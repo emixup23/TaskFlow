@@ -312,6 +312,16 @@ export interface ChatMessageAttachment {
   downloadUrl?: string;
 }
 
+export interface VoiceNoteData {
+  id: string;
+  audioUrl: string;
+  duration: number;
+  waveform?: number[];
+  mimeType?: string;
+  transcript?: string;
+  fileSize?: number;
+}
+
 export interface ChatMessage {
   id: string;
   channelId: string;
@@ -332,6 +342,7 @@ export interface ChatMessage {
   };
   mentions?: string[];
   attachments?: ChatMessageAttachment[];
+  voiceNote?: VoiceNoteData;
   reactions?: Record<string, string[]>;
   linkedTaskId?: string;
   linkedTaskTitle?: string;
@@ -480,6 +491,29 @@ export interface FormResponse {
   submittedAt: string;
   updatedAt?: string;
   answers: Record<string, any>;
+}
+
+export type NoteColor = 'amber' | 'blue' | 'emerald' | 'purple' | 'rose' | 'slate';
+
+export interface Note {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  authorRole?: string;
+  title: string;
+  content: string;
+  color?: NoteColor;
+  isPinned?: boolean;
+  isPrivate: boolean; // true = private to author, false = shared
+  isSharedWithAll?: boolean; // true = visible to everyone in workspace
+  sharedWithUserIds: string[]; // specific user IDs if not shared with all
+  allowCollaboration?: boolean; // if true, shared recipients can edit content
+  tags?: string[];
+  linkedTaskId?: string;
+  linkedTaskTitle?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const BASIC_DEFAULT_PRIVILEGES: UserPrivileges = {
@@ -980,6 +1014,7 @@ let channelReadState: Map<string, Map<string, string>> = new Map(); // channelId
 let dailyTasks: DailyTask[] = [];
 let forms: Form[] = [];
 let formResponses: FormResponse[] = [];
+let notes: Note[] = [];
 let notifications: NotificationItem[] = [];
 
 function extractMentions(text: string): string[] {
@@ -1614,6 +1649,7 @@ function wipeDemoData(adminUserId?: string) {
   dailyTasks = [];
   forms = [];
   formResponses = [];
+  notes = [];
   chatMessages = [];
   activityLogs = [];
 
@@ -3392,6 +3428,100 @@ if __name__ == "__main__":
       createdAt: new Date(Date.now() - 4 * 3600000).toISOString()
     }
   ];
+
+  // Seed Notes with Private & Shared Visibility across users
+  notes = [
+    {
+      id: 'note-1',
+      authorId: 'user-admin-1',
+      authorName: 'Med Osman',
+      authorAvatar: DEFAULT_USERS[0].avatar,
+      authorRole: 'admin',
+      title: 'Sprint 14 Architecture & Security Checklist',
+      content: `## Sprint 14 Focus Items\n\n- [x] Harden RBAC middleware against empty user tokens\n- [x] Add auto-reconnect backoff on frontend API client\n- [x] Implement user notepad space with private/shared flags\n- [ ] Review cross-team metrics before Friday release\n\n> Note: Coordinate with @Alex on test payload coverage before staging deploy.`,
+      color: 'blue',
+      isPinned: true,
+      isPrivate: false,
+      isSharedWithAll: true,
+      sharedWithUserIds: [],
+      allowCollaboration: true,
+      tags: ['Architecture', 'Sprint14', 'Security'],
+      createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 3600000).toISOString()
+    },
+    {
+      id: 'note-2',
+      authorId: 'user-admin-1',
+      authorName: 'Med Osman',
+      authorAvatar: DEFAULT_USERS[0].avatar,
+      authorRole: 'admin',
+      title: 'Personal Standup Notes & Brainstorming',
+      content: `### Today's Priorities (Private)\n\n1. Review direct message channel sync and WebSocket telemetry\n2. Verify meeting agenda attachments download flow\n3. Polish notepad typography, markdown preview, and search filters\n4. Prepare 1:1 talking points with engineering leads`,
+      color: 'amber',
+      isPinned: true,
+      isPrivate: true,
+      isSharedWithAll: false,
+      sharedWithUserIds: [],
+      allowCollaboration: false,
+      tags: ['Personal', 'Standup', 'Confidential'],
+      createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 2 * 3600000).toISOString()
+    },
+    {
+      id: 'note-3',
+      authorId: 'user-basic-1',
+      authorName: 'Alex Rivera',
+      authorAvatar: DEFAULT_USERS[2].avatar,
+      authorRole: 'lead',
+      title: 'API Design Standards & Pagination Best Practices',
+      content: `### Backend Guidelines for Engineers\n\n- **Consistent responses**: Always return structured errors \`{ error: string }\` with proper HTTP codes.\n- **Security**: Never expose password hashes or auth tokens in logs or generic serialization.\n- **Auditing**: Record user ID and human-readable action string in central activity logs.\n- **Idempotency**: GET endpoints should be safe for client-side auto-retries.`,
+      color: 'emerald',
+      isPinned: false,
+      isPrivate: false,
+      isSharedWithAll: true,
+      sharedWithUserIds: [],
+      allowCollaboration: false,
+      tags: ['Standards', 'Engineering', 'Backend'],
+      createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 4 * 3600000).toISOString()
+    },
+    {
+      id: 'note-4',
+      authorId: 'user-basic-2',
+      authorName: 'Maria Garcia',
+      authorAvatar: DEFAULT_USERS[3].avatar,
+      authorRole: 'member',
+      title: 'Design Tokens & 4.5:1 WCAG Contrast Matrix',
+      content: `### UI Audit Notes\n\nShared specifically with Med Osman and Alex Rivera for design system alignment:\n\n- Neutral 100 on dark background exceeds 12:1 contrast ratio.\n- Badge pills must keep text on one line with \`white-space: nowrap\`.\n- Interactive touch targets maintain minimum 44px on mobile viewport.`,
+      color: 'purple',
+      isPinned: false,
+      isPrivate: false,
+      isSharedWithAll: false,
+      sharedWithUserIds: ['user-admin-1', 'user-basic-1'],
+      allowCollaboration: true,
+      tags: ['DesignSystem', 'Accessibility', 'WCAG'],
+      createdAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 5 * 3600000).toISOString()
+    },
+    {
+      id: 'note-5',
+      authorId: 'user-basic-1',
+      authorName: 'Alex Rivera',
+      authorAvatar: DEFAULT_USERS[2].avatar,
+      authorRole: 'lead',
+      title: "Alex's Private Engineering Scratchpad",
+      content: `Personal draft thoughts on graph rendering performance:\n\n- Test D3 force simulation alpha target throttling\n- Check memory usage on nodes with heavy relationship links\n- Keep local scratchpad notes strictly private`,
+      color: 'rose',
+      isPinned: false,
+      isPrivate: true,
+      isSharedWithAll: false,
+      sharedWithUserIds: [],
+      allowCollaboration: false,
+      tags: ['Scratchpad', 'Ideas'],
+      createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 6 * 3600000).toISOString()
+    }
+  ];
 }
 
 initializeSeedData();
@@ -3524,6 +3654,11 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
   app.use(authMiddleware);
+
+  // Health check endpoint
+  app.get('/api/health', (_req: Request, res: Response) => {
+    res.json({ status: 'ok', time: new Date().toISOString() });
+  });
 
   // -------------------------------------------------------------
   // API Routes: Authentication & Session Management
@@ -6715,12 +6850,17 @@ async function startServer() {
 
   // GET /api/chat/channels: List accessible channels & groups for current user
   app.get('/api/chat/channels', (req: AuthenticatedRequest, res: Response) => {
-    const user = req.currentUser!;
+    const user = req.currentUser || users.find((u) => u.status === 'active') || users[0];
+    if (!user) {
+      res.json([]);
+      return;
+    }
 
     // Return public channels + private channels/DMs where user is a member
     const accessible = channels.filter((chan) => {
       if (!chan.isPrivate && chan.type === 'channel') return true;
-      return chan.memberIds.includes(user.id) || user.role === 'admin';
+      const memberIds = Array.isArray(chan.memberIds) ? chan.memberIds : [];
+      return memberIds.includes(user.id) || user.role === 'admin';
     });
 
     const userMap = new Map(users.map((u) => [u.id, u]));
@@ -6969,7 +7109,7 @@ async function startServer() {
   // GET /api/chat/channels/:channelId/messages: Fetch messages in channel
   app.get('/api/chat/channels/:channelId/messages', (req: AuthenticatedRequest, res: Response) => {
     const { channelId } = req.params;
-    const user = req.currentUser!;
+    const user = req.currentUser || users.find((u) => u.status === 'active') || users[0];
     const channel = channels.find((c) => c.id === channelId);
 
     if (!channel) {
@@ -6978,7 +7118,8 @@ async function startServer() {
     }
 
     // Access check: public channel or member or admin
-    if (channel.isPrivate && !channel.memberIds.includes(user.id) && user.role !== 'admin') {
+    const memberIds = Array.isArray(channel.memberIds) ? channel.memberIds : [];
+    if (user && channel.isPrivate && !memberIds.includes(user.id) && user.role !== 'admin') {
       res.status(403).json({ error: 'Forbidden: You are not a member of this private channel.' });
       return;
     }
@@ -7046,9 +7187,9 @@ async function startServer() {
       channel.memberIds.push(user.id);
     }
 
-    const { content, replyToId, attachments, linkedTaskId, mentions } = req.body;
+    const { content, replyToId, attachments, linkedTaskId, mentions, voiceNote } = req.body;
 
-    if ((!content || !content.trim()) && (!attachments || attachments.length === 0) && !linkedTaskId) {
+    if ((!content || !content.trim()) && (!attachments || attachments.length === 0) && !linkedTaskId && !voiceNote) {
       res.status(400).json({ error: 'Message cannot be empty.' });
       return;
     }
@@ -7094,11 +7235,12 @@ async function startServer() {
       senderAvatar: user.avatar,
       senderRole: user.role,
       senderTitle: user.title,
-      content: content ? content.trim() : '',
+      content: content ? content.trim() : (voiceNote ? '🎤 Voice message' : ''),
       createdAt: new Date().toISOString(),
       replyTo,
       mentions: Array.isArray(mentions) ? mentions : [],
       attachments: Array.isArray(attachments) ? attachments : [],
+      voiceNote: voiceNote || undefined,
       reactions: {},
       linkedTaskId,
       linkedTaskTitle,
@@ -8515,6 +8657,287 @@ async function startServer() {
 
     formResponses.splice(respIndex, 1);
     res.json({ success: true, id: responseId });
+  });
+
+  // -------------------------------------------------------------
+  // API Routes: User Notepad Space (Private & Shared Notes)
+  // -------------------------------------------------------------
+
+  // GET /api/notes: Fetch all notes visible to current user
+  app.get('/api/notes', (req: AuthenticatedRequest, res: Response) => {
+    const user = req.currentUser || users.find((u) => u.status === 'active') || users[0];
+    if (!user) {
+      res.json([]);
+      return;
+    }
+
+    const { filter, tag, search, color } = req.query;
+
+    // Filter notes visible to this user:
+    // 1. Notes created by this user (always visible, private or shared)
+    // 2. Notes shared by others: where isPrivate is false AND (isSharedWithAll is true OR user is in sharedWithUserIds)
+    let visible = notes.filter((n) => {
+      if (n.authorId === user.id) return true;
+      if (n.isPrivate) return false;
+      const isSharedAll = n.isSharedWithAll !== false;
+      const isDirectlyShared = Array.isArray(n.sharedWithUserIds) && n.sharedWithUserIds.includes(user.id);
+      return isSharedAll || isDirectlyShared;
+    });
+
+    if (filter === 'private') {
+      visible = visible.filter((n) => n.authorId === user.id && n.isPrivate);
+    } else if (filter === 'shared') {
+      visible = visible.filter((n) => !n.isPrivate);
+    } else if (filter === 'me') {
+      visible = visible.filter((n) => n.authorId === user.id);
+    } else if (filter === 'shared_with_me') {
+      visible = visible.filter((n) => n.authorId !== user.id && !n.isPrivate);
+    }
+
+    if (color && typeof color === 'string' && color !== 'all') {
+      visible = visible.filter((n) => n.color === color);
+    }
+
+    if (tag && typeof tag === 'string') {
+      visible = visible.filter((n) => Array.isArray(n.tags) && n.tags.includes(tag));
+    }
+
+    if (search && typeof search === 'string' && search.trim()) {
+      const q = search.trim().toLowerCase();
+      visible = visible.filter((n) =>
+        n.title.toLowerCase().includes(q) ||
+        n.content.toLowerCase().includes(q) ||
+        (n.tags && n.tags.some((t) => t.toLowerCase().includes(q))) ||
+        n.authorName.toLowerCase().includes(q)
+      );
+    }
+
+    // Sort: pinned notes first, then newest updatedAt
+    visible.sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+
+    res.json(visible);
+  });
+
+  // GET /api/notes/:id: Fetch single note with permission validation
+  app.get('/api/notes/:id', (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const user = req.currentUser || users.find((u) => u.status === 'active') || users[0];
+    const note = notes.find((n) => n.id === id);
+
+    if (!note) {
+      res.status(404).json({ error: 'Note not found.' });
+      return;
+    }
+
+    const isAuthor = user && note.authorId === user.id;
+    const isSharedAll = !note.isPrivate && note.isSharedWithAll !== false;
+    const isSharedUser = !note.isPrivate && user && Array.isArray(note.sharedWithUserIds) && note.sharedWithUserIds.includes(user.id);
+    const isAdmin = user && user.role === 'admin';
+
+    if (!isAuthor && !isSharedAll && !isSharedUser && !isAdmin) {
+      res.status(403).json({ error: 'Forbidden: This note is private to its author.' });
+      return;
+    }
+
+    res.json(note);
+  });
+
+  // POST /api/notes: Create new note
+  app.post('/api/notes', (req: AuthenticatedRequest, res: Response) => {
+    const user = req.currentUser || users.find((u) => u.status === 'active') || users[0];
+    if (!user) {
+      res.status(401).json({ error: 'Unauthorized: User session required.' });
+      return;
+    }
+
+    const {
+      title,
+      content,
+      color,
+      isPinned,
+      isPrivate,
+      isSharedWithAll,
+      sharedWithUserIds,
+      allowCollaboration,
+      tags,
+      linkedTaskId,
+      linkedTaskTitle
+    } = req.body;
+
+    const newNote: Note = {
+      id: `note-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      authorId: user.id,
+      authorName: user.name,
+      authorAvatar: user.avatar,
+      authorRole: user.role,
+      title: (title || 'Untitled Note').trim(),
+      content: typeof content === 'string' ? content : '',
+      color: color || 'amber',
+      isPinned: Boolean(isPinned),
+      isPrivate: isPrivate !== undefined ? Boolean(isPrivate) : true, // default private
+      isSharedWithAll: Boolean(isSharedWithAll),
+      sharedWithUserIds: Array.isArray(sharedWithUserIds) ? sharedWithUserIds : [],
+      allowCollaboration: Boolean(allowCollaboration),
+      tags: Array.isArray(tags) ? tags : [],
+      linkedTaskId: linkedTaskId || undefined,
+      linkedTaskTitle: linkedTaskTitle || undefined,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    notes.unshift(newNote);
+
+    addActivityLog(
+      user.id,
+      user.name,
+      user.avatar || '',
+      'note_created',
+      `${user.name} created ${newNote.isPrivate ? 'private' : 'shared'} note "${newNote.title}"`
+    );
+
+    res.status(201).json(newNote);
+  });
+
+  // PUT /api/notes/:id: Update note content, metadata or tags
+  app.put('/api/notes/:id', (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const user = req.currentUser || users.find((u) => u.status === 'active') || users[0];
+    const noteIndex = notes.findIndex((n) => n.id === id);
+
+    if (noteIndex === -1) {
+      res.status(404).json({ error: 'Note not found.' });
+      return;
+    }
+
+    const note = notes[noteIndex];
+    const isAuthor = user && note.authorId === user.id;
+    const canCollaborate = !note.isPrivate && note.allowCollaboration && (note.isSharedWithAll || (user && note.sharedWithUserIds.includes(user.id)));
+    const isAdmin = user && user.role === 'admin';
+
+    if (!isAuthor && !canCollaborate && !isAdmin) {
+      res.status(403).json({ error: 'Forbidden: You do not have permission to edit this note.' });
+      return;
+    }
+
+    const {
+      title,
+      content,
+      color,
+      isPinned,
+      isPrivate,
+      isSharedWithAll,
+      sharedWithUserIds,
+      allowCollaboration,
+      tags,
+      linkedTaskId,
+      linkedTaskTitle
+    } = req.body;
+
+    // Only note author or admin can modify ownership/privacy settings
+    if (isAuthor || isAdmin) {
+      if (isPrivate !== undefined) note.isPrivate = Boolean(isPrivate);
+      if (isSharedWithAll !== undefined) note.isSharedWithAll = Boolean(isSharedWithAll);
+      if (sharedWithUserIds !== undefined) note.sharedWithUserIds = Array.isArray(sharedWithUserIds) ? sharedWithUserIds : [];
+      if (allowCollaboration !== undefined) note.allowCollaboration = Boolean(allowCollaboration);
+      if (color !== undefined) note.color = color;
+      if (isPinned !== undefined) note.isPinned = Boolean(isPinned);
+    }
+
+    if (title !== undefined) note.title = String(title).trim() || 'Untitled Note';
+    if (content !== undefined) note.content = String(content);
+    if (tags !== undefined) note.tags = Array.isArray(tags) ? tags : [];
+    if (linkedTaskId !== undefined) note.linkedTaskId = linkedTaskId;
+    if (linkedTaskTitle !== undefined) note.linkedTaskTitle = linkedTaskTitle;
+    note.updatedAt = new Date().toISOString();
+
+    res.json(note);
+  });
+
+  // POST /api/notes/:id/share: Update privacy and sharing configuration
+  app.post('/api/notes/:id/share', (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const user = req.currentUser || users.find((u) => u.status === 'active') || users[0];
+    const note = notes.find((n) => n.id === id);
+
+    if (!note) {
+      res.status(404).json({ error: 'Note not found.' });
+      return;
+    }
+
+    if (user && note.authorId !== user.id && user.role !== 'admin') {
+      res.status(403).json({ error: 'Only the author or an admin can modify note sharing settings.' });
+      return;
+    }
+
+    const { isPrivate, isSharedWithAll, sharedWithUserIds, allowCollaboration } = req.body;
+    note.isPrivate = Boolean(isPrivate);
+    if (isSharedWithAll !== undefined) note.isSharedWithAll = Boolean(isSharedWithAll);
+    if (sharedWithUserIds !== undefined) note.sharedWithUserIds = Array.isArray(sharedWithUserIds) ? sharedWithUserIds : [];
+    if (allowCollaboration !== undefined) note.allowCollaboration = Boolean(allowCollaboration);
+    note.updatedAt = new Date().toISOString();
+
+    if (!note.isPrivate) {
+      addActivityLog(
+        user.id,
+        user.name,
+        user.avatar || '',
+        'note_shared',
+        `${user.name} shared note "${note.title}" ${note.isSharedWithAll ? 'with everyone' : `with ${note.sharedWithUserIds.length} member(s)`}`
+      );
+    }
+
+    res.json(note);
+  });
+
+  // POST /api/notes/:id/pin: Toggle pinned status
+  app.post('/api/notes/:id/pin', (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const note = notes.find((n) => n.id === id);
+
+    if (!note) {
+      res.status(404).json({ error: 'Note not found.' });
+      return;
+    }
+
+    note.isPinned = !note.isPinned;
+    note.updatedAt = new Date().toISOString();
+    res.json(note);
+  });
+
+  // DELETE /api/notes/:id: Delete note (author or admin)
+  app.delete('/api/notes/:id', (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const user = req.currentUser || users.find((u) => u.status === 'active') || users[0];
+    const noteIndex = notes.findIndex((n) => n.id === id);
+
+    if (noteIndex === -1) {
+      res.status(404).json({ error: 'Note not found.' });
+      return;
+    }
+
+    const note = notes[noteIndex];
+    if (user && note.authorId !== user.id && user.role !== 'admin') {
+      res.status(403).json({ error: 'Only the author or an administrator can delete this note.' });
+      return;
+    }
+
+    notes.splice(noteIndex, 1);
+
+    if (user) {
+      addActivityLog(
+        user.id,
+        user.name,
+        user.avatar || '',
+        'note_deleted',
+        `${user.name} deleted note "${note.title}"`
+      );
+    }
+
+    res.json({ success: true, id });
   });
 
 

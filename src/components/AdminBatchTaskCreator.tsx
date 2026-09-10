@@ -29,6 +29,7 @@ import { Priority } from '../types';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
 import { UserAvatar } from './UserAvatar';
+import { VoiceToTextButton } from './VoiceToTextButton';
 
 export interface StagedTask {
   id: string;
@@ -50,8 +51,8 @@ export const AdminBatchTaskCreator: React.FC<AdminBatchTaskCreatorProps> = ({ on
   const { statuses, projects, createBatchTasks, activeProjectId } = useTasks();
   const { users, isAdmin, currentUser } = useAuth();
 
-  // Access validation: Admin or privileged user
-  const canAccess = isAdmin || Boolean(currentUser?.privileges?.canCreateTask);
+  // Access validation: Admin only
+  const canAccess = isAdmin;
 
   // Form State
   const [taskTitle, setTaskTitle] = useState('');
@@ -470,7 +471,7 @@ export const AdminBatchTaskCreator: React.FC<AdminBatchTaskCreatorProps> = ({ on
           <div>
             <h2 className="text-base font-bold text-white">Administrator Access Required</h2>
             <p className="text-xs text-neutral-400 mt-1">
-              Only workspace administrators or users with task creation privileges can access the Batch Task Creation workspace.
+              Only workspace administrators can access the Batch Task Creation workspace.
             </p>
           </div>
           <button
@@ -745,16 +746,24 @@ export const AdminBatchTaskCreator: React.FC<AdminBatchTaskCreatorProps> = ({ on
 
               {/* 7. Description (text area) */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-neutral-200 flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-neutral-400" />
-                  <span>Description (Text Area)</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-neutral-200 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-neutral-400" />
+                    <span>Description (Text Area)</span>
+                  </label>
+                  <VoiceToTextButton
+                    id="batch-task-voice-btn"
+                    value={description}
+                    onChange={setDescription}
+                    title="Dictate batch task description with microphone"
+                  />
+                </div>
                 <textarea
                   id="textarea-batch-description"
                   rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Provide scope, requirements, or guidelines for the created tasks..."
+                  placeholder="Provide scope, requirements, or guidelines for the created tasks (type or dictate)..."
                   className="w-full px-3.5 py-2 bg-[#1a1a1a] border border-[#333333] rounded-lg text-xs text-white placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 />
               </div>

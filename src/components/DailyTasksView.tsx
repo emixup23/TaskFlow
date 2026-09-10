@@ -29,10 +29,12 @@ import {
   Users,
   Search,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  X
 } from 'lucide-react';
 import { DailyTask, DailyTimeBlock, DailyCategory, Priority, User } from '../types';
 import { api } from '../api/client';
+import { VoiceToTextButton } from './VoiceToTextButton';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
 import confetti from 'canvas-confetti';
@@ -838,25 +840,36 @@ export const DailyTasksView: React.FC = () => {
 
       {/* Create / Edit Modal Dialog */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#141414] border border-[#2a2a2a] rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-5 animate-fadeIn">
-            <div className="flex items-center justify-between border-b border-[#262626] pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-teal-500/15 text-teal-400 border border-teal-500/30">
+        <div
+          id="daily-task-modal-backdrop"
+          onClick={() => setIsModalOpen(false)}
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#141414] border border-[#2a2a2a] rounded-2xl w-full max-w-xl max-h-[92vh] overflow-y-auto shadow-2xl p-4 sm:p-6 space-y-5 animate-fadeIn"
+          >
+            <div className="flex items-center justify-between border-b border-[#262626] pb-3 gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-2 rounded-xl bg-teal-500/15 text-teal-400 border border-teal-500/30 shrink-0">
                   <CalendarCheck2 className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">
+                <div className="min-w-0">
+                  <h3 className="text-base font-bold text-white truncate">
                     {editingTask ? 'Edit Daily Task' : 'New Daily Task'}
                   </h3>
-                  <p className="text-xs text-slate-400">Schedule routine item, sync meeting or standup blocker</p>
+                  <p className="text-xs text-slate-400 truncate hidden xs:block">Schedule routine item, sync meeting or standup blocker</p>
                 </div>
               </div>
               <button
+                type="button"
+                id="btn-close-daily-task-modal"
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-[#222] transition-colors"
+                aria-label="Close daily task window"
+                className="flex items-center gap-1.5 px-3 py-1.5 sm:p-1.5 text-slate-300 hover:text-white rounded-lg bg-[#222222] sm:bg-transparent border border-[#333333] sm:border-transparent hover:bg-[#2a2a2a] transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0"
               >
-                ✕
+                <X className="w-4.5 h-4.5 text-slate-300" />
+                <span className="sm:hidden">Close</span>
               </button>
             </div>
 
@@ -896,12 +909,20 @@ export const DailyTasksView: React.FC = () => {
 
               {/* Description */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Description / Context
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                    Description / Context
+                  </label>
+                  <VoiceToTextButton
+                    id="daily-task-voice-btn"
+                    value={formDescription}
+                    onChange={setFormDescription}
+                    title="Dictate task description using microphone"
+                  />
+                </div>
                 <textarea
                   rows={2}
-                  placeholder="Key objectives, criteria or background..."
+                  placeholder="Key objectives, criteria or background (type or dictate with mic)..."
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   className="w-full bg-[#1c1c1c] border border-[#2e2e2e] rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
@@ -1042,10 +1063,12 @@ export const DailyTasksView: React.FC = () => {
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#262626]">
                 <button
                   type="button"
+                  id="btn-cancel-daily-task"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-[#1f1f1f] hover:bg-[#2a2a2a] text-slate-300 text-xs font-medium transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1f1f1f] hover:bg-[#2a2a2a] text-slate-300 text-xs font-medium transition-colors cursor-pointer border border-[#333333] sm:border-transparent"
                 >
-                  Cancel
+                  <X className="w-3.5 h-3.5 sm:hidden" />
+                  <span>Cancel / Close</span>
                 </button>
                 <button
                   type="submit"

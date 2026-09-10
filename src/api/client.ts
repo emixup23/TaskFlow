@@ -11,6 +11,7 @@ import {
   ChatMessage,
   ChatChannel,
   ChatMessageAttachment,
+  VoiceNoteData,
   Meeting,
   MeetingAttachment,
   TaskTimeLog,
@@ -30,15 +31,22 @@ import {
   DailyTask,
   NotificationItem,
   Form,
-  FormResponse
+  FormResponse,
+  Note
 } from '../types';
 
-let currentUserId = localStorage.getItem('taskflow_user_id') || 'user-admin-1';
-let currentAuthToken = localStorage.getItem('taskflow_auth_token') || '';
+import { STORAGE_KEYS } from '../constants/storageKeys';
+
+let currentUserId = '';
+let currentAuthToken = '';
 
 export function setApiUserId(id: string) {
   currentUserId = id;
-  localStorage.setItem('taskflow_user_id', id);
+  if (id) {
+    localStorage.setItem(STORAGE_KEYS.USER_ID, id);
+  } else {
+    localStorage.removeItem(STORAGE_KEYS.USER_ID);
+  }
 }
 
 export function getApiUserId(): string {
@@ -48,9 +56,9 @@ export function getApiUserId(): string {
 export function setApiAuthToken(token: string) {
   currentAuthToken = token;
   if (token) {
-    localStorage.setItem('taskflow_auth_token', token);
+    localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
   } else {
-    localStorage.removeItem('taskflow_auth_token');
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
   }
 }
 
@@ -58,10 +66,10 @@ export function getApiAuthToken(): string {
   return currentAuthToken;
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}, retries = 2): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'x-user-id': currentUserId,
+    ...(currentUserId ? { 'x-user-id': currentUserId } : {}),
     ...(options.headers as Record<string, string> || {})
   };
 
@@ -70,20 +78,43 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers['x-auth-token'] = currentAuthToken;
   }
 
-  const response = await fetch(path, { ...options, headers });
+  const isGetOrHead = !options.method || options.method === 'GET' || options.method === 'HEAD';
 
-  if (!response.ok) {
-    let errorMsg = `Request failed (${response.status})`;
-    try {
-      const data = await response.json();
-      if (data.error) errorMsg = data.error;
-    } catch {
-      // Ignore
+  try {
+    const response = await fetch(path, { ...options, headers });
+
+    if (!response.ok) {
+      // If server returns temporary 502/503/504 gateway response during restarts and request is idempotent, retry
+      if (retries > 0 && isGetOrHead && (response.status === 502 || response.status === 503 || response.status === 504)) {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        return request<T>(path, options, retries - 1);
+      }
+
+      let errorMsg = `Request failed (${response.status})`;
+      try {
+        const data = await response.json();
+        if (data.error) errorMsg = data.error;
+      } catch {
+        // Ignore
+      }
+      throw new Error(errorMsg);
     }
-    throw new Error(errorMsg);
-  }
 
-  return response.json();
+    return response.json();
+  } catch (err: any) {
+    // If it's a network disconnection / server restart error (Failed to fetch, NetworkError), retry idempotent calls
+    const isNetworkError =
+      err?.name === 'TypeError' ||
+      err?.message?.includes('Failed to fetch') ||
+      err?.message?.includes('NetworkError') ||
+      err?.message?.includes('Load failed');
+
+    if (retries > 0 && isGetOrHead && isNetworkError) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      return request<T>(path, options, retries - 1);
+    }
+    throw err;
+  }
 }
 
 export const api = {
@@ -310,6 +341,7 @@ export const api = {
       content?: string;
       replyToId?: string;
       attachments?: ChatMessageAttachment[];
+      voiceNote?: VoiceNoteData;
       linkedTaskId?: string;
       mentions?: string[];
     }
@@ -644,5 +676,56 @@ export const api = {
   deleteFormResponse: (formId: string, responseId: string) =>
     request<{ success: boolean; id: string }>(`/api/forms/${formId}/responses/${responseId}`, {
       method: 'DELETE'
+    }),
+
+  // Notepad Space (Private & Shared Notes)
+  getNotes: (params?: { filter?: string; tag?: string; search?: string; color?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.filter) query.set('filter', params.filter);
+    if (params?.tag) query.set('tag', params.tag);
+    if (params?.search) query.set('search', params.search);
+    if (params?.color) query.set('color', params.color);
+    const qs = query.toString();
+    return request<Note[]>(`/api/notes${qs ? `?${qs}` : ''}`);
+  },
+
+  getNote: (id: string) => request<Note>(`/api/notes/${id}`),
+
+  createNote: (data: Partial<Note>) =>
+    request<Note>('/api/notes', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
+  updateNote: (id: string, data: Partial<Note>) =>
+    request<Note>(`/api/notes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+
+  shareNote: (
+    id: string,
+    data: {
+      isPrivate: boolean;
+      isSharedWithAll?: boolean;
+      sharedWithUserIds?: string[];
+      allowCollaboration?: boolean;
+    }
+  ) =>
+    request<Note>(`/api/notes/${id}/share`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
+  togglePinNote: (id: string) =>
+    request<Note>(`/api/notes/${id}/pin`, {
+      method: 'POST'
+    }),
+
+  deleteNote: (id: string) =>
+    request<{ success: boolean; id: string }>(`/api/notes/${id}`, {
+      method: 'DELETE'
     })
 };
+
+export const apiClient = api;

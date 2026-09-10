@@ -63,8 +63,11 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
     setErrorMessage(null);
     try {
       setIsSubmitting(true);
-      // Attempt quick direct switch or login
-      await switchUser(userId);
+      try {
+        await login({ email: userEmail, password: 'password123' });
+      } catch {
+        await switchUser(userId);
+      }
       setSuccessMessage(`Logged in as ${userEmail}`);
       if (onSuccess) onSuccess();
     } catch (err: any) {

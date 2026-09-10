@@ -19,6 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import { useKudos } from '../context/KudosContext';
 import { TagBadge } from './TagBadge';
 import { UserAvatar } from './UserAvatar';
+import { VoiceToTextButton } from './VoiceToTextButton';
 
 export const CreateTaskModal: React.FC = () => {
   const {
@@ -140,29 +141,37 @@ export const CreateTaskModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 lg:p-8 animate-in fade-in duration-150">
+    <div
+      id="create-task-modal-backdrop"
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-6 lg:p-8 animate-in fade-in duration-150"
+      onClick={() => setIsCreateModalOpen(false)}
+    >
       <div
         id="create-task-modal"
-        className="relative bg-[#141414] w-full md:w-[90vw] md:max-w-[90vw] lg:w-[90vw] lg:max-w-[90vw] xl:w-[90vw] xl:max-w-[90vw] rounded shadow-2xl border border-[#262626] overflow-hidden flex flex-col max-h-[92vh] h-auto transition-all duration-200"
+        onClick={(e) => e.stopPropagation()}
+        className="relative bg-[#141414] w-full md:w-[90vw] md:max-w-[90vw] lg:w-[90vw] lg:max-w-[90vw] xl:w-[90vw] xl:max-w-[90vw] rounded shadow-2xl border border-[#262626] overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[92vh] h-auto transition-all duration-200"
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-[#262626] bg-[#1a1a1a] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded bg-blue-950/60 flex items-center justify-center text-blue-400">
+        <div className="p-3.5 sm:p-5 border-b border-[#262626] bg-[#1a1a1a] flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-blue-950/60 flex items-center justify-center text-blue-400 border border-blue-800/40 shrink-0">
               <Plus className="w-5 h-5 stroke-[2.5]" />
             </div>
-            <div>
-              <h2 className="text-base font-bold text-white leading-tight">Create New Task</h2>
-              <p className="text-xs text-neutral-400">Add an action item to the team workflow</p>
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-base font-bold text-white leading-tight truncate">Create New Task</h2>
+              <p className="text-xs text-neutral-400 truncate hidden xs:block">Add an action item to the team workflow</p>
             </div>
           </div>
 
           <button
             type="button"
+            id="btn-close-create-task-modal"
             onClick={() => setIsCreateModalOpen(false)}
-            className="p-1.5 text-neutral-400 hover:text-neutral-200 rounded hover:bg-[#262626] transition-colors cursor-pointer"
+            aria-label="Close task creation window"
+            className="flex items-center gap-1.5 px-3 py-1.5 sm:p-1.5 text-neutral-200 hover:text-white rounded-lg bg-[#222222] sm:bg-transparent border border-[#333333] sm:border-transparent hover:bg-[#2a2a2a] transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4.5 h-4.5 text-neutral-300" />
+            <span className="sm:hidden">Close</span>
           </button>
         </div>
 
@@ -407,14 +416,22 @@ export const CreateTaskModal: React.FC = () => {
 
           {/* Description */}
           <div className="space-y-1">
-            <label className="block text-xs font-bold uppercase tracking-wider text-neutral-300">
-              Detailed Description
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold uppercase tracking-wider text-neutral-300">
+                Detailed Description
+              </label>
+              <VoiceToTextButton
+                id="create-task-voice-btn"
+                value={description}
+                onChange={setDescription}
+              />
+            </div>
             <textarea
+              id="create-task-description-textarea"
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Outline steps, acceptance criteria, context, or links..."
+              placeholder="Outline steps, acceptance criteria, context, or links (type or dictate with mic)..."
               className="w-full p-3 text-xs bg-[#1f1f1f] border border-[#333333] rounded focus:ring-1 focus:ring-blue-500 text-neutral-200 placeholder:text-neutral-500 leading-relaxed"
             />
           </div>
@@ -467,10 +484,12 @@ export const CreateTaskModal: React.FC = () => {
           <div className="pt-4 border-t border-[#262626] flex items-center justify-end gap-3">
             <button
               type="button"
+              id="btn-cancel-create-task"
               onClick={() => setIsCreateModalOpen(false)}
-              className="px-4 py-2 text-xs font-semibold text-neutral-400 hover:text-neutral-200 hover:bg-[#222222] rounded transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-neutral-300 hover:text-white hover:bg-[#222222] border border-[#333333] sm:border-transparent rounded-lg transition-colors cursor-pointer"
             >
-              Cancel
+              <X className="w-3.5 h-3.5 sm:hidden" />
+              <span>Cancel / Close</span>
             </button>
 
             {(() => {

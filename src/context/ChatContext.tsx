@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { ChatChannel, ChatMessage, ChatMessageAttachment, Task } from '../types';
+import { ChatChannel, ChatMessage, ChatMessageAttachment, VoiceNoteData, Task } from '../types';
 import { api } from '../api/client';
 import { useAuth } from './AuthContext';
 import { useGamification } from './GamificationContext';
@@ -11,6 +11,7 @@ interface ChatContextType {
   messages: ChatMessage[];
   isLoading: boolean;
   isMessagesLoading: boolean;
+  messagesError: string | null;
   totalUnreadCount: number;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -23,6 +24,7 @@ interface ChatContextType {
     content?: string;
     replyToId?: string;
     attachments?: ChatMessageAttachment[];
+    voiceNote?: VoiceNoteData;
     linkedTaskId?: string;
     mentions?: string[];
   }) => Promise<ChatMessage | null>;
@@ -62,6 +64,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isMessagesLoading, setIsMessagesLoading] = useState<boolean>(false);
+  const [messagesError, setMessagesError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [channelCategoryFilter, setChannelCategoryFilter] = useState<'all' | 'channels' | 'direct'>('all');
   const [pendingTaskShare, setPendingTaskShare] = useState<Task | null>(null);
@@ -101,10 +104,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const targetId = channelIdOverride || activeChannelId;
     if (!targetId) {
       setMessages([]);
+      setMessagesError(null);
       return;
     }
 
     setIsMessagesLoading(true);
+    setMessagesError(null);
     try {
       const msgs = await api.getChatMessages(targetId);
       setMessages(msgs);
@@ -116,8 +121,22 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setChannels((prev) =>
         prev.map((c) => (c.id === targetId ? { ...c, unreadCount: 0 } : c))
       );
-    } catch (err) {
-      console.error('Failed to fetch channel messages:', err);
+    } catch (err: any) {
+      console.warn('Initial fetch for channel messages failed, attempting automatic recovery...', err);
+      try {
+        // Automatic retry with backoff for resilience against transient hiccups
+        await new Promise((resolve) => setTimeout(resolve, 600));
+        const retryMsgs = await api.getChatMessages(targetId);
+        setMessages(retryMsgs);
+        setMessagesError(null);
+        api.markChannelAsRead(targetId).catch(() => {});
+        setChannels((prev) =>
+          prev.map((c) => (c.id === targetId ? { ...c, unreadCount: 0 } : c))
+        );
+      } catch (retryErr: any) {
+        console.error('Failed to fetch channel messages after retry:', retryErr);
+        setMessagesError(retryErr?.message || 'Failed to load messages');
+      }
     } finally {
       setIsMessagesLoading(false);
     }
@@ -145,6 +164,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       content?: string;
       replyToId?: string;
       attachments?: ChatMessageAttachment[];
+      voiceNote?: VoiceNoteData;
       linkedTaskId?: string;
       mentions?: string[];
     }): Promise<ChatMessage | null> => {
@@ -166,7 +186,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   lastMessage: {
                     id: newMsg.id,
                     senderName: newMsg.senderName,
-                    content: newMsg.content || '📎 Attachment',
+                    content: newMsg.voiceNote
+                      ? '🎤 Voice message'
+                      : newMsg.content || '📎 Attachment',
                     createdAt: newMsg.createdAt
                   }
                 }
@@ -349,6 +371,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         messages,
         isLoading,
         isMessagesLoading,
+        messagesError,
         totalUnreadCount,
         searchQuery,
         setSearchQuery,

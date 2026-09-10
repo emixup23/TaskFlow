@@ -81,6 +81,7 @@ export const MessengerComments: React.FC<MessengerCommentsProps> = ({ task, canE
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const mentionMenuRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom of messages container
@@ -98,18 +99,37 @@ export const MessengerComments: React.FC<MessengerCommentsProps> = ({ task, canE
     scrollToBottom(true);
   }, [task.comments?.length]);
 
-  // Close emoji picker and mention menu on outside click
+  // Close emoji picker and mention menu on outside click or Escape key
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(target) &&
+        !emojiButtonRef.current?.contains(target)
+      ) {
         setShowEmojiPicker(false);
       }
-      if (mentionMenuRef.current && !mentionMenuRef.current.contains(e.target as Node)) {
+      if (mentionMenuRef.current && !mentionMenuRef.current.contains(target)) {
         setMentionQuery(null);
       }
     };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowEmojiPicker(false);
+        setMentionQuery(null);
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   // Filter users for @mention autocomplete
@@ -466,7 +486,7 @@ export const MessengerComments: React.FC<MessengerCommentsProps> = ({ task, canE
                               key={emoji}
                               type="button"
                               onClick={() => toggleCommentReaction(task.id, comment.id, emoji)}
-                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] border font-medium transition-transform active:scale-95 cursor-pointer ${
+                              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs border font-medium transition-transform active:scale-95 cursor-pointer ${
                                 hasReacted
                                   ? isOutgoing
                                     ? 'bg-blue-800 border-blue-400 text-white shadow-xs'
@@ -477,8 +497,8 @@ export const MessengerComments: React.FC<MessengerCommentsProps> = ({ task, canE
                               }`}
                               title={`Reacted by: ${reactingNames}`}
                             >
-                              <span>{emoji}</span>
-                              <span className="font-semibold text-[9px]">{userIds.length}</span>
+                              <span className="text-sm leading-none">{emoji}</span>
+                              <span className="font-semibold text-[10px]">{userIds.length}</span>
                             </button>
                           );
                         })}
@@ -501,7 +521,7 @@ export const MessengerComments: React.FC<MessengerCommentsProps> = ({ task, canE
                             key={emoji}
                             type="button"
                             onClick={() => toggleCommentReaction(task.id, comment.id, emoji)}
-                            className={`p-1 hover:scale-125 transition-transform text-xs rounded hover:bg-[#282828] cursor-pointer ${
+                            className={`p-1 hover:scale-125 transition-transform text-base rounded hover:bg-[#282828] cursor-pointer ${
                               hasReacted ? 'bg-blue-950/60 ring-1 ring-blue-500' : ''
                             }`}
                             title={`React with ${emoji}`}
@@ -684,7 +704,7 @@ export const MessengerComments: React.FC<MessengerCommentsProps> = ({ task, canE
           )}
 
           {/* Emoji Grid */}
-          <div className="grid grid-cols-8 gap-1 p-1 max-h-44 overflow-y-auto scrollbar-thin mt-1">
+          <div className="grid grid-cols-7 sm:grid-cols-8 gap-1.5 p-1 max-h-56 overflow-y-auto scrollbar-thin mt-1">
             {displayedEmojis.map((emoji, idx) => (
               <button
                 key={`${emoji}-${idx}`}
@@ -692,7 +712,7 @@ export const MessengerComments: React.FC<MessengerCommentsProps> = ({ task, canE
                 onClick={() => {
                   insertEmoji(emoji);
                 }}
-                className="h-8 flex items-center justify-center text-lg rounded hover:bg-[#282828] hover:scale-125 transition-all cursor-pointer"
+                className="h-10 w-10 flex items-center justify-center text-2xl rounded-lg hover:bg-[#282828] hover:scale-125 transition-all cursor-pointer select-none"
                 title={emoji}
               >
                 {emoji}
@@ -701,15 +721,15 @@ export const MessengerComments: React.FC<MessengerCommentsProps> = ({ task, canE
           </div>
 
           {/* Quick Reaction Bar Footer */}
-          <div className="pt-2 border-t border-[#2b2b2b] flex items-center justify-between text-[10px] text-neutral-400">
-            <span>Quick:</span>
-            <div className="flex items-center gap-1">
+          <div className="pt-2 border-t border-[#2b2b2b] flex items-center justify-between text-xs text-neutral-400">
+            <span className="font-medium text-[11px]">Quick:</span>
+            <div className="flex items-center gap-1.5">
               {QUICK_REACTION_EMOJIS.slice(0, 6).map((e) => (
                 <button
                   key={e}
                   type="button"
                   onClick={() => insertEmoji(e)}
-                  className="hover:scale-125 transition-transform p-0.5 cursor-pointer text-sm"
+                  className="hover:scale-125 transition-transform p-1 cursor-pointer text-lg"
                 >
                   {e}
                 </button>
@@ -727,14 +747,14 @@ export const MessengerComments: React.FC<MessengerCommentsProps> = ({ task, canE
         >
           {/* Quick Emoji Reaction Pill Strip */}
           <div className="flex items-center justify-between gap-2 overflow-x-auto scrollbar-none pb-0.5">
-            <div className="flex items-center gap-1 shrink-0">
-              <span className="text-[10px] text-neutral-500 font-medium">Quick emojis:</span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-[11px] text-neutral-400 font-medium">Quick emojis:</span>
               {['👍', '❤️', '🔥', '🚀', '🎉', '💡'].map((emoji) => (
                 <button
                   key={emoji}
                   type="button"
                   onClick={() => insertEmoji(emoji)}
-                  className="px-1.5 py-0.5 rounded text-xs bg-[#202020] hover:bg-[#2b2b2b] border border-[#303030] hover:scale-110 transition-all cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg text-base bg-[#202020] hover:bg-[#2b2b2b] border border-[#303030] hover:scale-125 transition-all cursor-pointer select-none"
                   title={`Insert ${emoji}`}
                 >
                   {emoji}
@@ -754,6 +774,7 @@ export const MessengerComments: React.FC<MessengerCommentsProps> = ({ task, canE
             <div className="flex items-center gap-0.5 pl-1 pb-1">
               {/* Emoji Picker Toggle Button */}
               <button
+                ref={emojiButtonRef}
                 type="button"
                 id="btn-comment-emoji-picker"
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}

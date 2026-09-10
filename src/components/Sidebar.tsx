@@ -16,7 +16,8 @@ import {
   Camera,
   ExternalLink,
   LogOut,
-  LogIn
+  LogIn,
+  StickyNote
 } from 'lucide-react';
 import {
   WorkflowIcon,
@@ -58,7 +59,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
     setIsProjectModalOpen,
     setEditingProject,
     setIsCreateModalOpen,
-    setIsStatusManagerOpen,
     openUserProfile,
     tasks
   } = useTasks();
@@ -70,10 +70,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Accordion state for Projects section
+  const [isProjectsExpanded, setIsProjectsExpanded] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('taskflow_sidebar_projects_expanded');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const toggleProjectsAccordion = () => {
+    setIsProjectsExpanded((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('taskflow_sidebar_projects_expanded', JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
   const canManageProjects = isAdmin || Boolean(currentUser?.privileges?.canManageProjects);
   const canManageUsers = isAdmin || Boolean(currentUser?.privileges?.canManageUsers);
   const canManageRoles = isAdmin || Boolean(currentUser?.privileges?.canManageRoles);
-  const canManageStatuses = isAdmin || Boolean(currentUser?.privileges?.canManageStatuses);
   const canViewAuditLogs = isAdmin || Boolean(currentUser?.privileges?.canViewAuditLogs);
 
   // Close dropdown on outside click
@@ -100,12 +121,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
     { mode: 'kanban', label: 'Workflow', icon: <WorkflowIcon className="w-4 h-4" />, colorDot: 'bg-blue-400', isAllowed: true },
     { mode: 'daily', label: 'Daily Tasks', icon: <DailyTasksIcon className="w-4 h-4" />, colorDot: 'bg-teal-400', isAllowed: true },
     { mode: 'tickets', label: 'Ticket System', icon: <TicketSystemIcon className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
-    { mode: 'list', label: 'Bulk tasks', icon: <BulkTasksIcon className="w-4 h-4" />, colorDot: 'bg-sky-400', isAllowed: true },
+    { mode: 'list', label: 'Bulk tasks', icon: <BulkTasksIcon className="w-4 h-4" />, colorDot: 'bg-sky-400', isAllowed: isAdmin, adminBadge: true },
     { mode: 'timeline', label: 'Timeline', icon: <TimelineIcon className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
     { mode: 'graph', label: 'Graph', icon: <GraphIcon className="w-4 h-4" />, colorDot: 'bg-indigo-400', isAllowed: true },
     { mode: 'chat', label: 'Chat', icon: <ChatIcon className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: true, unreadCount: totalUnreadCount },
     { mode: 'meetings', label: 'Meetings', icon: <MeetingsIcon className="w-4 h-4" />, colorDot: 'bg-violet-400', isAllowed: true },
     { mode: 'forms', label: 'Forms', icon: <FormsIcon className="w-4 h-4" />, colorDot: 'bg-indigo-400', isAllowed: true },
+    { mode: 'notes', label: 'Notepad', icon: <StickyNote className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
     { mode: 'rewards', label: 'Rewards', icon: <RewardsIcon className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
     { mode: 'dashboard', label: 'Dashboard', icon: <DashboardIcon className="w-4 h-4" />, colorDot: 'bg-blue-400', isAllowed: isAdmin || canManageUsers, adminBadge: true }
   ];
@@ -166,25 +188,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
               <div className="flex items-center gap-1.5">
                 <span className="text-white font-bold text-base tracking-tight truncate">TaskFlow</span>
                 <span className="text-[9px] bg-blue-500/20 text-blue-300 border border-blue-400/30 px-1.5 py-0.2 rounded font-semibold uppercase shrink-0">
-                  v2.5
+                  v3.0
                 </span>
               </div>
               <p className="text-[10px] text-neutral-400 tracking-wide font-medium truncate">Project Management Tool</p>
             </div>
           </div>
 
-          {onClose && (
-            <button
-              type="button"
-              id="btn-sidebar-close-toggle"
-              onClick={onClose}
-              className="p-2 text-neutral-400 hover:text-white rounded-lg hover:bg-[#222222] transition-colors shrink-0 cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center active:scale-95"
-              title="Collapse Sidebar"
-            >
-              <PanelLeftClose className="w-4 h-4 hidden lg:block" />
-              <X className="w-5 h-5 lg:hidden" />
-            </button>
-          )}
+          {/* Collapse/Close Sidebar Button */}
+          <button
+            type="button"
+            id="sidebar-btn-collapse"
+            onClick={onClose}
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar (Ctrl+B)"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-400 hover:text-white hover:bg-[#222222] border border-neutral-800 transition-colors cursor-pointer shrink-0 active:scale-95"
+          >
+            <PanelLeftClose className="w-5 h-5 hidden lg:block" />
+            <X className="w-5 h-5 lg:hidden" />
+          </button>
         </div>
 
         {/* Navigation Body */}
@@ -240,123 +262,141 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
             })}
           </div>
 
-          {/* Projects Section */}
+          {/* Projects Section Accordion */}
           <div className="space-y-1">
-            <div className="flex items-center justify-between px-3 py-1.5">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Briefcase className="w-3 h-3 text-blue-400" />
-                <span>Projects ({projects.length})</span>
-              </span>
+            <div className="flex items-center justify-between px-2 py-1 rounded hover:bg-[#181818] transition-colors group">
+              <button
+                type="button"
+                id="sidebar-projects-accordion-trigger"
+                onClick={toggleProjectsAccordion}
+                className="flex-1 flex items-center gap-1.5 text-left cursor-pointer select-none py-0.5"
+                title={isProjectsExpanded ? 'Collapse Projects' : 'Expand Projects'}
+                aria-expanded={isProjectsExpanded}
+              >
+                <ChevronRight
+                  className={`w-3.5 h-3.5 text-neutral-400 group-hover:text-white transition-transform duration-200 ${
+                    isProjectsExpanded ? 'rotate-90 text-blue-400' : ''
+                  }`}
+                />
+                <Briefcase className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <span className="text-[10px] font-bold text-neutral-300 group-hover:text-white uppercase tracking-wider">
+                  Projects ({projects.length})
+                </span>
+                {!isProjectsExpanded && activeProjectId !== 'all' && (
+                  (() => {
+                    const activeProj = projects.find((p) => p.id === activeProjectId);
+                    if (!activeProj) return null;
+                    return (
+                      <span className="ml-auto mr-1 flex items-center gap-1 text-[10px] text-blue-300 bg-blue-950/60 border border-blue-500/30 px-1.5 py-0.2 rounded max-w-[90px] truncate">
+                        <span
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{ backgroundColor: activeProj.color || '#3B82F6' }}
+                        />
+                        <span className="truncate">{activeProj.name}</span>
+                      </span>
+                    );
+                  })()
+                )}
+              </button>
 
               {canManageProjects && (
                 <button
                   type="button"
                   id="sidebar-btn-add-project"
-                  onClick={handleOpenNewProject}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenNewProject();
+                  }}
                   title="Create New Project (Admin / PM)"
-                  className="p-1 rounded text-neutral-400 hover:text-blue-400 hover:bg-[#222222] transition-colors cursor-pointer flex items-center gap-1 text-[11px]"
+                  className="p-1 rounded text-neutral-400 hover:text-blue-400 hover:bg-[#242424] transition-colors cursor-pointer flex items-center shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            {/* All Workspace Queue Item */}
-            <button
-              type="button"
-              id="sidebar-project-all"
-              onClick={() => handleProjectSelect('all')}
-              className={`w-full flex items-center justify-between px-3 py-1.5 rounded text-xs transition-all text-left cursor-pointer ${
-                activeProjectId === 'all'
-                  ? 'bg-blue-950/50 text-blue-300 font-semibold border border-blue-500/30'
-                  : 'text-neutral-400 hover:bg-[#1a1a1a] hover:text-white'
-              }`}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="w-2 h-2 rounded-full bg-neutral-400 shrink-0" />
-                <span className="truncate">All Workspace Tasks</span>
-              </div>
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/40 font-mono text-neutral-400">
-                {tasks.length}
-              </span>
-            </button>
-
-            {/* Individual Projects List */}
-            {projects.map((proj) => {
-              const isActive = activeProjectId === proj.id;
-              const projTasksCount = tasks.filter((t) => t.projectId === proj.id).length;
-              const owner = users.find((u) => u.id === proj.ownerId);
-              const canEditThisProj = isAdmin || proj.ownerId === currentUser?.id || canManageProjects;
-
-              return (
-                <div
-                  key={proj.id}
-                  id={`sidebar-project-${proj.id}`}
-                  onClick={() => handleProjectSelect(proj.id)}
-                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded text-xs transition-all text-left cursor-pointer group ${
-                    isActive
-                      ? 'bg-[#1c1f26] text-white font-semibold border border-blue-500/40'
+            {/* Accordion Content */}
+            {isProjectsExpanded && (
+              <div className="space-y-0.5 pl-1.5 border-l border-[#222222] ml-3 transition-all">
+                {/* All Workspace Queue Item */}
+                <button
+                  type="button"
+                  id="sidebar-project-all"
+                  onClick={() => handleProjectSelect('all')}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-all text-left cursor-pointer ${
+                    activeProjectId === 'all'
+                      ? 'bg-blue-950/50 text-blue-300 font-semibold border border-blue-500/30'
                       : 'text-neutral-400 hover:bg-[#1a1a1a] hover:text-white'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: proj.color || '#3B82F6' }}
-                    />
-                    <span className="truncate max-w-[130px]" title={proj.name}>
-                      {proj.name}
-                    </span>
+                    <span className="w-2 h-2 rounded-full bg-neutral-400 shrink-0" />
+                    <span className="truncate">All Workspace Tasks</span>
                   </div>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/40 font-mono text-neutral-400">
+                    {tasks.length}
+                  </span>
+                </button>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {owner && (
-                      <img
-                        src={owner.avatar}
-                        alt={owner.name}
-                        title={`Owner: ${owner.name}`}
-                        className="w-4 h-4 rounded-full object-cover ring-1 ring-white/20"
-                      />
-                    )}
+                {/* Individual Projects List */}
+                {projects.map((proj) => {
+                  const isActive = activeProjectId === proj.id;
+                  const projTasksCount = tasks.filter((t) => t.projectId === proj.id).length;
+                  const owner = users.find((u) => u.id === proj.ownerId);
+                  const canEditThisProj = isAdmin || proj.ownerId === currentUser?.id || canManageProjects;
 
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/40 font-mono text-neutral-400">
-                      {projTasksCount}
-                    </span>
+                  return (
+                    <div
+                      key={proj.id}
+                      id={`sidebar-project-${proj.id}`}
+                      onClick={() => handleProjectSelect(proj.id)}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-all text-left cursor-pointer group ${
+                        isActive
+                          ? 'bg-[#1c1f26] text-white font-semibold border border-blue-500/40'
+                          : 'text-neutral-400 hover:bg-[#1a1a1a] hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: proj.color || '#3B82F6' }}
+                        />
+                        <span className="truncate max-w-[120px]" title={proj.name}>
+                          {proj.name}
+                        </span>
+                      </div>
 
-                    {canEditThisProj && (
-                      <button
-                        type="button"
-                        onClick={(e) => handleEditProject(e, proj)}
-                        title="Manage Project Settings & Members"
-                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-neutral-400 hover:text-white hover:bg-[#2b2b2b] transition-opacity cursor-pointer"
-                      >
-                        <Settings className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {owner && (
+                          <img
+                            src={owner.avatar}
+                            alt={owner.name}
+                            title={`Owner: ${owner.name}`}
+                            className="w-4 h-4 rounded-full object-cover ring-1 ring-white/20"
+                          />
+                        )}
+
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/40 font-mono text-neutral-400">
+                          {projTasksCount}
+                        </span>
+
+                        {canEditThisProj && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleEditProject(e, proj)}
+                            title="Manage Project Settings & Members"
+                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-neutral-400 hover:text-white hover:bg-[#2b2b2b] transition-opacity cursor-pointer"
+                          >
+                            <Settings className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-
-          {/* Workflow Columns configuration for managers */}
-          {canManageStatuses && (
-            <div className="space-y-1">
-              <button
-                type="button"
-                id="sidebar-btn-workflow"
-                onClick={() => {
-                  setIsStatusManagerOpen(true);
-                }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-neutral-400 hover:bg-[#1a1a1a] hover:text-white rounded text-xs font-medium transition-colors text-left cursor-pointer group"
-              >
-                <span className="w-4 h-4 shrink-0 text-neutral-400 group-hover:text-white transition-colors flex items-center justify-center">
-                  <WorkflowIcon className="w-4 h-4" />
-                </span>
-                <span>Workflow &amp; Columns</span>
-              </button>
-            </div>
-          )}
 
           {/* Quick Stats Pill inside Sidebar */}
           <div className="p-3 bg-[#141414] rounded border border-[#262626] space-y-1.5">

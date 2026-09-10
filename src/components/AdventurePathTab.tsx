@@ -450,7 +450,7 @@ export const AdventurePathTab: React.FC<AdventurePathTabProps> = ({
         <div className="p-3.5 bg-[#141414] border border-[#282828] rounded-lg">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-sky-400" />
+              <img src="/shiled.svg" alt="Shield" className="w-4 h-4 object-contain inline-block" />
               <h4 className="text-xs font-bold text-white uppercase tracking-wider">
                 The 5 Grand Ranks of the Server Keeper
               </h4>
@@ -493,7 +493,11 @@ export const AdventurePathTab: React.FC<AdventurePathTabProps> = ({
                         }`}
                       />
                     ) : (
-                      <span className="text-2xl">{stage.badgeIcon}</span>
+                      stage.badgeIcon?.startsWith('/') || stage.badgeIcon?.endsWith('.svg') || stage.badgeIcon?.endsWith('.png') ? (
+                        <img src={stage.badgeIcon} alt="badge" className="w-8 h-8 object-contain" />
+                      ) : (
+                        <span className="text-2xl">{stage.badgeIcon}</span>
+                      )
                     )}
 
                     {/* Status Seal Overlay */}
@@ -671,7 +675,11 @@ export const AdventurePathTab: React.FC<AdventurePathTabProps> = ({
                           +{stage.xpReward} XP
                         </span>
                         <span className="text-[10px] font-semibold text-neutral-300 bg-[#222] border border-[#333] px-2 py-0.5 rounded flex items-center gap-1">
-                          <span>{stage.badgeIcon}</span>
+                          {stage.badgeIcon?.startsWith('/') || stage.badgeIcon?.endsWith('.svg') || stage.badgeIcon?.endsWith('.png') ? (
+                            <img src={stage.badgeIcon} alt="badge" className="w-3.5 h-3.5 object-contain inline-block" />
+                          ) : (
+                            <span>{stage.badgeIcon}</span>
+                          )}
                           <span>Title: {stage.badgeTitle}</span>
                         </span>
                         {stage.imageUrl && (

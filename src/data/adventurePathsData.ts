@@ -53,7 +53,7 @@ export const ADVENTURE_PATHS: AdventurePathDefinition[] = [
         targetCount: 6,
         xpReward: 500,
         badgeTitle: 'Guardian of the Uptime',
-        badgeIcon: '🛡️',
+        badgeIcon: '/shiled.svg',
         imageUrl: '/images/level-3-Guardian_of_the_uptime.jpg'
       },
       {

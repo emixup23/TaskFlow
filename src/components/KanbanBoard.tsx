@@ -31,6 +31,7 @@ import { Status, Task, Priority } from '../types';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
 import { TaskCard } from './TaskCard';
+import { WorkflowIcon } from './icons/SidebarIcons';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 
 export type ColumnSortOption =
@@ -926,17 +927,17 @@ export const KanbanBoard: React.FC = () => {
             )}
           </div>
 
-          {/* 4. Manage Columns Action */}
+          {/* 4. Workflow & Columns Action */}
           {canManageStatuses && (
             <button
               type="button"
-              id="btn-kanban-manage-columns"
+              id="btn-kanban-workflow-columns"
               onClick={() => setIsStatusManagerOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold bg-[#1a1a1a] hover:bg-[#242424] border border-[#333333] text-neutral-300 hover:text-white transition-colors cursor-pointer"
-              title="Add, rename, recolor, or reorder statuses"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-[#1a1a1a] hover:bg-[#252525] border border-[#333333] hover:border-neutral-600 text-neutral-200 hover:text-white transition-all cursor-pointer shadow-xs group"
+              title="Configure Workflow & Columns (add, rename, recolor, or reorder statuses)"
             >
-              <Edit2 className="w-3.5 h-3.5 text-neutral-400" />
-              <span className="hidden sm:inline">Statuses</span>
+              <WorkflowIcon className="w-3.5 h-3.5 text-blue-400 group-hover:text-blue-300 transition-colors" />
+              <span>Statuses</span>
             </button>
           )}
         </div>
@@ -1202,8 +1203,8 @@ export const KanbanBoard: React.FC = () => {
                               }}
                               className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-[#262626] text-left cursor-pointer"
                             >
-                              <Edit2 className="w-3.5 h-3.5 text-neutral-400" />
-                              <span>Workflow Manager</span>
+                              <WorkflowIcon className="w-3.5 h-3.5 text-blue-400" />
+                              <span>Workflow &amp; Columns</span>
                             </button>
 
                             {statuses.length > 1 && (
@@ -1256,6 +1257,25 @@ export const KanbanBoard: React.FC = () => {
             </div>
           );
         })}
+
+        {/* Quick Workflow & Columns stage adder card at the end of columns */}
+        {canManageStatuses && visibleStatuses.length > 0 && (
+          <div className="w-64 sm:w-72 shrink-0 flex flex-col pt-1">
+            <button
+              type="button"
+              id="btn-kanban-add-workflow-column"
+              onClick={() => setIsStatusManagerOpen(true)}
+              className="w-full h-24 border-2 border-dashed border-[#262626] hover:border-blue-500/50 hover:bg-blue-500/5 rounded-lg flex flex-col items-center justify-center gap-1.5 text-neutral-400 hover:text-blue-300 transition-all cursor-pointer group"
+              title="Open Workflow & Columns manager"
+            >
+              <div className="w-8 h-8 rounded-full bg-[#181818] border border-[#2a2a2a] group-hover:border-blue-500/40 flex items-center justify-center text-neutral-400 group-hover:text-blue-400 transition-colors">
+                <Plus className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-semibold">Workflow &amp; Columns</span>
+              <span className="text-[10px] text-neutral-500 group-hover:text-neutral-400">Add or configure stages</span>
+            </button>
+          </div>
+        )}
 
         {visibleStatuses.length === 0 && (
           <div className="flex-1 flex flex-col items-center justify-center p-12 text-center text-neutral-400 space-y-3">
