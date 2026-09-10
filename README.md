@@ -98,4 +98,4 @@ Issues and pull requests are welcome. If you plan a larger change, please open a
 
 ## License
 
-No license has been specified for this project yet. Add a `LICENSE` file to clarify usage rights, or reach out to the repository owner for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
