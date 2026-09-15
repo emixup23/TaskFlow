@@ -2,6 +2,7 @@ import React from 'react';
 import { Sidebar } from '../Sidebar';
 import { Header } from '../Header';
 import { FilterBar } from '../FilterBar';
+import { PanelLeft } from 'lucide-react';
 
 interface WorkspaceLayoutProps {
   isSidebarOpen: boolean;
@@ -23,7 +24,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   children
 }) => {
   return (
-    <div className="flex h-screen w-full bg-[#0d0d0d] text-slate-100 font-sans overflow-hidden antialiased selection:bg-blue-500 selection:text-white transition-colors duration-200">
+    <div className="flex h-screen w-full bg-[#0d0d0d] text-slate-100 font-sans overflow-hidden antialiased selection:bg-blue-500 selection:text-white transition-colors duration-200 relative">
       {/* Sleek Dark Sidebar */}
       <Sidebar isOpen={isSidebarOpen} onClose={onCloseSidebar} />
 
@@ -38,6 +39,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         {/* Dynamic View Body */}
         {children}
       </main>
+
+
     </div>
   );
 };

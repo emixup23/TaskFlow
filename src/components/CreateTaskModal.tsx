@@ -143,13 +143,13 @@ export const CreateTaskModal: React.FC = () => {
   return (
     <div
       id="create-task-modal-backdrop"
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-6 lg:p-8 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 lg:p-6 animate-in fade-in duration-150"
       onClick={() => setIsCreateModalOpen(false)}
     >
       <div
         id="create-task-modal"
         onClick={(e) => e.stopPropagation()}
-        className="relative bg-[#141414] w-full md:w-[90vw] md:max-w-[90vw] lg:w-[90vw] lg:max-w-[90vw] xl:w-[90vw] xl:max-w-[90vw] rounded shadow-2xl border border-[#262626] overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[92vh] h-auto transition-all duration-200"
+        className="relative bg-[#141414] w-[90%] max-w-[90%] sm:w-[90%] sm:max-w-[90%] md:w-[90vw] md:max-w-[90vw] lg:w-[90vw] lg:max-w-[90vw] xl:w-[90vw] xl:max-w-[90vw] rounded shadow-2xl border border-[#262626] overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[92vh] h-auto transition-all duration-200"
       >
         {/* Header */}
         <div className="p-3.5 sm:p-5 border-b border-[#262626] bg-[#1a1a1a] flex items-center justify-between gap-3">

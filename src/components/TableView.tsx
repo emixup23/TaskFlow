@@ -74,9 +74,9 @@ export const TableView: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 p-4 sm:p-6 bg-[#0d0d0d] dark:bg-[#0d0d0d] overflow-y-auto transition-colors duration-200 space-y-4">
+    <div className="flex-1 p-2.5 sm:p-6 bg-[#0d0d0d] dark:bg-[#0d0d0d] overflow-y-auto transition-colors duration-200 space-y-2.5 sm:space-y-4">
       {/* Table View Top Navigation Bar */}
-      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#141414] border border-[#262626] rounded-xl p-3 sm:px-4 sm:py-3 shadow-xs">
+      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#141414] border border-[#262626] rounded-xl p-2 sm:px-4 sm:py-3 shadow-xs">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 p-1 bg-[#1a1a1a] rounded-lg border border-[#2c2c2c]">
             <button
@@ -128,8 +128,94 @@ export const TableView: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto bg-[#141414] dark:bg-[#141414] rounded border border-[#262626] shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="max-w-7xl mx-auto bg-[#141414] dark:bg-[#141414] rounded-xl border border-[#262626] shadow-xs overflow-hidden">
+        {/* Mobile View: Compact Card List (reduces horizontal scroll clutter on small screens) */}
+        <div className="sm:hidden divide-y divide-[#222222]">
+          {sortedTasks.length === 0 ? (
+            <div className="p-8 text-center text-xs text-neutral-500">
+              No tasks found.
+            </div>
+          ) : (
+            sortedTasks.map((task) => {
+              const status = statuses.find((s) => s.id === task.statusId);
+              const assigned = users.filter((u) => task.assigneeIds?.includes(u.id));
+              const totalSubtasks = task.subtasks?.length || 0;
+              const completedSubtasks = task.subtasks?.filter((s) => s.completed).length || 0;
+              const pStyle = priorityBadges[task.priority] || priorityBadges.medium;
+              const isDone = Boolean(status?.isDone);
+
+              const hashNumber = Math.abs(
+                task.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 900
+              ) + 100;
+
+              return (
+                <div
+                  key={task.id}
+                  onClick={() => setSelectedTaskId(task.id)}
+                  className="p-2.5 hover:bg-[#1c1c1c] active:bg-[#222222] transition-colors cursor-pointer space-y-1.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[10px] text-neutral-500 font-mono">#{hashNumber}</span>
+                      <span
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-neutral-300 bg-[#222222] border border-[#333333]"
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: status?.color || '#94a3b8' }}
+                        />
+                        <span className="truncate max-w-[100px]">{status?.name || 'Undefined'}</span>
+                      </span>
+                    </div>
+
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${pStyle.bg} shrink-0`}
+                    >
+                      {pStyle.label}
+                    </span>
+                  </div>
+
+                  <div className="text-xs font-semibold text-neutral-100 line-clamp-1">
+                    <span className={isDone ? 'line-through text-neutral-500' : ''}>
+                      {task.title}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-neutral-400 pt-1">
+                    <div className="flex items-center gap-2">
+                      <div className="flex -space-x-1 overflow-hidden">
+                        {assigned.map((u) => (
+                          <img
+                            key={u.id}
+                            src={u.avatar}
+                            alt={u.name}
+                            title={u.name}
+                            className="w-5 h-5 rounded-full border border-[#141414] object-cover ring-1 ring-[#333333] shrink-0"
+                          />
+                        ))}
+                      </div>
+                      {task.dueDate && (
+                        <span className="text-[10px] text-neutral-400 flex items-center gap-1 font-mono">
+                          <Calendar className="w-3 h-3 text-neutral-500" />
+                          {task.dueDate}
+                        </span>
+                      )}
+                    </div>
+
+                    {totalSubtasks > 0 && (
+                      <span className="text-[10px] font-bold text-neutral-400 font-mono">
+                        {completedSubtasks}/{totalSubtasks} subtasks
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop View: Full Data Table */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[#262626] bg-[#1a1a1a] text-[10px] font-bold uppercase tracking-wider text-neutral-400">

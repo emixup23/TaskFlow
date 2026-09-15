@@ -9,7 +9,8 @@ import {
   Sparkles,
   ExternalLink,
   Target,
-  Coins
+  Coins,
+  X
 } from 'lucide-react';
 import { useGamification } from '../context/GamificationContext';
 import { useKudos } from '../context/KudosContext';
@@ -113,11 +114,20 @@ export const GamificationHeaderPill: React.FC = () => {
         )}
       </button>
 
+      {/* Mobile backdrop overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 sm:hidden animate-in fade-in duration-150"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Interactive Quick Overview Popover */}
       {isOpen && (
         <div
           id="popover-gamification-details"
-          className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] sm:w-80 max-w-sm bg-[#161616] rounded-xl shadow-2xl border border-amber-500/30 p-3.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-3"
+          className="fixed inset-x-3 top-16 mt-2 sm:mt-2 sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:w-80 max-w-none sm:max-w-sm bg-[#161616] rounded-xl shadow-2xl border border-amber-500/30 p-3.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-3 max-h-[calc(100vh-5.5rem)] sm:max-h-[85vh] overflow-y-auto"
         >
           {/* Header with Title & Level Badge */}
           <div className="flex items-center justify-between border-b border-[#262626] pb-2.5">
@@ -144,18 +154,31 @@ export const GamificationHeaderPill: React.FC = () => {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setIsOpen(false);
-                setIsRewardModalOpen(true);
-              }}
-              title="Open Rewards Modal"
-              className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5 hover:underline cursor-pointer"
-            >
-              <span>Rewards</span>
-              <ChevronRight className="w-3 h-3" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  setIsRewardModalOpen(true);
+                }}
+                title="Open Rewards Modal"
+                className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-0.5 hover:underline cursor-pointer"
+              >
+                <span>Rewards</span>
+                <ChevronRight className="w-3 h-3" />
+              </button>
+
+              {/* Mobile close button */}
+              <button
+                type="button"
+                id="btn-close-gamification-popover-mobile"
+                onClick={() => setIsOpen(false)}
+                className="sm:hidden p-1 text-neutral-400 hover:text-white rounded-md hover:bg-[#222222] transition-colors cursor-pointer"
+                title="Close level details"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Level Progress Bar & Next Level Info */}

@@ -12,12 +12,16 @@ import {
   MessageCircle,
   ExternalLink,
   Clock,
-  Inbox
+  Inbox,
+  Volume2,
+  VolumeX,
+  X
 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import { useTasks } from '../context/TaskContext';
 import { useChat } from '../context/ChatContext';
 import { NotificationItem, NotificationType } from '../types';
+import { soundManager, playNotificationSound } from '../utils/sound';
 
 interface NotificationDropdownProps {
   isOpen: boolean;
@@ -41,8 +45,18 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
   const { setActiveChannelId } = useChat();
 
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const [isAudioEnabled, setIsAudioEnabled] = useState(soundManager.isSoundEnabled());
 
   if (!isOpen) return null;
+
+  const toggleSound = () => {
+    const next = !isAudioEnabled;
+    soundManager.setSoundEnabled(next);
+    setIsAudioEnabled(next);
+    if (next) {
+      playNotificationSound();
+    }
+  };
 
   // Filter notifications based on tab
   const filteredNotifications = notifications.filter((notif) => {
@@ -150,56 +164,89 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
   };
 
   return (
-    <div
-      id="notification-dropdown-panel"
-      className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] sm:w-96 max-w-md bg-[#181818] rounded-lg shadow-2xl border border-[#333333] z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100"
-    >
-      {/* Header */}
-      <div className="p-3 border-b border-[#2b2b2b] bg-[#141414] flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-blue-950/60 border border-blue-800/60 flex items-center justify-center text-blue-400">
-            <Bell className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-xs sm:text-sm text-white flex items-center gap-2">
-              Notifications
-              {unreadCount > 0 && (
-                <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                  {unreadCount} new
-                </span>
-              )}
-            </h3>
-          </div>
-        </div>
+    <>
+      {/* Mobile backdrop overlay */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 sm:hidden animate-in fade-in duration-150"
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
-        <div className="flex items-center gap-1">
-          {unreadCount > 0 && (
+      <div
+        id="notification-dropdown-panel"
+        className="fixed inset-x-3 top-16 mt-2 sm:mt-2 sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:w-96 max-w-none sm:max-w-md bg-[#181818] rounded-xl shadow-2xl border border-[#333333] z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100 max-h-[calc(100vh-5.5rem)] sm:max-h-[80vh]"
+      >
+        {/* Header */}
+        <div className="p-3 border-b border-[#2b2b2b] bg-[#141414] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-blue-950/60 border border-blue-800/60 flex items-center justify-center text-blue-400">
+              <Bell className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-xs sm:text-sm text-white flex items-center gap-2">
+                Notifications
+                {unreadCount > 0 && (
+                  <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    {unreadCount} new
+                  </span>
+                )}
+              </h3>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1">
             <button
               type="button"
-              id="btn-mark-all-read"
-              onClick={() => markAllAsRead()}
-              title="Mark all as read"
-              className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-[#222222] rounded transition-colors text-[11px] font-medium flex items-center gap-1 cursor-pointer"
+              id="btn-toggle-notification-sound"
+              onClick={toggleSound}
+              title={isAudioEnabled ? "Audio alerts enabled (Click to mute or preview chime)" : "Audio alerts muted (Click to enable)"}
+              className={`p-1.5 rounded transition-colors text-[11px] font-medium flex items-center gap-1 cursor-pointer ${
+                isAudioEnabled
+                  ? 'text-emerald-400 hover:bg-emerald-950/40 hover:text-emerald-300'
+                  : 'text-neutral-500 hover:text-neutral-300 hover:bg-[#222222]'
+              }`}
             >
-              <CheckCheck className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Mark all read</span>
+              {isAudioEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
             </button>
-          )}
 
-          {notifications.length > 0 && (
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                id="btn-mark-all-read"
+                onClick={() => markAllAsRead()}
+                title="Mark all as read"
+                className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-[#222222] rounded transition-colors text-[11px] font-medium flex items-center gap-1 cursor-pointer"
+              >
+                <CheckCheck className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Mark all read</span>
+              </button>
+            )}
+
+            {notifications.length > 0 && (
+              <button
+                type="button"
+                id="btn-clear-all-notifs"
+                onClick={() => clearAll()}
+                title="Clear all notifications"
+                className="p-1.5 text-neutral-400 hover:text-rose-400 hover:bg-[#222222] rounded transition-colors text-[11px] font-medium flex items-center gap-1 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Clear</span>
+              </button>
+            )}
+
+            {/* Mobile close button */}
             <button
               type="button"
-              id="btn-clear-all-notifs"
-              onClick={() => clearAll()}
-              title="Clear all notifications"
-              className="p-1.5 text-neutral-400 hover:text-rose-400 hover:bg-[#222222] rounded transition-colors text-[11px] font-medium flex items-center gap-1 cursor-pointer"
+              id="btn-close-notifications-mobile"
+              onClick={onClose}
+              className="sm:hidden p-1 text-neutral-400 hover:text-white rounded-md hover:bg-[#222222] transition-colors cursor-pointer"
+              title="Close notifications"
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Clear</span>
+              <X className="w-4 h-4" />
             </button>
-          )}
+          </div>
         </div>
-      </div>
 
       {/* Filter Tabs */}
       <div className="flex items-center gap-1 px-3 py-2 border-b border-[#262626] bg-[#161616] text-[11px] overflow-x-auto">
@@ -381,5 +428,6 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
         </span>
       </div>
     </div>
+    </>
   );
 };

@@ -925,12 +925,29 @@ export interface FormResponse {
 
 export type NoteColor = 'amber' | 'blue' | 'emerald' | 'purple' | 'rose' | 'slate';
 
+export type DirectoryColor = 'blue' | 'amber' | 'emerald' | 'purple' | 'rose' | 'slate' | 'teal' | 'indigo';
+
+export interface NoteDirectory {
+  id: string;
+  name: string;
+  description?: string;
+  color?: DirectoryColor;
+  icon?: string; // 'folder' | 'briefcase' | 'book' | 'code' | 'archive' | 'star' | 'tag'
+  authorId: string;
+  authorName: string;
+  isPrivate: boolean; // true = personal directory, false = workspace shared
+  notesCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Note {
   id: string;
   authorId: string;
   authorName: string;
   authorAvatar?: string;
   authorRole?: string;
+  directoryId?: string | null; // ID of directory or null for root/unfiled
   title: string;
   content: string;
   color?: NoteColor;
@@ -942,9 +959,63 @@ export interface Note {
   tags?: string[];
   linkedTaskId?: string;
   linkedTaskTitle?: string;
+  canvasData?: string; // Serialized sketch/drawing data URL (image/png) or stroke vector
   createdAt: string;
   updatedAt: string;
 }
 
+export interface SecurityAuditCheck {
+  name: string;
+  status: 'pass' | 'warning' | 'fail';
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  description: string;
+}
 
+export interface SecurityAuditCategory {
+  name: string;
+  score: number;
+  status: 'pass' | 'warning' | 'fail';
+  checks: SecurityAuditCheck[];
+}
 
+export interface SecurityAuditReport {
+  timestamp: string;
+  overallScore: number;
+  grade: string;
+  status: string;
+  summary: {
+    totalUsers: number;
+    activeAdmins: number;
+    activeSessions: number;
+    activeRateLockouts: number;
+    sandboxedFilesCount: number;
+  };
+  categories: SecurityAuditCategory[];
+}
+
+// Lister Task Manager Synchronization Types
+export interface ListerTask {
+  id: string; // Unique string ID (if omitted when creating, Lister auto-generates one)
+  title: string; // Required task name
+  notes?: string; // Optional description or details
+  categoryId?: 'work' | 'personal' | 'shopping' | 'health' | 'learning' | 'finance' | string;
+  listId?: string; // Optional list grouping ID
+  priority?: 'low' | 'medium' | 'high'; // Defaults to 'medium'
+  completed: boolean; // Task completion status
+  dueDate?: string; // Format: YYYY-MM-DD
+  createdAt?: string; // ISO 8601 string
+  updatedAt?: string; // ISO 8601 string (critical for conflict resolution)
+}
+
+export interface ListerSyncPayload {
+  tasks: ListerTask[];
+  lastSyncTime?: string;
+}
+
+export interface ListerSyncResponse {
+  syncedTasks: (ListerTask | Task)[];
+  syncTime: string;
+  conflictsResolved?: number;
+  serverCount?: number;
+  message?: string;
+}

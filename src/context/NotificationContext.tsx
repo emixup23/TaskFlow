@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { NotificationItem, NotificationType } from '../types';
 import { api } from '../api/client';
 import { useAuth } from './AuthContext';
+import { playNotificationSound, playChatMessageSound } from '../utils/sound';
 
 interface NotificationContextType {
   notifications: NotificationItem[];
@@ -58,21 +59,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           (n) => !n.isRead && !knownNotificationIdsRef.current.has(n.id) && n.userId === currentUser.id
         );
         if (newlyReceived.length > 0) {
-          // Play subtle notification sound if browser allows
-          try {
-            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-            osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08); // A5
-            gain.gain.setValueAtTime(0.12, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-            osc.start(ctx.currentTime);
-            osc.stop(ctx.currentTime + 0.3);
-          } catch {
-            // AudioContext not allowed or silent
+          const hasChatDm = newlyReceived.some((n) => n.type === 'chat_dm');
+          if (hasChatDm) {
+            playChatMessageSound();
+          } else {
+            playNotificationSound();
           }
         }
       }
@@ -189,6 +180,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (currentUser && item.userId === currentUser.id) {
       setNotifications((prev) => [newNotif, ...prev]);
       setUnreadCount((prev) => prev + 1);
+      if (item.type === 'chat_dm') {
+        playChatMessageSound();
+      } else {
+        playNotificationSound();
+      }
     }
 
     // Also persist in localStorage for that user

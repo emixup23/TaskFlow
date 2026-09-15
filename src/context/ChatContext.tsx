@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ChatChannel, ChatMessage, ChatMessageAttachment, VoiceNoteData, Task } from '../types';
 import { api } from '../api/client';
 import { useAuth } from './AuthContext';
 import { useGamification } from './GamificationContext';
+import { playChatMessageSound, playMessageSentSound } from '../utils/sound';
 
 interface ChatContextType {
   channels: ChatChannel[];
@@ -19,7 +20,7 @@ interface ChatContextType {
   setChannelCategoryFilter: (filter: 'all' | 'channels' | 'direct') => void;
   setActiveChannelId: (id: string | null) => void;
   refreshChannels: () => Promise<void>;
-  refreshMessages: (channelId?: string) => Promise<void>;
+  refreshMessages: (channelId?: string, silent?: boolean) => Promise<void>;
   sendMessage: (data: {
     content?: string;
     replyToId?: string;
@@ -71,6 +72,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isCreateChannelModalOpen, setIsCreateChannelModalOpen] = useState<boolean>(false);
   const [isChannelDetailsOpen, setIsChannelDetailsOpen] = useState<boolean>(false);
 
+  const knownMessageIdsRef = useRef<Set<string>>(new Set());
+  const initialChannelLoadedRef = useRef<Record<string, boolean>>({});
+  const lastUnreadCountRef = useRef<number>(0);
+
   // Load Channels
   const refreshChannels = useCallback(async () => {
     try {
@@ -100,53 +105,104 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [currentUser, refreshChannels]);
 
   // Load messages whenever active channel changes
-  const refreshMessages = useCallback(async (channelIdOverride?: string) => {
-    const targetId = channelIdOverride || activeChannelId;
-    if (!targetId) {
-      setMessages([]);
-      setMessagesError(null);
-      return;
-    }
-
-    setIsMessagesLoading(true);
-    setMessagesError(null);
-    try {
-      const msgs = await api.getChatMessages(targetId);
-      setMessages(msgs);
-
-      // Mark channel as read
-      api.markChannelAsRead(targetId).catch(() => {});
-
-      // Optimistically update channel unread count in local state
-      setChannels((prev) =>
-        prev.map((c) => (c.id === targetId ? { ...c, unreadCount: 0 } : c))
-      );
-    } catch (err: any) {
-      console.warn('Initial fetch for channel messages failed, attempting automatic recovery...', err);
-      try {
-        // Automatic retry with backoff for resilience against transient hiccups
-        await new Promise((resolve) => setTimeout(resolve, 600));
-        const retryMsgs = await api.getChatMessages(targetId);
-        setMessages(retryMsgs);
+  const refreshMessages = useCallback(
+    async (channelIdOverride?: string, silent: boolean = false) => {
+      const targetId = channelIdOverride || activeChannelId;
+      if (!targetId) {
+        setMessages([]);
         setMessagesError(null);
+        return;
+      }
+
+      if (!silent) {
+        setIsMessagesLoading(true);
+      }
+      setMessagesError(null);
+      try {
+        const msgs = await api.getChatMessages(targetId);
+
+        // Check if new incoming messages arrived from other teammates
+        if (initialChannelLoadedRef.current[targetId]) {
+          const newIncoming = msgs.filter(
+            (m) => m.senderId !== currentUser?.id && !knownMessageIdsRef.current.has(m.id)
+          );
+          if (newIncoming.length > 0) {
+            playChatMessageSound();
+          }
+        }
+
+        msgs.forEach((m) => knownMessageIdsRef.current.add(m.id));
+        initialChannelLoadedRef.current[targetId] = true;
+
+        setMessages(msgs);
+
+        // Mark channel as read
         api.markChannelAsRead(targetId).catch(() => {});
+
+        // Optimistically update channel unread count in local state
         setChannels((prev) =>
           prev.map((c) => (c.id === targetId ? { ...c, unreadCount: 0 } : c))
         );
-      } catch (retryErr: any) {
-        console.error('Failed to fetch channel messages after retry:', retryErr);
-        setMessagesError(retryErr?.message || 'Failed to load messages');
+      } catch (err: any) {
+        if (!silent) {
+          console.warn('Initial fetch for channel messages failed, attempting automatic recovery...', err);
+          try {
+            // Automatic retry with backoff for resilience against transient hiccups
+            await new Promise((resolve) => setTimeout(resolve, 600));
+            const retryMsgs = await api.getChatMessages(targetId);
+            setMessages(retryMsgs);
+            setMessagesError(null);
+            api.markChannelAsRead(targetId).catch(() => {});
+            setChannels((prev) =>
+              prev.map((c) => (c.id === targetId ? { ...c, unreadCount: 0 } : c))
+            );
+          } catch (retryErr: any) {
+            console.error('Failed to fetch channel messages after retry:', retryErr);
+            setMessagesError(retryErr?.message || 'Failed to load messages');
+          }
+        }
+      } finally {
+        if (!silent) {
+          setIsMessagesLoading(false);
+        }
       }
-    } finally {
-      setIsMessagesLoading(false);
-    }
-  }, [activeChannelId]);
+    },
+    [activeChannelId, currentUser]
+  );
 
   useEffect(() => {
     if (activeChannelId) {
       refreshMessages(activeChannelId);
     }
   }, [activeChannelId, refreshMessages]);
+
+  // Periodic polling for incoming team chat messages & channel updates
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const fetchedChannels = await api.getChatChannels();
+        setChannels(fetchedChannels);
+
+        // Detect if any other channel received unread messages
+        const currentTotalUnread = fetchedChannels.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+        if (currentTotalUnread > lastUnreadCountRef.current) {
+          playChatMessageSound();
+        }
+        lastUnreadCountRef.current = currentTotalUnread;
+
+        // Silently poll current channel messages
+        if (activeChannelId) {
+          refreshMessages(activeChannelId, true);
+        }
+      } catch {
+        // Ignore background polling errors
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [currentUser, activeChannelId, refreshMessages]);
 
   // Active channel object
   const activeChannel = useMemo(() => {
@@ -171,7 +227,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!activeChannelId) return null;
       try {
         const newMsg = await api.sendChatMessage(activeChannelId, data);
+        knownMessageIdsRef.current.add(newMsg.id);
         setMessages((prev) => [...prev, newMsg]);
+
+        // Play subtle acoustic sent confirmation
+        playMessageSentSound();
 
         // Award gamification XP for chatting / collaborating!
         awardXP(15, 'Collaborated in Team Chat');

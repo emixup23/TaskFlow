@@ -25,7 +25,12 @@ import {
   ChevronRight,
   Type,
   Square,
-  BarChart3
+  BarChart3,
+  Volume2,
+  VolumeX,
+  Play,
+  Bell,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
@@ -34,6 +39,12 @@ import { SettingsTab, FontFamilyOption, RadiusOption, User } from '../types';
 import { UserAvatar } from './UserAvatar';
 import { RemoveDemoDataModal } from './RemoveDemoDataModal';
 import { formatDateTimeDDMMYYYYHHMM } from '../utils/dateUtils';
+import {
+  soundManager,
+  playNotificationSound,
+  playChatMessageSound,
+  playMessageSentSound
+} from '../utils/sound';
 
 interface AccentColorItem {
   name: string;
@@ -87,6 +98,43 @@ export const SettingsModal: React.FC = () => {
   const [isResettingSeed, setIsResettingSeed] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [teamSearch, setTeamSearch] = useState('');
+
+  // Audio preference states
+  const [soundEnabled, setSoundEnabled] = useState(soundManager.isSoundEnabled());
+  const [notifSoundEnabled, setNotifSoundEnabled] = useState(soundManager.isNotificationSoundEnabled());
+  const [chatSoundEnabled, setChatSoundEnabled] = useState(soundManager.isChatSoundEnabled());
+  const [soundVolume, setSoundVolume] = useState(soundManager.getVolume());
+
+  const handleToggleSoundMaster = () => {
+    const next = !soundEnabled;
+    soundManager.setSoundEnabled(next);
+    setSoundEnabled(next);
+    if (next) {
+      playNotificationSound();
+      addToast('info', 'Audio alerts enabled');
+    } else {
+      addToast('info', 'Audio alerts muted');
+    }
+  };
+
+  const handleToggleNotifSound = () => {
+    const next = !notifSoundEnabled;
+    soundManager.setNotificationSoundEnabled(next);
+    setNotifSoundEnabled(next);
+    if (next) playNotificationSound();
+  };
+
+  const handleToggleChatSound = () => {
+    const next = !chatSoundEnabled;
+    soundManager.setChatSoundEnabled(next);
+    setChatSoundEnabled(next);
+    if (next) playChatMessageSound();
+  };
+
+  const handleVolumeChange = (vol: number) => {
+    soundManager.setVolume(vol);
+    setSoundVolume(vol);
+  };
 
   // Close on Escape key
   useEffect(() => {
@@ -518,6 +566,144 @@ export const SettingsModal: React.FC = () => {
                       );
                     })}
                   </div>
+                </div>
+
+                {/* Audio Alerts & Sound Effects Card */}
+                <div className="pt-3 border-t border-[#262626] space-y-3 bg-[#161616] p-4 rounded-xl border border-[#2a2a2a]">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`p-2 rounded-lg ${soundEnabled ? 'bg-blue-600/15 text-blue-400' : 'bg-neutral-800 text-neutral-500'}`}>
+                        {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white flex items-center gap-2">
+                          <span>Audio Alerts &amp; Sound Effects</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${soundEnabled ? 'bg-emerald-500/20 text-emerald-400' : 'bg-neutral-800 text-neutral-400'}`}>
+                            {soundEnabled ? 'Enabled' : 'Muted'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-400 mt-0.5">
+                          Acoustic chimes for new task notifications, mentions, and team chat messages.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      id="btn-settings-toggle-sound-master"
+                      onClick={handleToggleSoundMaster}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        soundEnabled
+                          ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-xs'
+                          : 'bg-[#262626] hover:bg-[#333333] text-neutral-300'
+                      }`}
+                    >
+                      {soundEnabled ? 'Mute All' : 'Enable Audio'}
+                    </button>
+                  </div>
+
+                  {soundEnabled && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#222]">
+                      {/* Notification Sound Row */}
+                      <div className="p-3 rounded-lg bg-[#1a1a1a] border border-[#262626] flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <Bell className="w-4 h-4 text-blue-400 shrink-0" />
+                          <div>
+                            <div className="text-xs font-semibold text-neutral-200">Notification Chime</div>
+                            <div className="text-[10px] text-neutral-400">Assignments, mentions, and alerts</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            id="btn-test-notification-sound"
+                            onClick={() => playNotificationSound()}
+                            className="p-1.5 text-blue-400 hover:bg-blue-600/20 rounded text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                            title="Preview notification chime"
+                          >
+                            <Play className="w-3 h-3 fill-current" />
+                            <span>Test</span>
+                          </button>
+                          <button
+                            type="button"
+                            id="btn-toggle-notif-sound"
+                            onClick={handleToggleNotifSound}
+                            className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${
+                              notifSoundEnabled ? 'bg-blue-600' : 'bg-neutral-700'
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
+                                notifSoundEnabled ? 'right-0.5' : 'left-0.5'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Chat Message Sound Row */}
+                      <div className="p-3 rounded-lg bg-[#1a1a1a] border border-[#262626] flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <MessageSquare className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <div>
+                            <div className="text-xs font-semibold text-neutral-200">Chat Message Ping</div>
+                            <div className="text-[10px] text-neutral-400">Incoming team &amp; direct messages</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            id="btn-test-chat-sound"
+                            onClick={() => playChatMessageSound()}
+                            className="p-1.5 text-emerald-400 hover:bg-emerald-600/20 rounded text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                            title="Preview chat pop sound"
+                          >
+                            <Play className="w-3 h-3 fill-current" />
+                            <span>Test</span>
+                          </button>
+                          <button
+                            type="button"
+                            id="btn-toggle-chat-sound-setting"
+                            onClick={handleToggleChatSound}
+                            className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${
+                              chatSoundEnabled ? 'bg-emerald-600' : 'bg-neutral-700'
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
+                                chatSoundEnabled ? 'right-0.5' : 'left-0.5'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Volume slider & Sent Pip preview */}
+                      <div className="sm:col-span-2 pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-neutral-400">
+                        <div className="flex items-center gap-3">
+                          <span className="text-[11px] font-medium text-neutral-300">Volume</span>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={soundVolume}
+                            onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                            className="w-32 accent-blue-500 cursor-pointer"
+                          />
+                          <span className="text-[11px] font-mono text-neutral-400">{Math.round(soundVolume * 100)}%</span>
+                        </div>
+                        <button
+                          type="button"
+                          id="btn-test-sent-pip"
+                          onClick={() => playMessageSentSound()}
+                          className="text-[11px] text-neutral-400 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <Play className="w-2.5 h-2.5 fill-current" />
+                          <span>Test Sent Pip</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Launch Theme Studio Button */}

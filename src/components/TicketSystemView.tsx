@@ -31,7 +31,8 @@ import {
   ArrowRight,
   Sparkles,
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  X
 } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
@@ -56,11 +57,14 @@ export const TicketSystemView: React.FC = () => {
 
   // Layout View Mode: 'list' (Table), 'board' (Kanban columns), 'split' (Master-Detail)
   const [layoutMode, setLayoutMode] = useState<'list' | 'board' | 'split'>('list');
+  const [showSearch, setShowSearch] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [tagFilter, setTagFilter] = useState<string>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  const isFilterActive = priorityFilter !== 'all' || tagFilter !== 'all' || assigneeFilter !== 'all';
   const [selectedTicketIds, setSelectedTicketIds] = useState<string[]>([]);
   const [activeSplitTaskId, setActiveSplitTaskId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'dueDate' | 'priority' | 'updatedAt' | 'title'>('updatedAt');
@@ -303,7 +307,7 @@ export const TicketSystemView: React.FC = () => {
     <div id="ticket-system-view" className="flex-1 flex flex-col min-w-0 bg-[#0d0d0d] overflow-hidden">
       
       {/* Top Header & Ticket KPIs Banner */}
-      <div className="p-4 sm:p-5 border-b border-[#222222] bg-[#121212]/90 backdrop-blur-xs space-y-4">
+      <div className="p-2.5 sm:p-5 border-b border-[#222222] bg-[#121212]/90 backdrop-blur-xs space-y-2.5 sm:space-y-4">
         
         {/* Title and Top Controls */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -313,14 +317,11 @@ export const TicketSystemView: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-white tracking-tight">Ticket System & Workflow</h1>
+                <h1 className="text-lg font-bold text-white tracking-tight">Tickets</h1>
                 <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded font-semibold uppercase">
                   5-Stage Workflow
                 </span>
               </div>
-              <p className="text-xs text-neutral-400">
-                Track tickets through Created assigned, In progress, On hold, Solved, and Closed
-              </p>
             </div>
           </div>
 
@@ -339,7 +340,6 @@ export const TicketSystemView: React.FC = () => {
                 title="Table Queue View"
               >
                 <LayoutList className="w-3.5 h-3.5" />
-                <span>Table</span>
               </button>
 
               <button
@@ -352,7 +352,6 @@ export const TicketSystemView: React.FC = () => {
                 title="Kanban Columns View"
               >
                 <Columns className="w-3.5 h-3.5" />
-                <span>Board</span>
               </button>
 
               <button
@@ -365,10 +364,58 @@ export const TicketSystemView: React.FC = () => {
                 title="Split Queue & Inspector View"
               >
                 <Split className="w-3.5 h-3.5" />
-                <span>Split View</span>
               </button>
             </div>
 
+            {/* Toggle Search Button */}
+            <button
+              type="button"
+              id="btn-toggle-ticket-search"
+              onClick={() => setShowSearch((prev) => !prev)}
+              className={`p-2 rounded border transition-colors flex items-center justify-center cursor-pointer relative ${
+                showSearch
+                  ? 'bg-blue-600 text-white border-blue-500 shadow-xs'
+                  : searchQuery
+                  ? 'bg-blue-950/60 text-blue-300 border-blue-600/50'
+                  : 'bg-[#1a1a1a] text-neutral-400 hover:text-white border-[#2b2b2b]'
+              }`}
+              title={showSearch ? 'Hide Search Bar' : 'Search Tickets'}
+            >
+              <Search className="w-3.5 h-3.5" />
+              {searchQuery && (
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 absolute top-1 right-1" />
+              )}
+            </button>
+
+            {/* Toggle Filters Button */}
+            <button
+              type="button"
+              id="btn-toggle-ticket-filters"
+              onClick={() => setShowFilters((prev) => !prev)}
+              className={`p-2 rounded border transition-colors flex items-center justify-center cursor-pointer relative ${
+                showFilters
+                  ? 'bg-blue-600 text-white border-blue-500 shadow-xs'
+                  : isFilterActive
+                  ? 'bg-blue-950/60 text-blue-300 border-blue-600/50'
+                  : 'bg-[#1a1a1a] text-neutral-400 hover:text-white border-[#2b2b2b]'
+              }`}
+              title={showFilters ? 'Hide Filters' : 'Filter Tickets'}
+            >
+              <Filter className="w-3.5 h-3.5" />
+              {isFilterActive && (
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 absolute top-1 right-1" />
+              )}
+            </button>
+
+            {/* Create Ticket Modal Trigger */}
+            <button
+              type="button"
+              id="btn-create-ticket-main"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
             {/* Quick Ticket Button */}
             <button
               type="button"
@@ -380,21 +427,12 @@ export const TicketSystemView: React.FC = () => {
               <span>Quick Ticket</span>
             </button>
 
-            {/* Create Ticket Modal Trigger */}
-            <button
-              type="button"
-              id="btn-create-ticket-main"
-              onClick={() => setIsCreateModalOpen(true)}
-              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>New Ticket</span>
-            </button>
+
           </div>
         </div>
 
-        {/* 5 Status Cards KPI Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-1">
+        {/* Desktop: 5+ Status Cards KPI Row */}
+        <div className="hidden sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-1">
           
           {/* Total Tickets */}
           <div
@@ -521,97 +559,182 @@ export const TicketSystemView: React.FC = () => {
           </div>
 
           <div className="text-xs text-neutral-400 shrink-0 font-medium">
-            Showing <span className="text-white font-semibold">{filteredTickets.length}</span> of{' '}
+            <span className="text-white font-semibold">{filteredTickets.length}</span>/{' '}
             <span className="text-neutral-300">{tasks.length}</span> tickets
           </div>
         </div>
 
-        {/* Search & Filter Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
-          
-          {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
-            <input
-              type="text"
-              id="input-ticket-search"
-              placeholder="Search by ticket title, #TCK-ID, tags, requester, or keyword..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-1.5 bg-[#171717] border border-[#2e2e2e] rounded text-xs text-neutral-200 placeholder-neutral-500 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white text-xs cursor-pointer"
-              >
-                ×
-              </button>
+        {/* Active Search / Filters indicator chips when bars are hidden */}
+        {((!showSearch && searchQuery) || (!showFilters && isFilterActive)) && (
+          <div className="flex items-center gap-2 flex-wrap pt-1 text-xs">
+            {!showSearch && searchQuery && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-600/15 border border-blue-500/30 text-blue-300">
+                <Search className="w-3 h-3 text-blue-400" />
+                <span className="truncate max-w-[150px]">"{searchQuery}"</span>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="hover:text-white p-0.5 cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            {!showFilters && isFilterActive && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-600/15 border border-blue-500/30 text-blue-300">
+                <Filter className="w-3 h-3 text-blue-400" />
+                <span>Filters Active</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPriorityFilter('all');
+                    setTagFilter('all');
+                    setAssigneeFilter('all');
+                  }}
+                  className="hover:text-white p-0.5 text-[11px] underline ml-1 cursor-pointer"
+                  title="Reset all filters"
+                >
+                  Reset
+                </button>
+              </div>
             )}
           </div>
+        )}
 
-          {/* Priority & Tag Filters */}
-          <div className="flex items-center gap-2 flex-wrap">
-            
-            {/* Priority Selector */}
-            <select
-              id="select-ticket-priority-filter"
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="px-2.5 py-1.5 bg-[#171717] border border-[#2e2e2e] rounded text-xs text-neutral-300 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+        {/* Collapsible Search Bar */}
+        {showSearch && (
+          <div className="flex items-center gap-2 pt-1 animate-in fade-in duration-150">
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+              <input
+                type="text"
+                id="input-ticket-search"
+                autoFocus
+                placeholder="Search by ticket title, #TCK-ID, tags, requester, or keyword..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-8 py-1.5 bg-[#171717] border border-[#2e2e2e] rounded text-xs text-neutral-200 placeholder-neutral-500 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white text-xs cursor-pointer"
+                  title="Clear search"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              id="btn-close-ticket-search"
+              onClick={() => setShowSearch(false)}
+              className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-[#222] transition-colors shrink-0 cursor-pointer"
+              title="Close search bar"
             >
-              <option value="all">All Priorities</option>
-              <option value="urgent">🔴 Urgent</option>
-              <option value="high">🟠 High</option>
-              <option value="medium">🔵 Medium</option>
-              <option value="low">⚪ Low</option>
-            </select>
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
-            {/* Tag Selector */}
-            {allTags.length > 0 && (
+        {/* Collapsible Filters Bar */}
+        {showFilters && (
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1 p-2.5 bg-[#171717] border border-[#262626] rounded animate-in fade-in duration-150">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5 mr-1">
+                <Filter className="w-3 h-3 text-blue-400" />
+                Filters:
+              </span>
+
+              {/* Priority Selector */}
               <select
-                id="select-ticket-tag-filter"
-                value={tagFilter}
-                onChange={(e) => setTagFilter(e.target.value)}
-                className="px-2.5 py-1.5 bg-[#171717] border border-[#2e2e2e] rounded text-xs text-neutral-300 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                id="select-ticket-priority-filter"
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+                className="px-2.5 py-1.5 bg-[#1f1f1f] border border-[#2e2e2e] rounded text-xs text-neutral-300 focus:ring-1 focus:ring-blue-500 cursor-pointer"
               >
-                <option value="all">All Categories/Tags</option>
-                {allTags.map((tag) => (
-                  <option key={tag} value={tag}>
-                    #{tag}
+                <option value="all">All Priorities</option>
+                <option value="urgent">🔴 Urgent</option>
+                <option value="high">🟠 High</option>
+                <option value="medium">🔵 Medium</option>
+                <option value="low">⚪ Low</option>
+              </select>
+
+              {/* Tag Selector */}
+              {allTags.length > 0 && (
+                <select
+                  id="select-ticket-tag-filter"
+                  value={tagFilter}
+                  onChange={(e) => setTagFilter(e.target.value)}
+                  className="px-2.5 py-1.5 bg-[#1f1f1f] border border-[#2e2e2e] rounded text-xs text-neutral-300 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value="all">All Categories/Tags</option>
+                  {allTags.map((tag) => (
+                    <option key={tag} value={tag}>
+                      #{tag}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {/* Assignee Filter */}
+              <select
+                id="select-ticket-assignee-filter"
+                value={assigneeFilter}
+                onChange={(e) => setAssigneeFilter(e.target.value)}
+                className="px-2.5 py-1.5 bg-[#1f1f1f] border border-[#2e2e2e] rounded text-xs text-neutral-300 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="all">All Assignees</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
                   </option>
                 ))}
               </select>
-            )}
 
-            {/* Assignee Filter */}
-            <select
-              id="select-ticket-assignee-filter"
-              value={assigneeFilter}
-              onChange={(e) => setAssigneeFilter(e.target.value)}
-              className="px-2.5 py-1.5 bg-[#171717] border border-[#2e2e2e] rounded text-xs text-neutral-300 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-            >
-              <option value="all">All Assignees</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
+              {/* Sort Filter */}
+              <button
+                type="button"
+                id="btn-ticket-sort-toggle"
+                onClick={() => setSortAsc(!sortAsc)}
+                className="px-2.5 py-1.5 bg-[#1f1f1f] border border-[#2e2e2e] text-neutral-300 hover:text-white rounded text-xs flex items-center gap-1.5 cursor-pointer"
+                title={`Sort ${sortAsc ? 'Ascending' : 'Descending'}`}
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                <span className="text-[11px]">{sortAsc ? 'Asc' : 'Desc'}</span>
+              </button>
 
-            {/* Sort Filter */}
+              {/* Reset Filters button if active */}
+              {isFilterActive && (
+                <button
+                  type="button"
+                  id="btn-reset-ticket-filters"
+                  onClick={() => {
+                    setPriorityFilter('all');
+                    setTagFilter('all');
+                    setAssigneeFilter('all');
+                  }}
+                  className="text-[11px] text-blue-400 hover:text-blue-300 underline ml-1 cursor-pointer"
+                >
+                  Reset filters
+                </button>
+              )}
+            </div>
+
             <button
               type="button"
-              id="btn-ticket-sort-toggle"
-              onClick={() => setSortAsc(!sortAsc)}
-              className="p-1.5 bg-[#171717] border border-[#2e2e2e] text-neutral-300 hover:text-white rounded text-xs flex items-center gap-1 cursor-pointer"
-              title="Toggle Sort Order"
+              id="btn-close-ticket-filters"
+              onClick={() => setShowFilters(false)}
+              className="p-1 rounded text-neutral-400 hover:text-white hover:bg-[#222] transition-colors shrink-0 self-end sm:self-center cursor-pointer"
+              title="Close filters"
             >
-              <ArrowUpDown className="w-3.5 h-3.5" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
-        </div>
+        )}
 
         {/* Bulk Action Toolbar (When 1 or more tickets selected) */}
         {selectedTicketIds.length > 0 && (
@@ -786,7 +909,7 @@ export const TicketSystemView: React.FC = () => {
         {/* MODE 1: Table Queue List View */}
         {/* ------------------------------------------------------------- */}
         {layoutMode === 'list' && (
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+          <div className="flex-1 overflow-y-auto p-2 sm:p-5">
             {filteredTickets.length === 0 ? (
               <div className="p-12 text-center border border-dashed border-[#2b2b2b] rounded bg-[#121212] space-y-3">
                 <Ticket className="w-8 h-8 text-neutral-500 mx-auto" />
@@ -807,8 +930,93 @@ export const TicketSystemView: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <div className="border border-[#262626] rounded bg-[#141414] overflow-hidden shadow-xl">
-                <div className="overflow-x-auto">
+              <div className="border border-[#262626] rounded-xl bg-[#141414] overflow-hidden shadow-xl">
+                {/* Mobile View: Compact Ticket Cards */}
+                <div className="sm:hidden divide-y divide-[#222222]">
+                  {filteredTickets.map((ticket) => {
+                    const currentStatus = getStatus(ticket.statusId);
+                    const isSelected = selectedTicketIds.includes(ticket.id);
+                    const priorityCfg = priorityConfigs[ticket.priority] || priorityConfigs.medium;
+                    const isDone = currentStatus?.isDone;
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const isOverdue = ticket.dueDate && ticket.dueDate < todayStr && !isDone;
+                    const assignees = users.filter((u) => ticket.assigneeIds?.includes(u.id));
+
+                    return (
+                      <div
+                        key={ticket.id}
+                        onClick={() => setSelectedTaskId(ticket.id)}
+                        className={`p-2.5 hover:bg-[#1c1c1c] active:bg-[#222222] transition-colors cursor-pointer space-y-1.5 ${
+                          isSelected ? 'bg-blue-950/20' : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => handleToggleSelectTicket(ticket.id, e as any)}
+                              className="rounded border-neutral-700 bg-neutral-900 text-blue-600 focus:ring-0 cursor-pointer shrink-0"
+                            />
+                            <span className="font-mono text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.2 rounded border border-blue-500/20 font-bold shrink-0">
+                              #{ticket.id.replace('task-', 'TCK-')}
+                            </span>
+                            <span
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border truncate max-w-[110px]"
+                              style={{
+                                backgroundColor: `${currentStatus?.color || '#3B82F6'}18`,
+                                borderColor: `${currentStatus?.color || '#3B82F6'}45`,
+                                color: currentStatus?.color || '#3B82F6'
+                              }}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: currentStatus?.color || '#3B82F6' }} />
+                              <span className="truncate">{currentStatus?.name}</span>
+                            </span>
+                          </div>
+
+                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border shrink-0 ${priorityCfg.bg} ${priorityCfg.text}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${priorityCfg.dot}`} />
+                            {priorityCfg.label}
+                          </span>
+                        </div>
+
+                        <div className={`text-xs font-semibold text-neutral-100 line-clamp-1 ${isDone ? 'line-through text-neutral-500' : ''}`}>
+                          {ticket.title}
+                        </div>
+
+                        <div className="flex items-center justify-between text-[11px] text-neutral-400 pt-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex -space-x-1 overflow-hidden">
+                              {assignees.map((u) => (
+                                <img
+                                  key={u.id}
+                                  src={u.avatar}
+                                  alt={u.name}
+                                  title={u.name}
+                                  className="w-5 h-5 rounded-full border border-[#141414] object-cover ring-1 ring-[#333333]"
+                                />
+                              ))}
+                            </div>
+                            {assignees.length === 0 && (
+                              <span className="text-[10px] text-neutral-500 italic">Unassigned</span>
+                            )}
+                          </div>
+
+                          {ticket.dueDate && (
+                            <span className={`text-[10px] font-mono flex items-center gap-1 ${isOverdue ? 'text-rose-400 font-bold' : 'text-neutral-400'}`}>
+                              <Clock className="w-3 h-3" />
+                              {ticket.dueDate}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop View: Full 8-Column Data Table */}
+                <div className="hidden sm:block overflow-x-auto">
                   <table className="w-full text-left text-xs text-neutral-300">
                     <thead className="bg-[#1a1a1a] text-neutral-400 font-semibold border-b border-[#262626] uppercase text-[10px] tracking-wider">
                       <tr>
@@ -1032,7 +1240,7 @@ export const TicketSystemView: React.FC = () => {
         {/* MODE 2: Kanban 5-Column Board View */}
         {/* ------------------------------------------------------------- */}
         {layoutMode === 'board' && (
-          <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 sm:p-5 flex gap-4 min-w-0">
+          <div className="flex-1 overflow-x-auto overflow-y-hidden p-2 sm:p-5 flex gap-2.5 sm:gap-4 min-w-0">
             {statuses.map((status) => {
               const columnTickets = filteredTickets.filter((t) => t.statusId === status.id);
 
@@ -1143,7 +1351,7 @@ export const TicketSystemView: React.FC = () => {
           <div className="flex-1 flex min-w-0 overflow-hidden">
             
             {/* Left Queue List Pane */}
-            <div className="w-96 border-r border-[#262626] bg-[#121212] overflow-y-auto shrink-0 flex flex-col">
+            <div className={`w-full md:w-96 border-r border-[#262626] bg-[#121212] overflow-y-auto shrink-0 flex flex-col ${activeSplitTaskId ? 'hidden md:flex' : 'flex'}`}>
               <div className="p-3 border-b border-[#262626] bg-[#171717] text-xs font-semibold text-neutral-400 flex items-center justify-between">
                 <span>Ticket Queue ({filteredTickets.length})</span>
                 <span className="text-[10px] text-neutral-500">Select to inspect</span>
@@ -1192,14 +1400,26 @@ export const TicketSystemView: React.FC = () => {
             </div>
 
             {/* Right Inspector Detail Pane */}
-            <div className="flex-1 bg-[#141414] overflow-y-auto p-6 space-y-6">
+            <div className={`flex-1 bg-[#141414] overflow-y-auto p-4 sm:p-6 space-y-6 ${!activeSplitTaskId ? 'hidden md:block' : 'block'}`}>
               {activeSplitTask ? (
                 <div className="max-w-4xl mx-auto space-y-6">
                   
                   {/* Inspector Header */}
-                  <div className="flex items-start justify-between gap-4 border-b border-[#262626] pb-4">
-                    <div className="space-y-1.5 flex-1">
+                  <div className="flex items-start justify-between gap-4 border-b border-[#262626] pb-4 flex-wrap sm:flex-nowrap">
+                    <div className="space-y-1.5 flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
+                        {/* Mobile Back / Close Button */}
+                        <button
+                          type="button"
+                          id="btn-close-ticket-inspector-mobile"
+                          onClick={() => setActiveSplitTaskId(null)}
+                          className="md:hidden flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#222222] border border-[#333333] text-neutral-200 hover:text-white text-xs font-semibold cursor-pointer active:scale-95"
+                          title="Back to Ticket List"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                          <span>Close / Back</span>
+                        </button>
+
                         <span className="font-mono text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded font-bold border border-blue-500/20">
                           #{activeSplitTask.id.replace('task-', 'TCK-')}
                         </span>
@@ -1230,17 +1450,28 @@ export const TicketSystemView: React.FC = () => {
                         </select>
                       </div>
 
-                      <h2 className="text-lg font-bold text-white">{activeSplitTask.title}</h2>
+                      <h2 className="text-base sm:text-lg font-bold text-white break-words">{activeSplitTask.title}</h2>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTaskId(activeSplitTask.id)}
-                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      <span>Full Ticket Modal</span>
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTaskId(activeSplitTask.id)}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span className="hidden xs:inline">Full Ticket Modal</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveSplitTaskId(null)}
+                        className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-[#222222] border border-[#333333] transition-colors cursor-pointer"
+                        title="Close Inspector"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Description */}

@@ -19,7 +19,8 @@ import {
   Trash2,
   RotateCcw,
   Check,
-  ExternalLink
+  ExternalLink,
+  X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
@@ -30,6 +31,7 @@ import { UserAvatar } from './UserAvatar';
 import { RemoveDemoDataModal } from './RemoveDemoDataModal';
 import { NotificationDropdown } from './NotificationDropdown';
 import { GamificationHeaderPill } from './GamificationHeaderPill';
+import { SyncWithListerButton } from './SyncWithListerButton';
 
 interface HeaderProps {
   isSidebarOpen?: boolean;
@@ -74,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
   }, []);
 
   return (
-    <header className="h-16 bg-[#121212] dark:bg-[#121212] border-b border-[#262626] px-3 sm:px-6 lg:px-8 flex items-center justify-between shrink-0 z-20 sticky top-0 transition-colors duration-200">
+    <header className="h-14 sm:h-16 bg-[#121212] dark:bg-[#121212] border-b border-[#262626] px-2.5 sm:px-6 lg:px-8 flex items-center justify-between shrink-0 z-20 sticky top-0 transition-colors duration-200">
       
       {/* Left: Sidebar Toggle, Brand & Quick Search */}
       <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 pr-2 sm:pr-3">
@@ -84,19 +86,22 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
             id="btn-toggle-sidebar"
             onClick={onToggleSidebar}
             aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-            className={`w-9 h-9 sm:w-8 sm:h-8 rounded-lg transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${
+            className={`h-9 px-2.5 sm:px-2 sm:h-8 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 active:scale-95 ${
               !isSidebarOpen
-                ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40 hover:bg-blue-600/30 hover:text-white'
-                : 'text-neutral-300 hover:text-white hover:bg-[#222222] border border-[#2d2d2d]'
+                ? 'bg-blue-600/20 text-blue-400 border border-blue-500/50 hover:bg-blue-600/30 hover:text-white shadow-xs'
+                : 'bg-[#1e1e1e] text-blue-400 hover:text-white hover:bg-[#282828] border border-blue-500/40'
             }`}
             title={isSidebarOpen ? 'Collapse sidebar (Ctrl+B)' : 'Expand sidebar (Ctrl+B)'}
           >
             {isSidebarOpen ? (
-              <PanelLeftClose className="w-5 h-5" />
+              <>
+                <PanelLeftClose className="w-5 h-5 text-blue-400" />
+                <span className="text-[11px] font-bold hidden xs:inline sm:hidden text-neutral-300">Close</span>
+              </>
             ) : (
               <>
-                <Menu className="w-5 h-5 sm:hidden" />
-                <PanelLeft className="w-5 h-5 hidden sm:block" />
+                <PanelLeft className="w-5 h-5 text-blue-400" />
+                <span className="text-[11px] font-bold hidden xs:inline sm:hidden text-neutral-300">Sidebar</span>
               </>
             )}
           </button>
@@ -136,6 +141,9 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
 
       {/* Right Controls: Gamification Badge, Settings Dropdown, Notification Bell, Create Task Button, Profile */}
       <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        {/* Two-Way Lister Sync Button */}
+        <SyncWithListerButton variant="header" />
+
         {/* Gamification Badge next to Settings Dropdown Menu */}
         <GamificationHeaderPill />
 
@@ -156,10 +164,19 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
             <ChevronDown className={`w-3 h-3 text-neutral-400 transition-transform duration-200 ${isSettingsDropdownOpen ? 'rotate-180 text-blue-400' : ''}`} />
           </button>
 
+          {/* Mobile backdrop overlay */}
           {isSettingsDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] max-w-xs sm:w-80 bg-[#161616] rounded-xl shadow-2xl border border-[#2d2d2d] py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 divide-y divide-[#262626] max-h-[85vh] overflow-y-auto">
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 sm:hidden animate-in fade-in duration-150"
+              onClick={() => setIsSettingsDropdownOpen(false)}
+              aria-hidden="true"
+            />
+          )}
+
+          {isSettingsDropdownOpen && (
+            <div className="fixed inset-x-3 top-16 mt-2 sm:mt-2 sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:w-80 sm:max-w-xs bg-[#161616] rounded-xl shadow-2xl border border-[#2d2d2d] py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 divide-y divide-[#262626] max-h-[calc(100vh-5.5rem)] sm:max-h-[85vh] overflow-y-auto">
               {/* Dropdown Header */}
-              <div className="px-3.5 py-2 flex items-center justify-between">
+              <div className="px-3.5 py-2.5 flex items-center justify-between">
                 <div>
                   <h3 className="font-bold text-white text-xs tracking-tight flex items-center gap-1.5">
                     <Settings className="w-3.5 h-3.5 text-blue-400" />
@@ -167,11 +184,23 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
                   </h3>
                   <p className="text-[10px] text-neutral-400">Workspace controls &amp; system tools</p>
                 </div>
-                {isAdmin && (
-                  <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    Admin
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Admin
+                    </span>
+                  )}
+                  {/* Close button for mobile view */}
+                  <button
+                    type="button"
+                    id="btn-close-settings-dropdown-mobile"
+                    onClick={() => setIsSettingsDropdownOpen(false)}
+                    className="sm:hidden p-1 text-neutral-400 hover:text-white rounded-md hover:bg-[#262626] transition-colors cursor-pointer"
+                    title="Close settings menu"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Theme Mode & Studio Section */}
@@ -185,44 +214,44 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
                 </div>
 
                 {/* 3-segment switcher */}
-                <div className="grid grid-cols-3 gap-1 p-1 bg-[#1d1d1d] rounded-lg border border-[#2e2e2e]">
+                <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#1d1d1d] rounded-lg border border-[#2e2e2e]">
                   <button
                     type="button"
                     id="dropdown-theme-light"
                     onClick={() => setTheme('light')}
-                    className={`flex items-center justify-center gap-1.5 py-1 px-2 rounded text-[11px] font-medium transition-all cursor-pointer ${
+                    className={`flex items-center justify-center gap-1.5 py-2 sm:py-1 px-2 rounded text-[11px] font-medium transition-all cursor-pointer active:scale-95 ${
                       theme === 'light'
                         ? 'bg-blue-600 text-white shadow-xs font-semibold'
                         : 'text-neutral-400 hover:text-white hover:bg-[#282828]'
                     }`}
                   >
-                    <Sun className="w-3 h-3" />
+                    <Sun className="w-3.5 h-3.5" />
                     <span>Light</span>
                   </button>
                   <button
                     type="button"
                     id="dropdown-theme-dark"
                     onClick={() => setTheme('dark')}
-                    className={`flex items-center justify-center gap-1.5 py-1 px-2 rounded text-[11px] font-medium transition-all cursor-pointer ${
+                    className={`flex items-center justify-center gap-1.5 py-2 sm:py-1 px-2 rounded text-[11px] font-medium transition-all cursor-pointer active:scale-95 ${
                       theme === 'dark'
                         ? 'bg-blue-600 text-white shadow-xs font-semibold'
                         : 'text-neutral-400 hover:text-white hover:bg-[#282828]'
                     }`}
                   >
-                    <Moon className="w-3 h-3" />
+                    <Moon className="w-3.5 h-3.5" />
                     <span>Dark</span>
                   </button>
                   <button
                     type="button"
                     id="dropdown-theme-system"
                     onClick={() => setTheme('system')}
-                    className={`flex items-center justify-center gap-1.5 py-1 px-2 rounded text-[11px] font-medium transition-all cursor-pointer ${
+                    className={`flex items-center justify-center gap-1.5 py-2 sm:py-1 px-2 rounded text-[11px] font-medium transition-all cursor-pointer active:scale-95 ${
                       theme === 'system'
                         ? 'bg-blue-600 text-white shadow-xs font-semibold'
                         : 'text-neutral-400 hover:text-white hover:bg-[#282828]'
                     }`}
                   >
-                    <Laptop className="w-3 h-3" />
+                    <Laptop className="w-3.5 h-3.5" />
                     <span>System</span>
                   </button>
                 </div>

@@ -327,19 +327,19 @@ export const TaskDetailModal: React.FC = () => {
   return (
     <div
       id="task-detail-modal-backdrop"
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-6 lg:p-8 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 lg:p-6 animate-in fade-in duration-150"
       onClick={() => setSelectedTaskId(null)}
     >
       <div
         id="task-detail-modal"
         onClick={(e) => e.stopPropagation()}
-        className="relative bg-[#141414] w-full md:w-[90vw] md:max-w-[90vw] lg:w-[90vw] lg:max-w-[90vw] xl:w-[90vw] xl:max-w-[90vw] rounded shadow-2xl border border-[#262626] overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[92vh] h-[94vh] sm:h-[90vh] md:h-[88vh] transition-all duration-200"
+        className="relative bg-[#141414] w-[90%] max-w-[90%] sm:w-[90%] sm:max-w-[90%] md:w-[90vw] md:max-w-[90vw] lg:w-[90vw] lg:max-w-[90vw] xl:w-[90vw] xl:max-w-[90vw] rounded shadow-2xl border border-[#262626] overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[92vh] h-[94vh] sm:h-[90vh] md:h-[88vh] transition-all duration-200"
       >
         {/* Mobile-Only Dedicated Header Bar with Direct Close Button */}
         <div className="flex sm:hidden items-center justify-between px-3.5 py-2.5 bg-[#181818] border-b border-[#262626] shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xs font-mono font-bold text-blue-400 bg-blue-950/50 border border-blue-800/40 px-2 py-0.5 rounded truncate">
-              {task.code || `TASK-${task.id.slice(0, 6)}`}
+              {`TASK-${task.id.slice(0, 6)}`}
             </span>
             <span className="text-xs font-semibold text-neutral-300 truncate max-w-[110px]">
               {statuses.find((s) => s.id === task.statusId)?.name || 'Task'}
@@ -549,15 +549,15 @@ export const TaskDetailModal: React.FC = () => {
             />
           </div>
 
-          {/* Desktop Close & Privilege-gated Actions */}
-          <div className="hidden sm:flex items-center gap-2 shrink-0">
-            {/* Share / Copy Task Link */}
+          {/* Header Action Bar with Always-Visible Close Button */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Share / Copy Task Link (desktop) */}
             <button
               type="button"
               id="btn-copy-task-link"
               onClick={handleCopyLink}
               title={copiedLink ? 'Link copied to clipboard!' : 'Copy deep-link to this task'}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold bg-[#222222] hover:bg-[#2c2c2c] border border-[#333333] text-neutral-200 hover:text-white transition-colors cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold bg-[#222222] hover:bg-[#2c2c2c] border border-[#333333] text-neutral-200 hover:text-white transition-colors cursor-pointer"
             >
               {copiedLink ? (
                 <>
@@ -572,7 +572,7 @@ export const TaskDetailModal: React.FC = () => {
               )}
             </button>
 
-            {/* Discuss in Chat */}
+            {/* Discuss in Chat (desktop) */}
             <button
               type="button"
               id="btn-discuss-in-chat"
@@ -582,7 +582,7 @@ export const TaskDetailModal: React.FC = () => {
                 setViewMode('chat');
               }}
               title="Discuss this task in Team Chat"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold bg-[#222222] hover:bg-[#2c2c2c] border border-[#333333] text-neutral-200 hover:text-white transition-colors cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold bg-[#222222] hover:bg-[#2c2c2c] border border-[#333333] text-neutral-200 hover:text-white transition-colors cursor-pointer"
             >
               <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
               <span>Chat</span>
@@ -598,21 +598,12 @@ export const TaskDetailModal: React.FC = () => {
                   }
                 }}
                 title="Delete Task"
-                className="p-2 rounded text-rose-400 hover:bg-rose-950/50 border border-transparent hover:border-rose-800 transition-colors cursor-pointer"
+                className="hidden sm:flex p-2 rounded text-rose-400 hover:bg-rose-950/50 border border-transparent hover:border-rose-800 transition-colors cursor-pointer"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
             )}
-
-            <button
-              type="button"
-              id="btn-close-task-modal"
-              onClick={() => setSelectedTaskId(null)}
-              aria-label="Close task window"
-              className="p-2 rounded text-neutral-400 hover:text-neutral-200 hover:bg-[#262626] transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            
           </div>
         </div>
 
@@ -1656,22 +1647,6 @@ export const TaskDetailModal: React.FC = () => {
 
           </div>
 
-        </div>
-
-        {/* Sticky Mobile Bottom Bar with Close Button */}
-        <div className="sm:hidden px-4 py-2.5 bg-[#181818] border-t border-[#262626] flex items-center justify-between gap-3 shrink-0 z-10">
-          <span className="text-xs text-neutral-400 truncate max-w-[180px]">
-            {task.title || 'Untitled Task'}
-          </span>
-          <button
-            type="button"
-            id="btn-close-task-modal-mobile-bottom"
-            onClick={() => setSelectedTaskId(null)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-white text-xs font-bold border border-neutral-600 shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
-          >
-            <X className="w-4 h-4" />
-            <span>Close Task</span>
-          </button>
         </div>
 
       </div>

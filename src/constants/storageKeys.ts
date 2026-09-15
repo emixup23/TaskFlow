@@ -12,9 +12,14 @@ export const STORAGE_KEYS = {
   KANBAN_TASK_SORT: 'taskflow_kanban_task_sort',
   KANBAN_COL_TASK_SORTS: 'taskflow_kanban_col_task_sorts',
   HIDDEN_KANBAN_COLUMNS: 'taskflow_hidden_kanban_columns',
+  KANBAN_ACTIVE_COLUMN: 'taskflow_kanban_active_column',
   KUDOS_WALLETS: 'taskflow_kudos_wallets',
   GAMIFICATION_DATA: 'taskflow_gamification_data',
-  ADVENTURE_PROGRESS_PREFIX: 'taskflow_adventure_progress_'
+  ADVENTURE_PROGRESS_PREFIX: 'taskflow_adventure_progress_',
+  DAILY_SHOW_USER_FILTER: 'taskflow_daily_show_user_filter',
+  LISTER_API_BASE_URL: 'taskflow_lister_api_base_url',
+  LISTER_API_KEY: 'taskflow_lister_api_key',
+  LISTER_LAST_SYNC_TIME: 'taskflow_lister_last_sync_time'
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];

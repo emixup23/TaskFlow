@@ -287,19 +287,19 @@ export const UserProfileModal: React.FC = () => {
   return (
     <div
       id="user-profile-modal-backdrop"
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-6 animate-in fade-in duration-150"
       onClick={(e) => {
         if (e.target === e.currentTarget) closeUserProfile();
       }}
     >
       <div
         id="user-profile-modal"
-        className="relative bg-[#121212] w-full max-w-3xl rounded-xl shadow-2xl border border-[#262626] flex flex-col max-h-[92vh] text-slate-100 animate-in zoom-in-95 duration-150"
+        className="relative bg-[#121212] w-full max-w-3xl rounded-2xl sm:rounded-xl shadow-2xl border border-[#262626] flex flex-col max-h-[95vh] sm:max-h-[92vh] text-slate-100 animate-in zoom-in-95 duration-150 overflow-hidden"
       >
         {/* =========================================================================
             Profile Cover Header & Hero Banner
             ========================================================================= */}
-        <div className="relative bg-gradient-to-r from-blue-900/60 via-indigo-900/40 to-purple-900/50 border-b border-[#262626] p-6 pt-7">
+        <div className="relative bg-gradient-to-r from-blue-900/60 via-indigo-900/40 to-purple-900/50 border-b border-[#262626] p-4 sm:p-6 pt-4 sm:pt-7 shrink-0">
           {/* Subtle geometric pattern overlay */}
           <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
 
@@ -308,15 +308,15 @@ export const UserProfileModal: React.FC = () => {
             type="button"
             id="user-profile-btn-close"
             onClick={closeUserProfile}
-            className="absolute top-4 right-4 p-1.5 text-neutral-400 hover:text-white rounded-lg bg-black/40 hover:bg-black/70 border border-white/10 transition-colors cursor-pointer z-10"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 sm:p-2 text-neutral-400 hover:text-white rounded-lg bg-black/50 hover:bg-black/80 border border-white/10 transition-colors cursor-pointer z-10"
             title="Close Profile"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
-          <div className="relative z-1 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="relative z-1 flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4">
             {/* Avatar & Main Info */}
-            <div className="flex items-center sm:items-end gap-4">
+            <div className="flex items-start sm:items-end gap-3 sm:gap-4 pr-10 sm:pr-0">
               <div className="relative group shrink-0">
                 <UserAvatar
                   user={{
@@ -327,7 +327,7 @@ export const UserProfileModal: React.FC = () => {
                   }}
                   size="2xl"
                   showStatusIndicator
-                  className="w-20 h-20 sm:w-24 sm:h-24 ring-4 ring-[#121212] shadow-xl"
+                  className="w-16 h-16 sm:w-24 sm:h-24 ring-2 sm:ring-4 ring-[#121212] shadow-xl"
                 />
 
                 {/* Quick Avatar Change Camera Button */}
@@ -342,20 +342,20 @@ export const UserProfileModal: React.FC = () => {
                     className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity cursor-pointer text-[10px] font-medium"
                     title="Change Avatar"
                   >
-                    <Camera className="w-5 h-5 mb-0.5 text-blue-300" />
-                    <span>Change</span>
+                    <Camera className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5 text-blue-300" />
+                    <span className="text-[9px] sm:text-[10px]">Change</span>
                   </button>
                 )}
               </div>
 
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <h2 className="text-lg sm:text-2xl font-bold text-white tracking-tight truncate max-w-full">
                     {activeTab === 'edit' ? editName || 'User Name' : selectedProfileUser.name}
                   </h2>
                   
                   {isSelf && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                    <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold bg-blue-500/20 text-blue-300 border border-blue-400/30">
                       You
                     </span>
                   )}
@@ -366,7 +366,7 @@ export const UserProfileModal: React.FC = () => {
                     const RoleIcon = getRoleIconComponent(roleTemplate.icon);
                     return (
                       <span
-                        className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5 shadow-xs"
+                        className="px-2 sm:px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1 shadow-xs"
                         style={{
                           backgroundColor: `${roleTemplate.color}25`,
                           color: roleTemplate.color,
@@ -374,14 +374,14 @@ export const UserProfileModal: React.FC = () => {
                           borderWidth: 1
                         }}
                       >
-                        <RoleIcon className="w-3 h-3" />
+                        <RoleIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                         {roleTemplate.name}
                       </span>
                     );
                   })()}
                 </div>
 
-                <p className="text-xs sm:text-sm text-neutral-300 mt-0.5 flex items-center gap-2">
+                <p className="text-xs sm:text-sm text-neutral-300 mt-0.5 flex items-center gap-1.5 sm:gap-2 flex-wrap">
                   <span className="text-blue-300 font-medium">
                     {activeTab === 'edit' ? editTitle || 'Title' : selectedProfileUser.title || 'Team Member'}
                   </span>
@@ -391,14 +391,14 @@ export const UserProfileModal: React.FC = () => {
                   </span>
                 </p>
 
-                <div className="flex items-center gap-3 text-[11px] text-neutral-400 mt-2">
+                <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] text-neutral-400 mt-1 sm:mt-2 flex-wrap">
                   <span className="flex items-center gap-1">
-                    <Mail className="w-3.5 h-3.5 text-neutral-500" />
-                    <span className="truncate max-w-[180px]">{selectedProfileUser.email}</span>
+                    <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-500 shrink-0" />
+                    <span className="truncate max-w-[140px] sm:max-w-[200px]">{selectedProfileUser.email}</span>
                   </span>
                   {selectedProfileUser.phone && (
                     <span className="hidden sm:flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5 text-neutral-500" />
+                      <Phone className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
                       <span>{selectedProfileUser.phone}</span>
                     </span>
                   )}
@@ -407,16 +407,16 @@ export const UserProfileModal: React.FC = () => {
             </div>
 
             {/* Header Actions */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap sm:flex-nowrap w-full sm:w-auto pt-1 sm:pt-0">
               {canEdit && activeTab !== 'edit' && (
                 <button
                   type="button"
                   id="user-profile-btn-edit-mode"
                   onClick={() => setActiveTab('edit')}
-                  className="px-3 py-1.5 rounded-lg bg-[#1e1e1e] hover:bg-[#282828] text-neutral-200 hover:text-white border border-[#333333] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#1e1e1e] hover:bg-[#282828] text-neutral-200 hover:text-white border border-[#333333] text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
                 >
                   <Edit3 className="w-3.5 h-3.5 text-blue-400" />
-                  <span>{isSelf ? 'Edit My Profile & Avatar' : 'Edit Profile'}</span>
+                  <span>{isSelf ? 'Edit Profile & Avatar' : 'Edit Profile'}</span>
                 </button>
               )}
 
@@ -428,7 +428,7 @@ export const UserProfileModal: React.FC = () => {
                     await switchUser(selectedProfileUser.id);
                     addToast('info', `Switched active session to ${selectedProfileUser.name}`);
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
                   title="Switch to this account (Admin only)"
                 >
                   <Zap className="w-3.5 h-3.5 text-blue-400" />
@@ -443,7 +443,7 @@ export const UserProfileModal: React.FC = () => {
                   setViewMode('daily');
                   closeUserProfile();
                 }}
-                className="px-3 py-1.5 rounded-lg bg-teal-600/20 hover:bg-teal-600/30 text-teal-300 border border-teal-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-teal-600/20 hover:bg-teal-600/30 text-teal-300 border border-teal-500/40 text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
                 title="Open Daily Tasks Day Planner"
               >
                 <CalendarCheck2 className="w-3.5 h-3.5 text-teal-400" />
@@ -452,15 +452,15 @@ export const UserProfileModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Navigation Sub-tabs */}
-          <div className="flex items-center gap-1.5 mt-6 border-t border-white/10 pt-3 pb-1">
+          {/* Navigation Sub-tabs with smooth horizontal scrolling on mobile */}
+          <div className="flex items-center gap-1.5 mt-3.5 sm:mt-6 border-t border-white/10 pt-2.5 sm:pt-3 pb-1 overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
             <button
               type="button"
               id="user-profile-tab-overview"
               onClick={() => setActiveTab('overview')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap active:scale-95 ${
                 activeTab === 'overview'
-                  ? 'bg-white/15 text-white font-semibold shadow-xs'
+                  ? 'bg-white/20 text-white font-semibold shadow-xs'
                   : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
               }`}
             >
@@ -472,15 +472,15 @@ export const UserProfileModal: React.FC = () => {
               type="button"
               id="user-profile-tab-tasks"
               onClick={() => setActiveTab('tasks')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap active:scale-95 ${
                 activeTab === 'tasks'
-                  ? 'bg-white/15 text-white font-semibold shadow-xs'
+                  ? 'bg-white/20 text-white font-semibold shadow-xs'
                   : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
               }`}
             >
               <ListTodo className="w-3.5 h-3.5" />
-              <span>Assigned Tasks</span>
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-500/30 text-blue-300 font-bold">
+              <span>Tasks</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] sm:text-[10px] bg-blue-500/30 text-blue-300 font-bold">
                 {assignedTasks.length}
               </span>
             </button>
@@ -489,9 +489,9 @@ export const UserProfileModal: React.FC = () => {
               type="button"
               id="user-profile-tab-gamification"
               onClick={() => setActiveTab('gamification')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap active:scale-95 ${
                 activeTab === 'gamification'
-                  ? 'bg-white/15 text-white font-semibold shadow-xs'
+                  ? 'bg-white/20 text-white font-semibold shadow-xs'
                   : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
               }`}
             >
@@ -503,28 +503,28 @@ export const UserProfileModal: React.FC = () => {
               type="button"
               id="user-profile-tab-edit"
               onClick={() => setActiveTab('edit')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap active:scale-95 ${
                 activeTab === 'edit'
                   ? 'bg-blue-600 text-white font-semibold shadow-xs'
                   : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
               }`}
             >
               <Camera className="w-3.5 h-3.5" />
-              <span>Avatar & Settings</span>
+              <span>Avatar & Bio</span>
             </button>
 
             <button
               type="button"
               id="user-profile-tab-security"
               onClick={() => setActiveTab('security')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap active:scale-95 ${
                 activeTab === 'security'
                   ? 'bg-emerald-600 text-white font-semibold shadow-xs'
                   : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
               }`}
             >
               <Lock className="w-3.5 h-3.5" />
-              <span>Security & Password</span>
+              <span>Security</span>
             </button>
           </div>
         </div>
@@ -532,64 +532,64 @@ export const UserProfileModal: React.FC = () => {
         {/* =========================================================================
             Tab Content Area
             ========================================================================= */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6">
           
           {/* =====================================================================
               TAB 1: OVERVIEW
               ===================================================================== */}
           {activeTab === 'overview' && (
-            <div className="space-y-6 animate-in fade-in duration-150">
+            <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-150">
               
               {/* Quick KPI Stats row */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                <div className="p-3 bg-[#181818] rounded-lg border border-[#262626]">
-                  <div className="text-[11px] text-neutral-400 font-medium">Assigned Tasks</div>
-                  <div className="text-xl font-bold text-white mt-1">{assignedTasks.length}</div>
-                  <div className="text-[10px] text-neutral-500 mt-0.5">{activeTasks.length} active in sprint</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+                <div className="p-2.5 sm:p-3 bg-[#181818] rounded-xl border border-[#262626]">
+                  <div className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Assigned Tasks</div>
+                  <div className="text-lg sm:text-xl font-bold text-white mt-0.5 sm:mt-1">{assignedTasks.length}</div>
+                  <div className="text-[9px] sm:text-[10px] text-neutral-500 mt-0.5 truncate">{activeTasks.length} active in sprint</div>
                 </div>
 
-                <div className="p-3 bg-[#181818] rounded-lg border border-[#262626]">
-                  <div className="text-[11px] text-neutral-400 font-medium">Completion Rate</div>
-                  <div className="text-xl font-bold text-emerald-400 mt-1">{completionRate}%</div>
-                  <div className="text-[10px] text-neutral-500 mt-0.5">{completedTasks.length} tasks resolved</div>
+                <div className="p-2.5 sm:p-3 bg-[#181818] rounded-xl border border-[#262626]">
+                  <div className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Completion Rate</div>
+                  <div className="text-lg sm:text-xl font-bold text-emerald-400 mt-0.5 sm:mt-1">{completionRate}%</div>
+                  <div className="text-[9px] sm:text-[10px] text-neutral-500 mt-0.5 truncate">{completedTasks.length} tasks resolved</div>
                 </div>
 
-                <div className="p-3 bg-[#181818] rounded-lg border border-[#262626]">
-                  <div className="text-[11px] text-neutral-400 font-medium">Gamification Level</div>
-                  <div className="text-xl font-bold text-amber-400 mt-1 flex items-center gap-1.5">
+                <div className="p-2.5 sm:p-3 bg-[#181818] rounded-xl border border-[#262626]">
+                  <div className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Gamification Level</div>
+                  <div className="text-lg sm:text-xl font-bold text-amber-400 mt-0.5 sm:mt-1 flex items-center gap-1.5">
                     <span>Lvl {userStats?.level || 1}</span>
-                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                   </div>
-                  <div className="text-[10px] text-neutral-500 mt-0.5">{userStats?.xp || 0} Total XP</div>
+                  <div className="text-[9px] sm:text-[10px] text-neutral-500 mt-0.5 truncate">{userStats?.xp || 0} Total XP</div>
                 </div>
 
-                <div className="p-3 bg-[#181818] rounded-lg border border-[#262626]">
-                  <div className="text-[11px] text-neutral-400 font-medium">Kudos Balance</div>
-                  <div className="text-xl font-bold text-amber-300 mt-1 flex items-center gap-1.5">
+                <div className="p-2.5 sm:p-3 bg-[#181818] rounded-xl border border-[#262626]">
+                  <div className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Kudos Balance</div>
+                  <div className="text-lg sm:text-xl font-bold text-amber-300 mt-0.5 sm:mt-1 flex items-center gap-1.5">
                     <span>{userWallet?.balance ?? 100}</span>
-                    <Coins className="w-4 h-4 text-amber-400" />
+                    <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                   </div>
-                  <div className="text-[10px] text-neutral-500 mt-0.5">{userWallet?.earnedTotal ?? 100} earned total</div>
+                  <div className="text-[9px] sm:text-[10px] text-neutral-500 mt-0.5 truncate">{userWallet?.earnedTotal ?? 100} earned total</div>
                 </div>
 
-                <div className="p-3 bg-[#181818] rounded-lg border border-[#262626] col-span-2 sm:col-span-1">
-                  <div className="text-[11px] text-neutral-400 font-medium">Current Streak</div>
-                  <div className="text-xl font-bold text-orange-400 mt-1 flex items-center gap-1.5">
+                <div className="p-2.5 sm:p-3 bg-[#181818] rounded-xl border border-[#262626] col-span-2 sm:col-span-1">
+                  <div className="text-[10px] sm:text-[11px] text-neutral-400 font-medium">Current Streak</div>
+                  <div className="text-lg sm:text-xl font-bold text-orange-400 mt-0.5 sm:mt-1 flex items-center gap-1.5">
                     <span>{userStats?.currentStreak || 0} Days</span>
-                    <Flame className="w-4 h-4 text-orange-500" />
+                    <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500" />
                   </div>
-                  <div className="text-[10px] text-neutral-500 mt-0.5">Active sprint streak</div>
+                  <div className="text-[9px] sm:text-[10px] text-neutral-500 mt-0.5">Active sprint streak</div>
                 </div>
               </div>
 
               {/* Bio / About Section */}
-              <div className="p-4 bg-[#181818] rounded-lg border border-[#262626]">
+              <div className="p-3.5 sm:p-4 bg-[#181818] rounded-xl border border-[#262626]">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2 flex items-center gap-2">
                   <UserIcon className="w-3.5 h-3.5 text-blue-400" />
                   <span>About & Bio</span>
                 </h3>
                 {selectedProfileUser.bio ? (
-                  <p className="text-sm text-neutral-300 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed whitespace-pre-wrap">
                     {selectedProfileUser.bio}
                   </p>
                 ) : (
@@ -600,25 +600,25 @@ export const UserProfileModal: React.FC = () => {
               </div>
 
               {/* Profile Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 {/* Contact & Organization Card */}
-                <div className="p-4 bg-[#181818] rounded-lg border border-[#262626] space-y-3">
+                <div className="p-3.5 sm:p-4 bg-[#181818] rounded-xl border border-[#262626] space-y-3">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-2">
                     <Building className="w-3.5 h-3.5 text-blue-400" />
                     <span>Organization & Contact</span>
                   </h3>
 
                   <div className="space-y-2 text-xs">
-                    <div className="flex items-center justify-between py-1.5 border-b border-[#242424]">
-                      <span className="text-neutral-400">Email Address</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between py-1.5 border-b border-[#242424] gap-1 sm:gap-2">
+                      <span className="text-neutral-400 text-[11px] sm:text-xs">Email Address</span>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-neutral-200 font-mono text-[11px]">
+                        <span className="text-neutral-200 font-mono text-[11px] truncate max-w-[200px]">
                           {selectedProfileUser.email}
                         </span>
                         <button
                           type="button"
                           onClick={handleCopyEmail}
-                          className="p-1 text-neutral-400 hover:text-white rounded hover:bg-[#252525] transition-colors"
+                          className="p-1 text-neutral-400 hover:text-white rounded hover:bg-[#252525] transition-colors cursor-pointer"
                           title="Copy email"
                         >
                           {copiedEmail ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
@@ -626,20 +626,20 @@ export const UserProfileModal: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between py-1.5 border-b border-[#242424]">
-                      <span className="text-neutral-400">Department</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between py-1.5 border-b border-[#242424] gap-1 sm:gap-2">
+                      <span className="text-neutral-400 text-[11px] sm:text-xs">Department</span>
                       <span className="text-neutral-200 font-medium">
                         {selectedProfileUser.department || 'Engineering'}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between py-1.5 border-b border-[#242424]">
-                      <span className="text-neutral-400">Role Template</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between py-1.5 border-b border-[#242424] gap-1 sm:gap-2">
+                      <span className="text-neutral-400 text-[11px] sm:text-xs">Role Template</span>
                       {(() => {
                         const template = getRoleTemplate(selectedProfileUser.role);
                         return (
                           <span
-                            className="px-2 py-0.5 rounded text-[10px] font-bold uppercase flex items-center gap-1 border"
+                            className="px-2 py-0.5 rounded text-[10px] font-bold uppercase flex items-center gap-1 border w-fit"
                             style={{
                               backgroundColor: `${template.color}20`,
                               color: template.color,
@@ -654,7 +654,7 @@ export const UserProfileModal: React.FC = () => {
                     </div>
 
                     <div className="flex items-center justify-between py-1.5">
-                      <span className="text-neutral-400">Account Status</span>
+                      <span className="text-neutral-400 text-[11px] sm:text-xs">Account Status</span>
                       <span className={`flex items-center gap-1 text-[11px] font-medium ${
                         selectedProfileUser.status === 'active' || !selectedProfileUser.status
                           ? 'text-emerald-400'
@@ -676,13 +676,13 @@ export const UserProfileModal: React.FC = () => {
                 </div>
 
                 {/* Quick Navigation / Visual Relationships Card */}
-                <div className="p-4 bg-[#181818] rounded-lg border border-[#262626] flex flex-col justify-between">
+                <div className="p-3.5 sm:p-4 bg-[#181818] rounded-xl border border-[#262626] flex flex-col justify-between">
                   <div>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-2 mb-3">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-2 mb-2 sm:mb-3">
                       <Layers className="w-3.5 h-3.5 text-blue-400" />
                       <span>Workspace Deep-Links</span>
                     </h3>
-                    <p className="text-xs text-neutral-400 mb-4 leading-relaxed">
+                    <p className="text-xs text-neutral-400 mb-3 sm:mb-4 leading-relaxed">
                       Explore this member's collaborations, dependencies, and assigned tasks across the interactive graph and chat.
                     </p>
                   </div>
@@ -695,13 +695,13 @@ export const UserProfileModal: React.FC = () => {
                         closeUserProfile();
                         navigateToGraph(selectedProfileUser.id);
                       }}
-                      className="w-full px-3 py-2 rounded-lg bg-[#141414] hover:bg-[#222] border border-[#2c2c2c] text-xs font-medium text-neutral-300 hover:text-white flex items-center justify-between transition-colors cursor-pointer group"
+                      className="w-full px-3 py-2 rounded-lg bg-[#141414] hover:bg-[#222] border border-[#2c2c2c] text-xs font-medium text-neutral-300 hover:text-white flex items-center justify-between transition-colors cursor-pointer group active:scale-98"
                     >
                       <div className="flex items-center gap-2">
                         <Layers className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
-                        <span>Inspect in Relationship Graph</span>
+                        <span className="text-left">Inspect in Relationship Graph</span>
                       </div>
-                      <ExternalLink className="w-3.5 h-3.5 text-neutral-500 group-hover:text-neutral-300" />
+                      <ExternalLink className="w-3.5 h-3.5 text-neutral-500 group-hover:text-neutral-300 shrink-0" />
                     </button>
 
                     <button
@@ -718,17 +718,17 @@ export const UserProfileModal: React.FC = () => {
                         closeUserProfile();
                         setViewMode('chat');
                       }}
-                      className="w-full px-3 py-2 rounded-lg bg-[#141414] hover:bg-[#222] border border-[#2c2c2c] text-xs font-medium text-neutral-300 hover:text-white flex items-center justify-between transition-colors cursor-pointer group"
+                      className="w-full px-3 py-2 rounded-lg bg-[#141414] hover:bg-[#222] border border-[#2c2c2c] text-xs font-medium text-neutral-300 hover:text-white flex items-center justify-between transition-colors cursor-pointer group active:scale-98"
                     >
                       <div className="flex items-center gap-2">
                         <MessageSquare className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-                        <span>
+                        <span className="text-left">
                           {selectedProfileUser.id === currentUser?.id
                             ? 'Open Team Chat'
                             : `Direct Message ${selectedProfileUser.name.split(' ')[0]}`}
                         </span>
                       </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-neutral-500 group-hover:text-neutral-300" />
+                      <ChevronRight className="w-3.5 h-3.5 text-neutral-500 group-hover:text-neutral-300 shrink-0" />
                     </button>
                   </div>
                 </div>
@@ -736,16 +736,16 @@ export const UserProfileModal: React.FC = () => {
 
               {/* Privileges Matrix preview */}
               {selectedProfileUser.privileges && (
-                <div className="p-4 bg-[#181818] rounded-lg border border-[#262626]">
+                <div className="p-3.5 sm:p-4 bg-[#181818] rounded-xl border border-[#262626]">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3 flex items-center gap-2">
                     <Shield className="w-3.5 h-3.5 text-blue-400" />
                     <span>Active RBAC Privileges</span>
                   </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5 sm:gap-2 text-xs">
                     {Object.entries(selectedProfileUser.privileges).map(([key, enabled]) => (
                       <div
                         key={key}
-                        className={`p-2 rounded flex items-center gap-2 border ${
+                        className={`p-2 rounded-lg flex items-center gap-2 border ${
                           enabled
                             ? 'bg-emerald-950/20 text-emerald-300 border-emerald-800/40'
                             : 'bg-[#141414] text-neutral-500 border-[#222]'
@@ -767,16 +767,16 @@ export const UserProfileModal: React.FC = () => {
               TAB 2: ASSIGNED TASKS
               ===================================================================== */}
           {activeTab === 'tasks' && (
-            <div className="space-y-4 animate-in fade-in duration-150">
+            <div className="space-y-3 sm:space-y-4 animate-in fade-in duration-150">
               {/* Task filters */}
-              <div className="flex items-center justify-between border-b border-[#262626] pb-3">
-                <div className="flex items-center gap-1.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#262626] pb-3">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <button
                     type="button"
                     onClick={() => setTaskFilter('all')}
-                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-medium transition-colors cursor-pointer ${
                       taskFilter === 'all'
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-blue-600 text-white font-semibold'
                         : 'bg-[#1a1a1a] text-neutral-400 hover:text-white'
                     }`}
                   >
@@ -785,9 +785,9 @@ export const UserProfileModal: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setTaskFilter('active')}
-                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-medium transition-colors cursor-pointer ${
                       taskFilter === 'active'
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-blue-600 text-white font-semibold'
                         : 'bg-[#1a1a1a] text-neutral-400 hover:text-white'
                     }`}
                   >
@@ -796,9 +796,9 @@ export const UserProfileModal: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setTaskFilter('completed')}
-                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-medium transition-colors cursor-pointer ${
                       taskFilter === 'completed'
-                        ? 'bg-emerald-600 text-white'
+                        ? 'bg-emerald-600 text-white font-semibold'
                         : 'bg-[#1a1a1a] text-neutral-400 hover:text-white'
                     }`}
                   >
@@ -806,14 +806,14 @@ export const UserProfileModal: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="text-xs text-neutral-400">
+                <div className="text-[11px] sm:text-xs text-neutral-400">
                   <span className="font-semibold text-emerald-400">{completionRate}%</span> resolved
                 </div>
               </div>
 
               {/* Task List */}
               {displayTasks.length === 0 ? (
-                <div className="p-8 text-center bg-[#181818] rounded-lg border border-[#262626] space-y-2">
+                <div className="p-6 sm:p-8 text-center bg-[#181818] rounded-xl border border-[#262626] space-y-2">
                   <ListTodo className="w-8 h-8 text-neutral-600 mx-auto" />
                   <p className="text-sm font-semibold text-neutral-300">No tasks found</p>
                   <p className="text-xs text-neutral-500">
@@ -832,9 +832,9 @@ export const UserProfileModal: React.FC = () => {
                           closeUserProfile();
                           setSelectedTaskId(task.id);
                         }}
-                        className="p-3 bg-[#181818] hover:bg-[#1f1f1f] rounded-lg border border-[#262626] hover:border-[#383838] transition-all cursor-pointer flex items-center justify-between gap-3 group"
+                        className="p-2.5 sm:p-3 bg-[#181818] hover:bg-[#1f1f1f] rounded-xl border border-[#262626] hover:border-[#383838] transition-all cursor-pointer flex items-center justify-between gap-2.5 sm:gap-3 group active:scale-99"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                           <span
                             className={`w-2.5 h-2.5 rounded-full shrink-0 ${
                               isDone
@@ -850,7 +850,7 @@ export const UserProfileModal: React.FC = () => {
                             }`}>
                               {task.title}
                             </h4>
-                            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-neutral-400">
+                            <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 text-[10px] text-neutral-400 flex-wrap">
                               <span className="uppercase font-mono font-bold text-neutral-500">{task.id}</span>
                               {task.dueDate && (
                                 <>
@@ -873,9 +873,9 @@ export const UserProfileModal: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            className={`px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase ${
                               task.priority === 'urgent'
                                 ? 'bg-rose-500/20 text-rose-300'
                                 : task.priority === 'high'
@@ -899,37 +899,37 @@ export const UserProfileModal: React.FC = () => {
               TAB 3: GAMIFICATION & BADGES
               ===================================================================== */}
           {activeTab === 'gamification' && (
-            <div className="space-y-6 animate-in fade-in duration-150">
+            <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-150">
               {/* Level Progress Banner */}
-              <div className="p-4 bg-gradient-to-r from-amber-950/40 via-yellow-950/30 to-amber-900/20 rounded-xl border border-amber-500/30 space-y-3">
-                <div className="flex items-center justify-between">
+              <div className="p-3.5 sm:p-4 bg-gradient-to-r from-amber-950/40 via-yellow-950/30 to-amber-900/20 rounded-xl border border-amber-500/30 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
-                      <Award className="w-5 h-5" />
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                      <Award className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-white leading-tight">
+                      <h3 className="text-sm sm:text-base font-bold text-white leading-tight">
                         Level {userStats?.level || 1} • {userStats?.levelTitle || 'Champion'}
                       </h3>
-                      <p className="text-xs text-amber-300/80">
+                      <p className="text-[11px] sm:text-xs text-amber-300/80">
                         {userStats?.xp || 0} Total Experience Points Earned
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/40 text-xs font-bold">
-                    <Flame className="w-4 h-4 text-orange-400 animate-pulse" />
+                  <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/40 text-[11px] sm:text-xs font-bold w-fit">
+                    <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-400 animate-pulse" />
                     <span>{userStats?.currentStreak || 0} Day Streak</span>
                   </div>
                 </div>
 
                 {/* Progress bar */}
                 <div>
-                  <div className="flex items-center justify-between text-[11px] text-neutral-400 mb-1">
+                  <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-neutral-400 mb-1">
                     <span>Level Progress</span>
                     <span>{(userStats?.xp || 0) % 500} / 500 XP to next level</span>
                   </div>
-                  <div className="w-full h-2.5 bg-black/60 rounded-full overflow-hidden border border-amber-500/20">
+                  <div className="w-full h-2 sm:h-2.5 bg-black/60 rounded-full overflow-hidden border border-amber-500/20">
                     <div
                       className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all duration-500"
                       style={{ width: `${Math.min(100, Math.round((((userStats?.xp || 0) % 500) / 500) * 100))}%` }}
@@ -945,31 +945,31 @@ export const UserProfileModal: React.FC = () => {
                   <span>Unlocked Badges & Accomplishments</span>
                 </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                   {achievements.map((ach) => (
                     <div
                       key={ach.id}
-                      className={`p-3.5 rounded-lg border flex items-start gap-3 transition-all ${
+                      className={`p-3 sm:p-3.5 rounded-xl border flex items-start gap-2.5 sm:gap-3 transition-all ${
                         ach.unlocked
                           ? 'bg-[#181818] border-amber-500/40 text-white'
                           : 'bg-[#141414] border-[#242424] text-neutral-500 opacity-60'
                       }`}
                     >
                       <div
-                        className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center shrink-0 ${
                           ach.unlocked
                             ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
                             : 'bg-neutral-800 text-neutral-600'
                         }`}
                       >
-                        <Award className="w-5 h-5" />
+                        <Award className="w-4 h-4 sm:w-5 sm:h-5" />
                       </div>
 
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                           <h4 className="text-xs font-bold text-neutral-200">{ach.title}</h4>
                           {ach.unlocked && (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 flex-wrap">
                               <span className="text-[9px] font-bold text-amber-400 bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-800">
                                 +{ach.xpReward} XP
                               </span>
@@ -996,28 +996,28 @@ export const UserProfileModal: React.FC = () => {
               ===================================================================== */}
           {activeTab === 'edit' && (
             canEdit ? (
-            <form onSubmit={handleSaveProfile} className="space-y-6 animate-in fade-in duration-150">
+            <form onSubmit={handleSaveProfile} className="space-y-4 sm:space-y-6 animate-in fade-in duration-150">
               
               {/* =================================================================
                   AVATAR CUSTOMIZER SUITE
                   ================================================================= */}
-              <div className="p-4 sm:p-5 bg-[#181818] rounded-xl border border-[#2a2a2a] space-y-4">
-                <div className="flex items-center justify-between border-b border-[#282828] pb-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      <Camera className="w-4 h-4 text-blue-400" />
+              <div className="p-3.5 sm:p-5 bg-[#181818] rounded-xl border border-[#2a2a2a] space-y-3 sm:space-y-4">
+                <div className="flex items-center justify-between border-b border-[#282828] pb-3 gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                      <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400" />
                       <span>Customize Profile Avatar</span>
                     </h3>
-                    <p className="text-xs text-neutral-400">
-                      Choose from vector tech presets, illustrated styles, image upload, or custom URL
+                    <p className="text-[11px] sm:text-xs text-neutral-400 truncate">
+                      Vector tech presets, DiceBear, photo upload, or URL
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <UserAvatar
                       user={{ name: editName, avatar: editAvatar }}
                       size="lg"
-                      className="w-12 h-12 ring-2 ring-blue-500 shadow-md"
+                      className="w-10 h-10 sm:w-12 sm:h-12 ring-2 ring-blue-500 shadow-md"
                     />
                   </div>
                 </div>
@@ -1028,7 +1028,7 @@ export const UserProfileModal: React.FC = () => {
                     type="button"
                     id="avatar-tab-svg-presets"
                     onClick={() => setAvatarTab('svg-presets')}
-                    className={`py-1.5 px-2 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                    className={`py-1.5 px-2 rounded-md text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
                       avatarTab === 'svg-presets'
                         ? 'bg-blue-600 text-white shadow-xs'
                         : 'text-neutral-400 hover:text-neutral-200'
@@ -1041,20 +1041,20 @@ export const UserProfileModal: React.FC = () => {
                     type="button"
                     id="avatar-tab-dicebear"
                     onClick={() => setAvatarTab('dicebear')}
-                    className={`py-1.5 px-2 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                    className={`py-1.5 px-2 rounded-md text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
                       avatarTab === 'dicebear'
                         ? 'bg-blue-600 text-white shadow-xs'
                         : 'text-neutral-400 hover:text-neutral-200'
                     }`}
                   >
-                    Characters (DiceBear)
+                    Characters
                   </button>
 
                   <button
                     type="button"
                     id="avatar-tab-upload"
                     onClick={() => setAvatarTab('upload')}
-                    className={`py-1.5 px-2 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                    className={`py-1.5 px-2 rounded-md text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
                       avatarTab === 'upload'
                         ? 'bg-blue-600 text-white shadow-xs'
                         : 'text-neutral-400 hover:text-neutral-200'
@@ -1067,7 +1067,7 @@ export const UserProfileModal: React.FC = () => {
                     type="button"
                     id="avatar-tab-url"
                     onClick={() => setAvatarTab('url')}
-                    className={`py-1.5 px-2 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                    className={`py-1.5 px-2 rounded-md text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
                       avatarTab === 'url'
                         ? 'bg-blue-600 text-white shadow-xs'
                         : 'text-neutral-400 hover:text-neutral-200'
@@ -1079,12 +1079,12 @@ export const UserProfileModal: React.FC = () => {
 
                 {/* Sub-panel 1: Vector Tech & Geometric SVG Presets */}
                 {avatarTab === 'svg-presets' && (
-                  <div className="space-y-3">
-                    <p className="text-xs text-neutral-400">
+                  <div className="space-y-2.5 sm:space-y-3">
+                    <p className="text-[11px] sm:text-xs text-neutral-400">
                       Pick a custom generative SVG vector icon designed for modern tech profiles:
                     </p>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 max-h-56 overflow-y-auto pr-1">
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-56 overflow-y-auto pr-1">
                       {SVG_AVATAR_STYLES.map((style) => {
                         const previewUrl = getSvgAvatarDataUrl(editName || 'User', style.id);
                         const isSelected = editAvatar === previewUrl;
@@ -1094,7 +1094,7 @@ export const UserProfileModal: React.FC = () => {
                             key={style.id}
                             type="button"
                             onClick={() => handleSelectSvgStyle(style.id)}
-                            className={`p-2.5 rounded-lg border flex flex-col items-center gap-2 transition-all cursor-pointer group ${
+                            className={`p-2 rounded-lg border flex flex-col items-center gap-1.5 transition-all cursor-pointer group ${
                               isSelected
                                 ? 'bg-blue-950/50 border-blue-500 ring-2 ring-blue-500/40 text-white'
                                 : 'bg-[#121212] border-[#262626] hover:border-[#444] text-neutral-300'
@@ -1103,11 +1103,11 @@ export const UserProfileModal: React.FC = () => {
                             <img
                               src={previewUrl}
                               alt={style.name}
-                              className="w-12 h-12 rounded-lg object-cover group-hover:scale-105 transition-transform"
+                              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover group-hover:scale-105 transition-transform"
                             />
                             <div className="text-center w-full min-w-0">
-                              <p className="text-[11px] font-semibold truncate">{style.name}</p>
-                              <span className="text-[9px] text-neutral-500 uppercase">{style.category}</span>
+                              <p className="text-[10px] sm:text-[11px] font-semibold truncate">{style.name}</p>
+                              <span className="text-[8px] sm:text-[9px] text-neutral-500 uppercase">{style.category}</span>
                             </div>
                           </button>
                         );
@@ -1119,7 +1119,7 @@ export const UserProfileModal: React.FC = () => {
                 {/* Sub-panel 2: DiceBear Illustrated Characters */}
                 {avatarTab === 'dicebear' && (
                   <div className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                       <div>
                         <label className="block text-xs font-semibold text-neutral-300 mb-1">
                           Character Collection
@@ -1130,7 +1130,7 @@ export const UserProfileModal: React.FC = () => {
                             setDicebearCollection(e.target.value);
                             setEditAvatar(`https://api.dicebear.com/7.x/${e.target.value}/svg?seed=${encodeURIComponent(dicebearSeed)}`);
                           }}
-                          className="w-full bg-[#121212] border border-[#333] rounded-lg px-3 py-2 text-xs text-white focus:ring-1 focus:ring-blue-500"
+                          className="w-full bg-[#121212] border border-[#333] rounded-lg px-2.5 py-1.5 text-xs text-white focus:ring-1 focus:ring-blue-500"
                         >
                           {DICEBEAR_COLLECTIONS.map((c) => (
                             <option key={c.id} value={c.id}>
@@ -1152,13 +1152,13 @@ export const UserProfileModal: React.FC = () => {
                               setDicebearSeed(e.target.value);
                               setEditAvatar(`https://api.dicebear.com/7.x/${dicebearCollection}/svg?seed=${encodeURIComponent(e.target.value)}`);
                             }}
-                            className="flex-1 bg-[#121212] border border-[#333] rounded-lg px-3 py-2 text-xs text-white focus:ring-1 focus:ring-blue-500"
+                            className="flex-1 bg-[#121212] border border-[#333] rounded-lg px-2.5 py-1.5 text-xs text-white focus:ring-1 focus:ring-blue-500"
                             placeholder="Type seed..."
                           />
                           <button
                             type="button"
                             onClick={handleRandomizeDicebear}
-                            className="p-2 rounded-lg bg-[#252525] hover:bg-[#333] text-neutral-300 hover:text-white border border-[#383838] transition-colors cursor-pointer"
+                            className="p-1.5 sm:p-2 rounded-lg bg-[#252525] hover:bg-[#333] text-neutral-300 hover:text-white border border-[#383838] transition-colors cursor-pointer"
                             title="Randomize Character"
                           >
                             <RefreshCw className="w-4 h-4" />
@@ -1168,7 +1168,7 @@ export const UserProfileModal: React.FC = () => {
                     </div>
 
                     {/* Preview Strip */}
-                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 pt-2 border-t border-[#262626]">
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5 sm:gap-2 pt-2 border-t border-[#262626]">
                       {['Alpha', 'Bravo', 'Echo', 'Neon', 'Cyber', 'Spark', 'Quantum', 'Titan'].map((seedVariant) => {
                         const variantUrl = `https://api.dicebear.com/7.x/${dicebearCollection}/svg?seed=${encodeURIComponent(seedVariant)}`;
                         return (
@@ -1207,15 +1207,15 @@ export const UserProfileModal: React.FC = () => {
 
                     <div
                       onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-[#383838] hover:border-blue-500 rounded-xl p-6 text-center cursor-pointer bg-[#121212] hover:bg-[#161616] transition-all group"
+                      className="border-2 border-dashed border-[#383838] hover:border-blue-500 rounded-xl p-4 sm:p-6 text-center cursor-pointer bg-[#121212] hover:bg-[#161616] transition-all group"
                     >
-                      <div className="w-12 h-12 rounded-full bg-blue-950/60 border border-blue-500/30 flex items-center justify-center text-blue-400 mx-auto mb-2 group-hover:scale-110 transition-transform">
-                        <Upload className="w-6 h-6" />
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-950/60 border border-blue-500/30 flex items-center justify-center text-blue-400 mx-auto mb-2 group-hover:scale-110 transition-transform">
+                        <Upload className="w-5 h-5 sm:w-6 sm:h-6" />
                       </div>
                       <p className="text-xs font-semibold text-white">
                         Click to select an image from your computer
                       </p>
-                      <p className="text-[11px] text-neutral-400 mt-1">
+                      <p className="text-[10px] sm:text-[11px] text-neutral-400 mt-1">
                         PNG, JPG, SVG, or WebP (Max 2 MB)
                       </p>
                     </div>
@@ -1224,12 +1224,12 @@ export const UserProfileModal: React.FC = () => {
 
                 {/* Sub-panel 4: Custom Image URL */}
                 {avatarTab === 'url' && (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5 sm:space-y-3">
                     <div>
                       <label className="block text-xs font-semibold text-neutral-300 mb-1">
                         Direct Image URL
                       </label>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
                         <input
                           type="url"
                           value={customImageUrl}
@@ -1238,14 +1238,14 @@ export const UserProfileModal: React.FC = () => {
                             setEditAvatar(e.target.value);
                           }}
                           placeholder="https://example.com/avatar.jpg"
-                          className="flex-1 bg-[#121212] border border-[#333] rounded-lg px-3 py-2 text-xs text-white focus:ring-1 focus:ring-blue-500"
+                          className="flex-1 bg-[#121212] border border-[#333] rounded-lg px-2.5 py-1.5 text-xs text-white focus:ring-1 focus:ring-blue-500"
                         />
                         <button
                           type="button"
                           onClick={() => setEditAvatar(customImageUrl)}
-                          className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
+                          className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer"
                         >
-                          Apply URL
+                          Apply
                         </button>
                       </div>
                     </div>
@@ -1256,7 +1256,7 @@ export const UserProfileModal: React.FC = () => {
               {/* =================================================================
                   PROFILE INFORMATION FIELDS
                   ================================================================= */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-neutral-300 mb-1">
                     Full Name *
@@ -1331,7 +1331,7 @@ export const UserProfileModal: React.FC = () => {
 
               {/* Admin-only controls: Role, Status & Privileges */}
               {isAdmin && (
-                <div className="p-4 bg-[#181818] rounded-xl border border-amber-500/30 space-y-4">
+                <div className="p-3.5 sm:p-4 bg-[#181818] rounded-xl border border-amber-500/30 space-y-3 sm:space-y-4">
                   <div className="flex items-center gap-2">
                     <Shield className="w-4 h-4 text-amber-400" />
                     <h4 className="text-xs font-bold uppercase tracking-wider text-amber-300">
@@ -1339,7 +1339,7 @@ export const UserProfileModal: React.FC = () => {
                     </h4>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-neutral-300 mb-1">
                         Assigned Role Template
@@ -1383,7 +1383,7 @@ export const UserProfileModal: React.FC = () => {
               )}
 
               {/* Submit Buttons */}
-              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-[#262626]">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-2.5 pt-3 sm:pt-4 border-t border-[#262626]">
                 <button
                   type="button"
                   id="profile-btn-cancel-edit"
@@ -1391,7 +1391,7 @@ export const UserProfileModal: React.FC = () => {
                     setIsProfileEditMode(false);
                     setActiveTab('overview');
                   }}
-                  className="px-4 py-2 rounded-lg bg-[#1e1e1e] hover:bg-[#282828] text-neutral-300 hover:text-white border border-[#333] text-xs font-semibold transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg bg-[#1e1e1e] hover:bg-[#282828] text-neutral-300 hover:text-white border border-[#333] text-xs font-semibold transition-colors cursor-pointer text-center active:scale-98"
                 >
                   Cancel
                 </button>
@@ -1400,7 +1400,7 @@ export const UserProfileModal: React.FC = () => {
                   type="submit"
                   id="profile-btn-save-changes"
                   disabled={isSaving}
-                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-2.5 sm:py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-600/20 cursor-pointer active:scale-98"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{isSaving ? 'Saving Changes...' : 'Save Profile & Avatar'}</span>
@@ -1408,8 +1408,8 @@ export const UserProfileModal: React.FC = () => {
               </div>
             </form>
             ) : (
-              <div className="p-6 bg-[#161616] border border-[#262626] rounded-xl text-center space-y-4 max-w-md mx-auto animate-in fade-in duration-150">
-                <UserAvatar user={{ name: selectedProfileUser?.name || 'User', avatar: selectedProfileUser?.avatar }} size="xl" className="w-20 h-20 mx-auto ring-2 ring-neutral-700" />
+              <div className="p-4 sm:p-6 bg-[#161616] border border-[#262626] rounded-xl text-center space-y-4 max-w-md mx-auto animate-in fade-in duration-150">
+                <UserAvatar user={{ name: selectedProfileUser?.name || 'User', avatar: selectedProfileUser?.avatar }} size="xl" className="w-16 h-16 sm:w-20 sm:h-20 mx-auto ring-2 ring-neutral-700" />
                 <div>
                   <h4 className="text-base font-bold text-white">{selectedProfileUser?.name}</h4>
                   <p className="text-xs text-neutral-400 font-mono">{selectedProfileUser?.email}</p>
@@ -1425,14 +1425,14 @@ export const UserProfileModal: React.FC = () => {
               TAB 5: SECURITY & PASSWORD CHANGE
               ===================================================================== */}
           {activeTab === 'security' && (
-            <div className="max-w-xl mx-auto space-y-5">
-              <div className="p-4 bg-[#161616] border border-[#262626] rounded-xl flex items-start gap-3">
+            <div className="max-w-xl mx-auto space-y-4 sm:space-y-5">
+              <div className="p-3.5 sm:p-4 bg-[#161616] border border-[#262626] rounded-xl flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-emerald-950/60 border border-emerald-800/80 text-emerald-400 shrink-0">
                   <img src="/shiled.svg" alt="Security" className="w-5 h-5 object-contain" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Account Security &amp; Credentials</h3>
-                  <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
+                  <h3 className="text-xs sm:text-sm font-bold text-white">Account Security &amp; Credentials</h3>
+                  <p className="text-[11px] sm:text-xs text-neutral-400 mt-0.5 leading-relaxed">
                     Passwords are salted and securely hashed using bcrypt. Enter your current password and a new password to update your login credentials.
                   </p>
                 </div>
@@ -1487,7 +1487,7 @@ export const UserProfileModal: React.FC = () => {
                     setIsChangingPass(false);
                   }
                 }}
-                className="space-y-4 bg-[#141414] border border-[#262626] rounded-xl p-5"
+                className="space-y-3.5 sm:space-y-4 bg-[#141414] border border-[#262626] rounded-xl p-3.5 sm:p-5"
               >
                 <div>
                   <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
@@ -1507,12 +1507,12 @@ export const UserProfileModal: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowCurrentPass(!showCurrentPass)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white cursor-pointer"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white cursor-pointer p-1"
                     >
                       {showCurrentPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
                   </div>
-                  <p className="text-[11px] text-neutral-500 mt-1">Default demo accounts password is: <span className="font-mono text-neutral-400">password123</span></p>
+                  <p className="text-[10px] sm:text-[11px] text-neutral-500 mt-1">Default demo accounts password is: <span className="font-mono text-neutral-400">password123</span></p>
                 </div>
 
                 <div>
@@ -1534,7 +1534,7 @@ export const UserProfileModal: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowNewPass(!showNewPass)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white cursor-pointer"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white cursor-pointer p-1"
                     >
                       {showNewPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
@@ -1560,12 +1560,12 @@ export const UserProfileModal: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="pt-2 flex justify-end">
+                <div className="pt-2 flex flex-col sm:flex-row sm:justify-end">
                   <button
                     id="profile-btn-update-password"
                     type="submit"
                     disabled={isChangingPass}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-all shadow-md shadow-emerald-600/20 flex items-center gap-2 cursor-pointer"
+                    className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                   >
                     <Lock className="w-3.5 h-3.5" />
                     <span>{isChangingPass ? 'Updating Password...' : 'Save New Password'}</span>
@@ -1574,12 +1574,12 @@ export const UserProfileModal: React.FC = () => {
               </form>
             </>
           ) : (
-            <div className="p-6 bg-[#141414] border border-[#262626] rounded-xl text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center mx-auto text-emerald-400">
-                <Lock className="w-6 h-6" />
+            <div className="p-4 sm:p-6 bg-[#141414] border border-[#262626] rounded-xl text-center space-y-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-neutral-800 flex items-center justify-center mx-auto text-emerald-400">
+                <Lock className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <h4 className="text-sm font-bold text-white">Protected Security Settings</h4>
-              <p className="text-xs text-neutral-400 max-w-sm mx-auto leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-neutral-400 max-w-sm mx-auto leading-relaxed">
                 Password update controls for <strong className="text-white">{selectedProfileUser?.name}</strong> are private to the account holder. Log in as this user to change credentials.
               </p>
             </div>

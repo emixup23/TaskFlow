@@ -8,6 +8,8 @@ import {
   Paperclip,
   Plus,
   Search,
+  Filter,
+  X,
   CheckCircle2,
   AlertCircle,
   Play,
@@ -41,6 +43,7 @@ export const MeetingsView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | MeetingStatus>('all');
   const [timeFilter, setTimeFilter] = useState<'all' | 'upcoming' | 'past' | 'today'>('all');
+  const [showMobileSearchFilters, setShowMobileSearchFilters] = useState(false);
 
   const todayStr = new Date().toISOString().split('T')[0];
 //
@@ -115,7 +118,7 @@ export const MeetingsView: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#0d0d0d]">
       {/* Top Header & Actions Bar */}
-      <div className="p-4 sm:p-6 border-b border-[#262626] bg-[#121212] space-y-4">
+      <div className="p-2.5 sm:p-6 border-b border-[#262626] bg-[#121212] space-y-2.5 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5">
@@ -124,19 +127,40 @@ export const MeetingsView: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                  <span>Meetings & Team Syncs</span>
+                  <span>Meetings</span>
                   <span className="text-xs px-2 py-0.5 rounded bg-[#222222] border border-[#333333] text-neutral-300 font-mono">
                     {meetings.length}
                   </span>
                 </h1>
-                <p className="text-xs text-neutral-400">
-                  Manage members, structured agenda topics, rich notes, attachments, and meeting durations.
-                </p>
+
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            {/* Mobile Search & Filter toggle button */}
+            <button
+              type="button"
+              id="btn-toggle-mobile-search"
+              onClick={() => setShowMobileSearchFilters((prev) => !prev)}
+              className={`sm:hidden flex items-center justify-center w-8 h-8 rounded border transition-colors cursor-pointer relative ${
+                showMobileSearchFilters || searchQuery || statusFilter !== 'all'
+                  ? 'bg-violet-950/70 border-violet-500/60 text-violet-300'
+                  : 'bg-[#181818] border-[#2d2d2d] text-neutral-400 hover:text-neutral-200'
+              }`}
+              title="Search and filter meetings"
+              aria-label="Toggle search and filter"
+            >
+              {showMobileSearchFilters ? (
+                <X className="w-4 h-4" />
+              ) : (
+                <Search className="w-4 h-4" />
+              )}
+              {!showMobileSearchFilters && (searchQuery || statusFilter !== 'all') && (
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-violet-400" />
+              )}
+            </button>
+
             <button
               type="button"
               id="btn-schedule-meeting"
@@ -144,13 +168,12 @@ export const MeetingsView: React.FC = () => {
               className="flex items-center gap-2 px-3.5 py-2 rounded bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs transition-colors shadow-lg shadow-violet-950/40 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Schedule Meeting</span>
             </button>
           </div>
         </div>
 
-        {/* Quick KPI Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+        {/* Quick KPI Stats Cards - Hidden on Mobile */}
+        <div className="hidden sm:grid sm:grid-cols-4 gap-3 pt-2">
           <div className="p-3 bg-[#181818] border border-[#262626] rounded">
             <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">Total Syncs</span>
             <span className="text-xl font-bold font-mono text-white">{totalMeetings}</span>
@@ -169,8 +192,8 @@ export const MeetingsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Search & Filter Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+        {/* Search & Filter Controls - Hidden by default on Mobile, revealed behind search icon */}
+        <div className={`${showMobileSearchFilters ? 'flex' : 'hidden'} sm:flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 pt-1.5 sm:pt-2`}>
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -178,8 +201,17 @@ export const MeetingsView: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search meetings by title, agenda topic, or member..."
-              className="w-full pl-9 pr-3 py-1.5 bg-[#181818] border border-[#2d2d2d] rounded text-xs text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:border-violet-500"
+              className="w-full pl-9 pr-8 py-1.5 bg-[#181818] border border-[#2d2d2d] rounded text-xs text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:border-violet-500"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -218,9 +250,9 @@ export const MeetingsView: React.FC = () => {
       </div>
 
       {/* Meetings Grid / List Surface */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#0d0d0d]">
+      <div className="flex-1 overflow-y-auto p-2.5 sm:p-6 bg-[#0d0d0d]">
         {filteredMeetings.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
             {filteredMeetings.map((meeting) => {
               const project = projects.find((p) => p.id === meeting.projectId);
               const mDate = meeting.date || (meeting.startTime ? meeting.startTime.split('T')[0] : todayStr);
@@ -244,7 +276,7 @@ export const MeetingsView: React.FC = () => {
                   key={meeting.id}
                   id={`meeting-card-${meeting.id}`}
                   onClick={() => openMeetingDetail(meeting)}
-                  className="group relative flex flex-col justify-between p-4 rounded-lg bg-[#141414] hover:bg-[#181818] border border-[#262626] hover:border-violet-500/60 transition-all duration-150 cursor-pointer shadow-xs hover:shadow-md"
+                  className="group relative flex flex-col justify-between p-3 sm:p-4 rounded-lg bg-[#141414] hover:bg-[#181818] border border-[#262626] hover:border-violet-500/60 transition-all duration-150 cursor-pointer shadow-xs hover:shadow-md"
                 >
                   <div>
                     {/* Top Status & Date Header */}

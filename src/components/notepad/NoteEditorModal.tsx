@@ -22,13 +22,19 @@ import {
   Link,
   ShieldCheck,
   Eye,
-  Edit3
+  Edit3,
+  Folder,
+  FolderPlus,
+  Pen,
+  Trash2
 } from 'lucide-react';
+import { NoteCanvas } from './NoteCanvas';
 
 interface NoteEditorModalProps {
   isOpen: boolean;
   onClose: () => void;
   noteToEdit?: Note | null;
+  initialTab?: 'write' | 'canvas' | 'preview';
 }
 
 const COLOR_OPTIONS: { key: NoteColor; label: string; bg: string; ring: string }[] = [
@@ -43,15 +49,18 @@ const COLOR_OPTIONS: { key: NoteColor; label: string; bg: string; ring: string }
 export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
   isOpen,
   onClose,
-  noteToEdit
+  noteToEdit,
+  initialTab
 }) => {
-  const { createNote, updateNote } = useNotepad();
+  const { createNote, updateNote, directories, selectedDirectoryId, setIsDirectoryModalOpen, setEditingDirectory } = useNotepad();
   const { currentUser, users } = useAuth();
   const { tasks } = useTasks();
 
   const [title, setTitle] = useState<string>('');
   const [content, setContent] = useState<string>('');
+  const [canvasData, setCanvasData] = useState<string>('');
   const [color, setColor] = useState<NoteColor>('amber');
+  const [directoryId, setDirectoryId] = useState<string | null>(null);
   const [isPrivate, setIsPrivate] = useState<boolean>(true);
   const [isSharedWithAll, setIsSharedWithAll] = useState<boolean>(true);
   const [sharedWithUserIds, setSharedWithUserIds] = useState<string[]>([]);
@@ -60,7 +69,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
   const [tagInput, setTagInput] = useState<string>('');
   const [linkedTaskId, setLinkedTaskId] = useState<string>('');
 
-  const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
+  const [activeTab, setActiveTab] = useState<'write' | 'canvas' | 'preview'>('write');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [showMemberPicker, setShowMemberPicker] = useState<boolean>(false);
 
@@ -70,7 +79,9 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
     if (noteToEdit) {
       setTitle(noteToEdit.title || '');
       setContent(noteToEdit.content || '');
+      setCanvasData(noteToEdit.canvasData || '');
       setColor(noteToEdit.color || 'amber');
+      setDirectoryId(noteToEdit.directoryId || null);
       setIsPrivate(noteToEdit.isPrivate);
       setIsSharedWithAll(noteToEdit.isSharedWithAll !== false);
       setSharedWithUserIds(Array.isArray(noteToEdit.sharedWithUserIds) ? [...noteToEdit.sharedWithUserIds] : []);
@@ -80,7 +91,9 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
     } else {
       setTitle('');
       setContent('');
+      setCanvasData('');
       setColor('amber');
+      setDirectoryId(selectedDirectoryId && selectedDirectoryId !== 'unfiled' ? selectedDirectoryId : null);
       setIsPrivate(true);
       setIsSharedWithAll(true);
       setSharedWithUserIds([]);
@@ -88,9 +101,15 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
       setTags([]);
       setLinkedTaskId('');
     }
-    setActiveTab('write');
+    if (initialTab) {
+      setActiveTab(initialTab);
+    } else if (noteToEdit?.canvasData && !noteToEdit?.content) {
+      setActiveTab('canvas');
+    } else {
+      setActiveTab('write');
+    }
     setTagInput('');
-  }, [noteToEdit, isOpen]);
+  }, [noteToEdit, isOpen, selectedDirectoryId, initialTab]);
 
   if (!isOpen) return null;
 
@@ -136,16 +155,18 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
   };
 
   const handleSave = async () => {
-    if (!title.trim() && !content.trim()) {
+    if (!title.trim() && !content.trim() && !canvasData.trim()) {
       return;
     }
 
     setIsSaving(true);
     try {
       const payload: Partial<Note> = {
-        title: title.trim() || 'Untitled Note',
+        title: title.trim() || (canvasData.trim() ? 'Canvas Sketch' : 'Untitled Note'),
         content,
+        canvasData: canvasData.trim() || undefined,
         color,
+        directoryId: directoryId || null,
         tags,
         linkedTaskId: linkedTaskId || undefined,
         linkedTaskTitle: tasks.find((t) => t.id === linkedTaskId)?.title || undefined
@@ -188,7 +209,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
       <div
         id="note-editor-modal"
         onKeyDown={handleKeyDown}
-        className="bg-[#181818] border border-neutral-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-up"
+        className="bg-[#181818] border border-neutral-800 rounded-2xl w-full md:w-[90vw] md:max-w-[90vw] lg:w-[90vw] lg:max-w-[90vw] xl:w-[90vw] xl:max-w-[90vw] overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-scale-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -281,6 +302,40 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
                 </button>
               </div>
             )}
+          </div>
+
+          {/* Directory / Folder Selector */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 bg-[#131313] rounded-xl border border-neutral-800/80">
+            <div className="flex items-center gap-2">
+              <Folder className="w-4 h-4 text-blue-400" />
+              <span className="text-xs font-medium text-neutral-300">Folder / Directory:</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={directoryId || ''}
+                onChange={(e) => setDirectoryId(e.target.value ? e.target.value : null)}
+                className="bg-[#1e1e1e] text-neutral-200 text-xs px-2.5 py-1.5 rounded-lg border border-neutral-700/70 focus:outline-none focus:border-blue-500 cursor-pointer"
+              >
+                <option value="">(No folder / Unfiled)</option>
+                {directories.map((dir) => (
+                  <option key={dir.id} value={dir.id}>
+                    {dir.name} {dir.isPrivate ? '🔒' : ''}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingDirectory(null);
+                  setIsDirectoryModalOpen(true);
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-400 hover:text-blue-300 px-2.5 py-1 bg-blue-950/40 hover:bg-blue-900/40 border border-blue-800/50 rounded-lg transition-colors cursor-pointer"
+                title="Create new directory"
+              >
+                <FolderPlus className="w-3.5 h-3.5" />
+                <span>New Folder</span>
+              </button>
+            </div>
           </div>
 
           {/* Shared Options Dropdown if note is marked as Shared */}
@@ -437,21 +492,35 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
                 </button>
               </div>
 
-              {/* Write vs Preview Tabs */}
+              {/* Write, Canvas, and Preview Tabs */}
               <div className="flex items-center gap-1 bg-[#202020] p-0.5 rounded-lg border border-neutral-700">
                 <button
                   type="button"
                   onClick={() => setActiveTab('write')}
-                  className={`px-2 py-0.5 rounded text-xs font-medium transition-colors cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
                     activeTab === 'write' ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-neutral-200'
                   }`}
                 >
-                  Write
+                  <Edit3 className="w-3 h-3" />
+                  <span>Write</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('canvas')}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                    activeTab === 'canvas' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  <Pen className="w-3 h-3" />
+                  <span>Canvas</span>
+                  {canvasData && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-300 ring-2 ring-blue-500" title="Canvas attached" />
+                  )}
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('preview')}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
                     activeTab === 'preview' ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-neutral-200'
                   }`}
                 >
@@ -461,18 +530,54 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               </div>
             </div>
 
-            {/* Editor Area */}
+            {/* Canvas Attached Notification Banner when on Write Tab */}
+            {activeTab === 'write' && canvasData && (
+              <div className="px-4 py-2 bg-blue-950/30 border-b border-blue-900/40 flex items-center justify-between text-xs text-blue-300">
+                <div className="flex items-center gap-2">
+                  <Pen className="w-3.5 h-3.5 text-blue-400" />
+                  <span>This note includes a canvas sketch drawing.</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('canvas')}
+                    className="text-[11px] text-blue-300 hover:text-white underline cursor-pointer"
+                  >
+                    Edit Canvas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCanvasData('')}
+                    className="text-[11px] text-rose-400 hover:text-rose-300 ml-2 cursor-pointer"
+                    title="Remove canvas drawing from note"
+                  >
+                    Remove Canvas
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Editor Area: Write / Canvas / Preview */}
             {activeTab === 'write' ? (
               <textarea
                 ref={textareaRef}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Write your note in markdown... Checklist (- [ ] item), bullet points, and formatted text are supported."
+                placeholder="Write your note in markdown... Checklist (- [ ] item), bullet points, and formatted text are supported. You can also switch to the Canvas tab to draw or diagram!"
                 rows={10}
                 className="w-full p-4 bg-transparent text-sm text-neutral-200 placeholder-neutral-600 focus:outline-none resize-y font-mono leading-relaxed"
               />
+            ) : activeTab === 'canvas' ? (
+              <div className="p-3 bg-[#111111]">
+                <NoteCanvas
+                  initialData={canvasData}
+                  onChange={(val) => setCanvasData(val)}
+                  minHeight={340}
+                />
+              </div>
             ) : (
-              <div className="p-4 min-h-[220px] max-h-[360px] overflow-y-auto text-sm text-neutral-200 space-y-2 prose prose-invert max-w-none">
+              <div className="p-4 min-h-[220px] max-h-[380px] overflow-y-auto text-sm text-neutral-200 space-y-3 prose prose-invert max-w-none">
+                {/* Markdown text preview */}
                 {content.trim() ? (
                   content.split('\n').map((line, idx) => {
                     const checkMatch = line.match(/^(\s*[-*]\s*\[)([ xX])(\]\s*)(.*)$/);
@@ -524,8 +629,34 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
                       </p>
                     );
                   })
-                ) : (
+                ) : !canvasData ? (
                   <p className="text-xs text-neutral-500 italic">No content to preview yet.</p>
+                ) : null}
+
+                {/* Canvas Drawing Preview */}
+                {canvasData && (
+                  <div className="mt-4 pt-3 border-t border-neutral-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-300">
+                        <Pen className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Attached Canvas Sketch</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('canvas')}
+                        className="text-[11px] text-blue-400 hover:text-blue-300 font-medium cursor-pointer"
+                      >
+                        Edit in Canvas
+                      </button>
+                    </div>
+                    <div className="rounded-xl overflow-hidden border border-neutral-800 bg-[#141414] p-2 flex justify-center">
+                      <img
+                        src={canvasData}
+                        alt="Canvas sketch"
+                        className="max-h-72 w-full object-contain rounded-lg"
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
             )}

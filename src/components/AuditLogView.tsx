@@ -7,6 +7,7 @@ import {
   Clock,
   ArrowRight,
   Shield,
+  ShieldCheck,
   Layers,
   MessageSquare,
   CheckCircle2,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
+import { SecurityAuditModal } from './SecurityAuditModal';
 
 export const AuditLogView: React.FC = () => {
   const { activityLogs, setSelectedTaskId } = useTasks();
@@ -22,6 +24,7 @@ export const AuditLogView: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
   const [selectedActionType, setSelectedActionType] = useState<string>('all');
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
 
   const actionTypes = [
     'all',
@@ -90,16 +93,26 @@ export const AuditLogView: React.FC = () => {
           </p>
         </div>
 
-        <div className="text-xs text-neutral-400 font-medium">
-          {isAdmin ? (
-            <span className="text-amber-300 bg-amber-950/50 border border-amber-800 px-2.5 py-1 rounded font-semibold">
-              Full Organization Audit Log
-            </span>
-          ) : (
-            <span className="text-blue-300 bg-blue-950/50 border border-blue-800 px-2.5 py-1 rounded font-semibold">
-              Assigned Tasks Audit Log
-            </span>
-          )}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setShowSecurityModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/70 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-700/60 text-xs font-semibold transition-all shadow-xs"
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>Security & Hardening Audit</span>
+          </button>
+
+          <div className="text-xs text-neutral-400 font-medium">
+            {isAdmin ? (
+              <span className="text-amber-300 bg-amber-950/50 border border-amber-800 px-2.5 py-1 rounded font-semibold">
+                Full Organization Audit Log
+              </span>
+            ) : (
+              <span className="text-blue-300 bg-blue-950/50 border border-blue-800 px-2.5 py-1 rounded font-semibold">
+                Assigned Tasks Audit Log
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -226,6 +239,11 @@ export const AuditLogView: React.FC = () => {
           </div>
         )}
       </div>
+
+      <SecurityAuditModal
+        isOpen={showSecurityModal}
+        onClose={() => setShowSecurityModal(false)}
+      />
     </div>
   );
 };

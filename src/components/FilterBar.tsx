@@ -20,6 +20,7 @@ import { useAuth } from '../context/AuthContext';
 import { Priority } from '../types';
 import { getTagStyle } from '../utils/tagColors';
 import { UserAvatar } from './UserAvatar';
+import { SyncWithListerButton } from './SyncWithListerButton';
 
 export const FilterBar: React.FC = () => {
   const { filters, setFilters, resetFilters, statuses, tasks, filteredTasks } = useTasks();
@@ -209,8 +210,8 @@ export const FilterBar: React.FC = () => {
   }, [allTags, tagSearch]);
 
   return (
-    <div ref={containerRef} className="bg-[#121212] border-b border-[#262626] py-2.5 px-4 sm:px-6 transition-colors duration-200">
-      <div className="max-w-7xl mx-auto space-y-2.5">
+    <div ref={containerRef} className="bg-[#121212] border-b border-[#262626] py-2 sm:py-2.5 px-2.5 sm:px-6 transition-colors duration-200">
+      <div className="max-w-7xl mx-auto space-y-2 sm:space-y-2.5">
         
         {/* Main Controls Row: Search + Dropdown Menus + Stats */}
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5">
@@ -645,8 +646,11 @@ export const FilterBar: React.FC = () => {
 
           {/* Right section: Results Summary & Reset All */}
           <div className={`${isMobileFiltersOpen ? 'flex' : 'hidden'} sm:flex items-center gap-3 justify-between lg:justify-end shrink-0 pt-1 lg:pt-0`}>
+            {/* Lister Sync Button */}
+            <SyncWithListerButton variant="toolbar" />
+
             <span className="text-xs text-neutral-400 font-medium whitespace-nowrap">
-              Showing <strong className="text-neutral-200">{filteredTasks.length}</strong> of{' '}
+              <strong className="text-neutral-200">{filteredTasks.length}</strong>/{' '}
               <strong className="text-neutral-200">{tasks.length}</strong> tasks
             </span>
 

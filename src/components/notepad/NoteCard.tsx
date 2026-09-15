@@ -19,7 +19,9 @@ import {
   Clock,
   ExternalLink,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  Folder,
+  Pen
 } from 'lucide-react';
 
 interface NoteCardProps {
@@ -97,7 +99,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({
   showTags = true,
   showSharingStats = true
 }) => {
-  const { togglePinNote, deleteNote, updateNote } = useNotepad();
+  const { togglePinNote, deleteNote, updateNote, directories } = useNotepad();
   const { currentUser } = useAuth();
   const { sendMessage, channels, activeChannelId } = useChat();
 
@@ -110,6 +112,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({
   const canEdit = isAuthor || (Boolean(note.allowCollaboration) && !note.isPrivate) || isAdmin;
   const canDelete = isAuthor || isAdmin;
 
+  const noteDirectory = note.directoryId ? directories.find((d) => d.id === note.directoryId) : null;
   const colorConfig = COLOR_STYLES[note.color || 'amber'] || COLOR_STYLES.amber;
 
   const formatRelativeTime = (isoString: string) => {
@@ -253,6 +256,13 @@ export const NoteCard: React.FC<NoteCardProps> = ({
                   <span>Collab</span>
                 </span>
               )}
+
+              {noteDirectory && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-800/90 text-neutral-300 border border-neutral-700/60 max-w-[120px] truncate" title={`Directory: ${noteDirectory.name}`}>
+                  <Folder className="w-2.5 h-2.5 text-blue-400 shrink-0" />
+                  <span className="truncate">{noteDirectory.name}</span>
+                </span>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-1 py-0.5">
@@ -363,6 +373,21 @@ export const NoteCard: React.FC<NoteCardProps> = ({
             </p>
           )}
         </div>
+
+        {/* Canvas Sketch Preview Thumbnail */}
+        {note.canvasData && (
+          <div className="mt-2.5 rounded-lg overflow-hidden border border-neutral-800 bg-[#121212] relative group/canvas h-24 flex items-center justify-center">
+            <img
+              src={note.canvasData}
+              alt="Canvas sketch"
+              className="w-full h-full object-contain pointer-events-none"
+            />
+            <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs text-[10px] font-medium text-blue-300 border border-blue-500/30 flex items-center gap-1 shadow-xs">
+              <Pen className="w-2.5 h-2.5" />
+              <span>Canvas</span>
+            </div>
+          </div>
+        )}
 
         {/* Tags */}
         {showTags && Array.isArray(note.tags) && note.tags.length > 0 && (

@@ -29,6 +29,7 @@ import {
   RotateCcw as ResetIcon,
   ArrowUpDown
 } from 'lucide-react';
+import { getApiAuthToken } from '../api/client';
 
 export interface FileViewerItem {
   id: string;
@@ -43,6 +44,7 @@ export interface FileViewerItem {
   uploadedByAvatar?: string;
   uploadedAt?: string;
   checksum?: string;
+  token?: string;
 }
 
 interface FileViewerModalProps {
@@ -239,8 +241,17 @@ export const FileViewerModal: React.FC<FileViewerModalProps> = ({ isOpen, onClos
         }
 
         // 3. Try to fetch from /api/attachments/:id/data first
+        const authToken = getApiAuthToken();
+        const authHeaders: Record<string, string> = {};
+        if (authToken) {
+          authHeaders['Authorization'] = `Bearer ${authToken}`;
+        }
+
         try {
-          const infoRes = await fetch(`/api/attachments/${file.id}/data`);
+          const dataUrl = file.token
+            ? `/api/attachments/${file.id}/data?token=${encodeURIComponent(file.token)}`
+            : `/api/attachments/${file.id}/data`;
+          const infoRes = await fetch(dataUrl, { headers: authHeaders });
           if (infoRes.ok) {
             const infoData = await infoRes.json();
             if (infoData.dataBase64) {
@@ -258,8 +269,11 @@ export const FileViewerModal: React.FC<FileViewerModalProps> = ({ isOpen, onClos
 
         // 4. Fetch the raw view endpoint
         try {
-          const fetchTarget = activeUrl || `/api/attachments/${file.id}/view`;
-          const res = await fetch(fetchTarget);
+          let fetchTarget = activeUrl || `/api/attachments/${file.id}/view`;
+          if (file.token && !fetchTarget.includes('token=')) {
+            fetchTarget += (fetchTarget.includes('?') ? '&' : '?') + `token=${encodeURIComponent(file.token)}`;
+          }
+          const res = await fetch(fetchTarget, { headers: authHeaders });
           if (!res.ok) {
             throw new Error(`Failed to load file content (${res.status} ${res.statusText})`);
           }
@@ -963,7 +977,7 @@ export const FileViewerModal: React.FC<FileViewerModalProps> = ({ isOpen, onClos
                   {/* Table Footer */}
                   <div className="px-4 py-2 bg-[#181818] border-t border-[#262626] flex items-center justify-between text-xs text-neutral-400">
                     <span>
-                      Showing {filteredCsvRows.length} of {parsedCSV.rows.length} rows
+                      {filteredCsvRows.length}/{parsedCSV.rows.length} rows
                     </span>
                     {sortColumnIndex !== null && (
                       <button

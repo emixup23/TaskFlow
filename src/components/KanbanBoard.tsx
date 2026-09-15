@@ -362,6 +362,105 @@ export const KanbanBoard: React.FC = () => {
     }
   }, [visibleStatuses, columnSort, tasksByStatus]);
 
+  // Single-column navigation state & bounds
+  const [activeColumnIndex, setActiveColumnIndex] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.KANBAN_ACTIVE_COLUMN);
+      return saved !== null ? parseInt(saved, 10) || 0 : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  const [isDropTargetPrev, setIsDropTargetPrev] = useState(false);
+  const [isDropTargetNext, setIsDropTargetNext] = useState(false);
+  const touchStartXRef = useRef<number | null>(null);
+
+  // Keep activeColumnIndex within valid bounds of sortedVisibleStatuses
+  const safeIndex = useMemo(() => {
+    if (sortedVisibleStatuses.length === 0) return 0;
+    return Math.min(Math.max(0, activeColumnIndex), sortedVisibleStatuses.length - 1);
+  }, [activeColumnIndex, sortedVisibleStatuses.length]);
+
+  // Persist active column index
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.KANBAN_ACTIVE_COLUMN, safeIndex.toString());
+    } catch (e) {
+      console.warn('Failed to persist active column index:', e);
+    }
+  }, [safeIndex]);
+
+  const prevStatus = safeIndex > 0 ? sortedVisibleStatuses[safeIndex - 1] : null;
+  const nextStatus = safeIndex < sortedVisibleStatuses.length - 1 ? sortedVisibleStatuses[safeIndex + 1] : null;
+  const currentStatus = sortedVisibleStatuses[safeIndex] || null;
+
+  const handlePrevColumn = () => {
+    if (safeIndex > 0) {
+      setActiveColumnIndex(safeIndex - 1);
+      setActiveMenuStatusId(null);
+    }
+  };
+
+  const handleNextColumn = () => {
+    if (safeIndex < sortedVisibleStatuses.length - 1) {
+      setActiveColumnIndex(safeIndex + 1);
+      setActiveMenuStatusId(null);
+    }
+  };
+
+  // Keyboard navigation with ArrowLeft and ArrowRight keys
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const modalActive = document.querySelector('[role="dialog"], .fixed.inset-0.z-50');
+      if (modalActive) return;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (safeIndex > 0) {
+          setActiveColumnIndex(safeIndex - 1);
+          setActiveMenuStatusId(null);
+        }
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        if (safeIndex < sortedVisibleStatuses.length - 1) {
+          setActiveColumnIndex(safeIndex + 1);
+          setActiveMenuStatusId(null);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [safeIndex, sortedVisibleStatuses.length]);
+
+  // Touch swipe support for mobile navigation
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.changedTouches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const diff = e.changedTouches[0].clientX - touchStartXRef.current;
+    touchStartXRef.current = null;
+    if (diff > 50) {
+      handlePrevColumn();
+    } else if (diff < -50) {
+      handleNextColumn();
+    }
+  };
+
   // Sort tasks within an individual column
   const getSortedTasksForColumn = (
     statusId: string,
@@ -490,6 +589,7 @@ export const KanbanBoard: React.FC = () => {
     setColumnSort('default');
     reorderStatuses(baseList.map((s) => s.id));
     setActiveMenuStatusId(null);
+    setActiveColumnIndex(targetIndex);
   };
 
   // Admin action: Save current sorted sequence permanently
@@ -517,14 +617,28 @@ export const KanbanBoard: React.FC = () => {
     <div className="flex-1 flex flex-col min-h-0 bg-[#0d0d0d] dark:bg-[#0d0d0d] overflow-hidden transition-colors duration-200">
       {/* Board Controls Toolbar */}
       <div className="px-3 sm:px-6 py-2 sm:py-2.5 bg-[#121212] border-b border-[#222222] flex items-center justify-between gap-2.5 shrink-0 flex-wrap">
-        {/* Left: Summary, Hidden indicators, and Active Sort badges */}
+        {/* Left: Summary, Active Column Indicator, Keyboard Hint, Hidden indicators, and Active Sort badges */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
           <div className="flex items-center gap-1.5 text-xs text-neutral-300 font-medium shrink-0">
             <Columns3 className="w-4 h-4 text-blue-400 shrink-0" />
-            <span className="hidden sm:inline">Workflow Columns:</span>
+            <span className="hidden sm:inline">Workflow Column:</span>
             <strong className="text-white">
-              {visibleStatuses.length} of {statuses.length}
+              {currentStatus ? currentStatus.name : ''}
+              <span className="text-neutral-400 font-normal ml-1">
+                ({sortedVisibleStatuses.length > 0 ? `${safeIndex + 1}/${sortedVisibleStatuses.length}` : '0'})
+              </span>
             </strong>
+          </div>
+
+          <div className="hidden md:flex items-center gap-1 text-[11px] text-neutral-500">
+            <span>Use</span>
+            <kbd className="px-1.5 py-0.2 bg-[#1e1e1e] border border-neutral-700 rounded text-neutral-300 font-mono text-[10px]">
+              ←
+            </kbd>
+            <kbd className="px-1.5 py-0.2 bg-[#1e1e1e] border border-neutral-700 rounded text-neutral-300 font-mono text-[10px]">
+              →
+            </kbd>
+            <span>keys to navigate</span>
           </div>
 
           {hiddenCount > 0 && (
@@ -943,357 +1057,623 @@ export const KanbanBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* Kanban Board Columns Horizontal Area */}
-      <div className="flex-1 p-3 sm:p-6 flex gap-3.5 sm:gap-6 overflow-x-auto overflow-y-hidden min-w-0">
-        {sortedVisibleStatuses.map((status, index) => {
-          const rawTasks = tasksByStatus[status.id] || [];
-          const { tasks: columnTasks, activeSort: activeColSort } = getSortedTasksForColumn(
-            status.id,
-            rawTasks
-          );
-          const isDraggedOver = draggedOverStatusId === status.id;
-          const isMenuOpen = activeMenuStatusId === status.id;
+      {/* Column Navigator Bar with Arrow Left and Arrow Right & Stage Stepper */}
+      {sortedVisibleStatuses.length > 0 && (
+        <div className="px-3 sm:px-6 py-2 bg-[#141414] border-b border-[#222222] flex items-center justify-between gap-2 shrink-0">
+          {/* Arrow Left: Navigate to Previous Column */}
+          <button
+            type="button"
+            id="btn-workflow-nav-prev"
+            onClick={handlePrevColumn}
+            disabled={safeIndex === 0}
+            onDragOver={(e) => {
+              if (safeIndex > 0) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                setIsDropTargetPrev(true);
+              }
+            }}
+            onDragLeave={() => setIsDropTargetPrev(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDropTargetPrev(false);
+              const taskId = e.dataTransfer.getData('text/plain');
+              if (taskId && prevStatus) {
+                moveTaskStatus(taskId, prevStatus.id);
+                addToast('success', `Moved task to ${prevStatus.name}`);
+              }
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all select-none shrink-0 ${
+              isDropTargetPrev
+                ? 'bg-blue-600/30 border-blue-500 text-blue-300 ring-2 ring-blue-500 shadow-md scale-105'
+                : safeIndex === 0
+                ? 'bg-[#181818] border-[#252525] text-neutral-600 opacity-40 cursor-not-allowed'
+                : 'bg-[#1e1e1e] hover:bg-[#282828] border-[#333333] hover:border-neutral-500 text-neutral-200 hover:text-white shadow-xs active:scale-95 cursor-pointer'
+            }`}
+            title={
+              prevStatus
+                ? `Previous Column: ${prevStatus.name} (Press ← / Drop card to move)`
+                : 'First column (No previous stage)'
+            }
+          >
+            <ArrowLeft className="w-4 h-4 text-blue-400" />
+            <span className="hidden sm:inline">Previous</span>
+            {prevStatus && (
+              <span className="hidden md:inline text-[11px] text-neutral-400 font-normal max-w-[100px] truncate">
+                ({prevStatus.name})
+              </span>
+            )}
+          </button>
 
-          return (
-            <div
-              key={status.id}
-              id={`kanban-column-${status.id}`}
-              onDragOver={(e) => handleDragOver(e, status.id)}
-              onDragLeave={(e) => handleDragLeave(e, status.id)}
-              onDrop={(e) => handleDrop(e, status.id)}
-              className={`w-[84vw] max-w-[320px] sm:w-80 flex flex-col gap-3 sm:gap-3.5 shrink-0 transition-all ${
-                isDraggedOver ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-[#0d0d0d] rounded' : ''
-              }`}
-            >
-              {/* Column Header */}
-              <div className="flex items-center justify-between px-1 shrink-0">
-                <div className="flex items-center gap-2 min-w-0">
+          {/* Center Pipeline Stepper Pills */}
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-0.5 px-1 max-w-full min-w-0 scrollbar-none">
+            {sortedVisibleStatuses.map((st, idx) => {
+              const isActive = idx === safeIndex;
+              const count = tasksByStatus[st.id]?.length || 0;
+
+              return (
+                <button
+                  key={st.id}
+                  type="button"
+                  id={`btn-workflow-column-pill-${st.id}`}
+                  onClick={() => {
+                    setActiveColumnIndex(idx);
+                    setActiveMenuStatusId(null);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const taskId = e.dataTransfer.getData('text/plain');
+                    if (taskId) {
+                      moveTaskStatus(taskId, st.id);
+                      addToast('success', `Moved task to ${st.name}`);
+                      setActiveColumnIndex(idx);
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-all shrink-0 cursor-pointer border ${
+                    isActive
+                      ? 'bg-blue-950/60 border-blue-500 text-white font-semibold ring-1 ring-blue-500/50 shadow-xs'
+                      : 'bg-[#1a1a1a] hover:bg-[#242424] border-[#2c2c2c] text-neutral-400 hover:text-neutral-200'
+                  }`}
+                  title={`Jump to ${st.name} (${count} tasks)`}
+                >
                   <span
-                    className="w-2 h-2 rounded shrink-0"
-                    style={{ backgroundColor: status.color }}
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: st.color }}
                   />
-                  <h3 className="font-bold text-neutral-300 text-xs sm:text-sm uppercase tracking-wider truncate">
-                    {status.name}
-                  </h3>
-                  {status.isDone && (
-                    <span className="text-[10px] bg-emerald-950/60 text-emerald-400 px-1 py-0.2 rounded border border-emerald-800/40 shrink-0 font-medium">
-                      Done
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  {/* In-column Sort indicator if active */}
-                  {activeColSort !== 'default' && (
-                    <span
-                      className="text-[10px] bg-blue-950/60 text-blue-300 font-semibold px-1.5 py-0.5 rounded border border-blue-800/50 flex items-center gap-1 shrink-0 cursor-default"
-                      title={`Cards in this column sorted by: ${
-                        TASK_SORT_CONFIG.find((s) => s.id === activeColSort)?.label
-                      }`}
-                    >
-                      <ArrowUpDown className="w-2.5 h-2.5" />
-                      <span className="hidden xl:inline">
-                        {TASK_SORT_CONFIG.find((s) => s.id === activeColSort)?.badge}
-                      </span>
-                    </span>
-                  )}
-
-                  <span className="text-xs text-neutral-400 font-medium bg-[#1a1a1a] px-2 py-0.5 rounded border border-[#2b2b2b] shadow-xs">
-                    {columnTasks.length}
+                  <span className="truncate max-w-[85px] sm:max-w-[120px]">{st.name}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
+                      isActive ? 'bg-blue-600 text-white' : 'bg-[#262626] text-neutral-400'
+                    }`}
+                  >
+                    {count}
                   </span>
+                </button>
+              );
+            })}
+          </div>
 
-                  {/* Add task quick button */}
-                  {canCreate && (
-                    <button
-                      type="button"
-                      onClick={() => setIsCreateModalOpen(true)}
-                      title={`Add task to ${status.name}`}
-                      className="p-1 text-neutral-400 hover:text-blue-400 hover:bg-[#1f1f1f] rounded transition-colors cursor-pointer"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  )}
+          {/* Arrow Right: Navigate to Next Column */}
+          <button
+            type="button"
+            id="btn-workflow-nav-next"
+            onClick={handleNextColumn}
+            disabled={safeIndex === sortedVisibleStatuses.length - 1}
+            onDragOver={(e) => {
+              if (safeIndex < sortedVisibleStatuses.length - 1) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                setIsDropTargetNext(true);
+              }
+            }}
+            onDragLeave={() => setIsDropTargetNext(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDropTargetNext(false);
+              const taskId = e.dataTransfer.getData('text/plain');
+              if (taskId && nextStatus) {
+                moveTaskStatus(taskId, nextStatus.id);
+                addToast('success', `Moved task to ${nextStatus.name}`);
+              }
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all select-none shrink-0 ${
+              isDropTargetNext
+                ? 'bg-blue-600/30 border-blue-500 text-blue-300 ring-2 ring-blue-500 shadow-md scale-105'
+                : safeIndex === sortedVisibleStatuses.length - 1
+                ? 'bg-[#181818] border-[#252525] text-neutral-600 opacity-40 cursor-not-allowed'
+                : 'bg-[#1e1e1e] hover:bg-[#282828] border-[#333333] hover:border-neutral-500 text-neutral-200 hover:text-white shadow-xs active:scale-95 cursor-pointer'
+            }`}
+            title={
+              nextStatus
+                ? `Next Column: ${nextStatus.name} (Press → / Drop card to move)`
+                : 'Last column (No next stage)'
+            }
+          >
+            {nextStatus && (
+              <span className="hidden md:inline text-[11px] text-neutral-400 font-normal max-w-[100px] truncate">
+                ({nextStatus.name})
+              </span>
+            )}
+            <span className="hidden sm:inline">Next</span>
+            <ArrowRight className="w-4 h-4 text-blue-400" />
+          </button>
+        </div>
+      )}
 
-                  {/* Column Controls */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      id={`btn-col-menu-${status.id}`}
-                      onClick={() => setActiveMenuStatusId(isMenuOpen ? null : status.id)}
-                      className="p-1 text-neutral-400 hover:text-white hover:bg-[#1f1f1f] rounded transition-colors cursor-pointer"
-                    >
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
+      {/* Main Single Column Display with Flanking Navigation Arrows */}
+      {sortedVisibleStatuses.length > 0 && currentStatus ? (
+        <div
+          className="flex-1 min-h-0 flex items-stretch justify-center p-1.5 sm:p-5 md:p-6 overflow-hidden relative"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Flanking Left Arrow Button (Desktop / Tablet quick click) */}
+          <div className="hidden md:flex items-center justify-center absolute left-2 lg:left-4 top-1/2 -translate-y-1/2 z-20 shrink-0">
+            <button
+              type="button"
+              id="btn-workflow-flank-prev"
+              onClick={handlePrevColumn}
+              disabled={safeIndex === 0}
+              onDragOver={(e) => {
+                if (safeIndex > 0) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  setIsDropTargetPrev(true);
+                }
+              }}
+              onDragLeave={() => setIsDropTargetPrev(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDropTargetPrev(false);
+                const taskId = e.dataTransfer.getData('text/plain');
+                if (taskId && prevStatus) {
+                  moveTaskStatus(taskId, prevStatus.id);
+                  addToast('success', `Moved task to ${prevStatus.name}`);
+                }
+              }}
+              className={`w-11 h-11 rounded-full flex items-center justify-center border transition-all shadow-lg ${
+                isDropTargetPrev
+                  ? 'bg-blue-600 border-blue-400 text-white ring-4 ring-blue-500/40 scale-110'
+                  : safeIndex === 0
+                  ? 'bg-[#141414] border-[#222222] text-neutral-700 opacity-30 cursor-not-allowed'
+                  : 'bg-[#1a1a1a] hover:bg-[#252525] border-[#333333] hover:border-neutral-500 text-neutral-300 hover:text-white hover:scale-105 active:scale-95 cursor-pointer'
+              }`}
+              title={prevStatus ? `Go to ${prevStatus.name} (←)` : 'No previous column'}
+              aria-label="Previous Column"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          </div>
 
-                    {isMenuOpen && (
-                      <div
-                        id={`col-menu-dropdown-${status.id}`}
-                        className="absolute right-0 mt-1 w-56 max-w-[calc(100vw-2.5rem)] bg-[#181818] rounded shadow-xl border border-[#333333] py-1.5 z-40 animate-in fade-in zoom-in-95 duration-100 text-xs"
+          {/* The Single Active Column */}
+          {(() => {
+            const status = currentStatus;
+            const rawTasks = tasksByStatus[status.id] || [];
+            const { tasks: columnTasks, activeSort: activeColSort } = getSortedTasksForColumn(
+              status.id,
+              rawTasks
+            );
+            const isDraggedOver = draggedOverStatusId === status.id;
+            const isMenuOpen = activeMenuStatusId === status.id;
+
+            return (
+              <div
+                key={status.id}
+                id={`kanban-column-${status.id}`}
+                onDragOver={(e) => handleDragOver(e, status.id)}
+                onDragLeave={(e) => handleDragLeave(e, status.id)}
+                onDrop={(e) => handleDrop(e, status.id)}
+                className={`w-[90%] max-w-[90%] flex flex-col h-full min-h-0 mx-auto bg-[#121212] border border-[#262626] rounded-xl sm:rounded-2xl p-2.5 sm:p-4.5 shadow-xl transition-all ${
+                  isDraggedOver ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-[#0d0d0d]' : ''
+                }`}
+              >
+                {/* Single Column Header */}
+                <div className="flex items-center justify-between pb-2 sm:pb-3.5 border-b border-[#242424] shrink-0 gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span
+                      className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs"
+                      style={{ backgroundColor: status.color }}
+                    />
+                    <h3 className="font-bold text-white text-sm sm:text-base tracking-wide truncate">
+                      {status.name}
+                    </h3>
+                    {status.isDone && (
+                      <span className="text-[10px] bg-emerald-950/70 text-emerald-300 border border-emerald-700/60 px-2 py-0.5 rounded font-semibold shrink-0">
+                        Completed Stage
+                      </span>
+                    )}
+                    <span className="hidden sm:inline-flex text-[11px] bg-[#1a1a1a] text-neutral-400 border border-[#2b2b2b] px-2 py-0.5 rounded font-medium shrink-0">
+                      Stage {safeIndex + 1} of {sortedVisibleStatuses.length}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                    {/* In-column Sort indicator if active */}
+                    {activeColSort !== 'default' && (
+                      <span
+                        className="text-[10px] bg-blue-950/60 text-blue-300 font-semibold px-2 py-0.5 rounded border border-blue-800/50 flex items-center gap-1 shrink-0 cursor-default"
+                        title={`Cards in this column sorted by: ${
+                          TASK_SORT_CONFIG.find((s) => s.id === activeColSort)?.label
+                        }`}
                       >
-                        <div className="px-3 py-1 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-                          Column: {status.name}
-                        </div>
+                        <ArrowUpDown className="w-3 h-3" />
+                        <span className="hidden sm:inline">
+                          {TASK_SORT_CONFIG.find((s) => s.id === activeColSort)?.badge}
+                        </span>
+                      </span>
+                    )}
 
-                        {/* Column Position Controls */}
-                        <div className="px-3 pt-1 text-[10px] font-semibold text-neutral-500 uppercase">
-                          Column Position
-                        </div>
-                        <div className="grid grid-cols-2 gap-1 px-2 py-1">
-                          <button
-                            type="button"
-                            disabled={index === 0}
-                            onClick={() => handleMoveColumn(status.id, 'first')}
-                            className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-300 hover:bg-[#262626] rounded disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                            title="Move to first column"
-                          >
-                            <ChevronsLeft className="w-3.5 h-3.5 text-neutral-400" />
-                            <span>First</span>
-                          </button>
-                          <button
-                            type="button"
-                            disabled={index === 0}
-                            onClick={() => handleMoveColumn(status.id, 'left')}
-                            className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-300 hover:bg-[#262626] rounded disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                            title="Move column left"
-                          >
-                            <ArrowLeft className="w-3.5 h-3.5 text-neutral-400" />
-                            <span>Left</span>
-                          </button>
-                          <button
-                            type="button"
-                            disabled={index === sortedVisibleStatuses.length - 1}
-                            onClick={() => handleMoveColumn(status.id, 'right')}
-                            className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-300 hover:bg-[#262626] rounded disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                            title="Move column right"
-                          >
-                            <ArrowRight className="w-3.5 h-3.5 text-neutral-400" />
-                            <span>Right</span>
-                          </button>
-                          <button
-                            type="button"
-                            disabled={index === sortedVisibleStatuses.length - 1}
-                            onClick={() => handleMoveColumn(status.id, 'last')}
-                            className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-300 hover:bg-[#262626] rounded disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                            title="Move to last column"
-                          >
-                            <ChevronsRight className="w-3.5 h-3.5 text-neutral-400" />
-                            <span>Last</span>
-                          </button>
-                        </div>
+                    {/* Task count badge */}
+                    <span className="text-xs text-neutral-300 font-semibold bg-[#1a1a1a] px-2.5 py-1 rounded-md border border-[#2b2b2b] shadow-xs">
+                      {columnTasks.length} {columnTasks.length === 1 ? 'task' : 'tasks'}
+                    </span>
 
-                        <div className="border-t border-[#2b2b2b] my-1" />
+                    {/* Add task quick button */}
+                    {canCreate && (
+                      <button
+                        type="button"
+                        id="btn-add-task-to-column"
+                        onClick={() => setIsCreateModalOpen(true)}
+                        title={`Add new task to ${status.name}`}
+                        className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">New Task</span>
+                      </button>
+                    )}
 
-                        {/* In-Column Cards Sorting */}
-                        <div className="px-3 py-1 text-[10px] font-semibold text-neutral-500 uppercase">
-                          Sort Cards in this Column
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setColumnTaskSortOverrides((prev) => {
-                              const next = { ...prev };
-                              delete next[status.id];
-                              return next;
-                            });
-                            setActiveMenuStatusId(null);
-                          }}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left cursor-pointer ${
-                            !columnTaskSortOverrides[status.id]
-                              ? 'text-blue-400 font-semibold bg-[#222222]'
-                              : 'text-neutral-300 hover:bg-[#262626]'
-                          }`}
+                    {/* Column Options Menu */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        id={`btn-col-menu-${status.id}`}
+                        onClick={() => setActiveMenuStatusId(isMenuOpen ? null : status.id)}
+                        className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#202020] rounded-md transition-colors cursor-pointer"
+                        title="Column options"
+                      >
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
+
+                      {isMenuOpen && (
+                        <div
+                          id={`col-menu-dropdown-${status.id}`}
+                          className="absolute right-0 mt-1.5 w-60 max-w-[calc(100vw-2.5rem)] bg-[#181818] rounded-lg shadow-2xl border border-[#333333] py-2 z-40 animate-in fade-in zoom-in-95 duration-100 text-xs"
                         >
-                          <span>Default (Board Sort)</span>
-                          {!columnTaskSortOverrides[status.id] && <Check className="w-3 h-3" />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setColumnTaskSortOverrides((prev) => ({
-                              ...prev,
-                              [status.id]: 'priority-desc'
-                            }));
-                            setActiveMenuStatusId(null);
-                          }}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left cursor-pointer ${
-                            columnTaskSortOverrides[status.id] === 'priority-desc'
-                              ? 'text-blue-400 font-semibold bg-[#222222]'
-                              : 'text-neutral-300 hover:bg-[#262626]'
-                          }`}
-                        >
-                          <span>Priority (Urgent first)</span>
-                          {columnTaskSortOverrides[status.id] === 'priority-desc' && <Check className="w-3 h-3" />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setColumnTaskSortOverrides((prev) => ({
-                              ...prev,
-                              [status.id]: 'due-asc'
-                            }));
-                            setActiveMenuStatusId(null);
-                          }}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left cursor-pointer ${
-                            columnTaskSortOverrides[status.id] === 'due-asc'
-                              ? 'text-blue-400 font-semibold bg-[#222222]'
-                              : 'text-neutral-300 hover:bg-[#262626]'
-                          }`}
-                        >
-                          <span>Due Date (Soonest first)</span>
-                          {columnTaskSortOverrides[status.id] === 'due-asc' && <Check className="w-3 h-3" />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setColumnTaskSortOverrides((prev) => ({
-                              ...prev,
-                              [status.id]: 'title-asc'
-                            }));
-                            setActiveMenuStatusId(null);
-                          }}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left cursor-pointer ${
-                            columnTaskSortOverrides[status.id] === 'title-asc'
-                              ? 'text-blue-400 font-semibold bg-[#222222]'
-                              : 'text-neutral-300 hover:bg-[#262626]'
-                          }`}
-                        >
-                          <span>Title (A → Z)</span>
-                          {columnTaskSortOverrides[status.id] === 'title-asc' && <Check className="w-3 h-3" />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setColumnTaskSortOverrides((prev) => ({
-                              ...prev,
-                              [status.id]: 'newest'
-                            }));
-                            setActiveMenuStatusId(null);
-                          }}
-                          className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left cursor-pointer ${
-                            columnTaskSortOverrides[status.id] === 'newest'
-                              ? 'text-blue-400 font-semibold bg-[#222222]'
-                              : 'text-neutral-300 hover:bg-[#262626]'
-                          }`}
-                        >
-                          <span>Newest Created First</span>
-                          {columnTaskSortOverrides[status.id] === 'newest' && <Check className="w-3 h-3" />}
-                        </button>
+                          <div className="px-3 py-1 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                            Column: {status.name}
+                          </div>
 
-                        <div className="border-t border-[#2b2b2b] my-1" />
-
-                        {/* Hide Column option */}
-                        <button
-                          type="button"
-                          onClick={() => handleHideSpecificColumn(status.id)}
-                          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-[#262626] text-left cursor-pointer"
-                        >
-                          <EyeOff className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Hide this Column</span>
-                        </button>
-
-                        {canManageStatuses && (
-                          <>
-                            <div className="border-t border-[#2b2b2b] my-1" />
-
+                          {/* Column Position Controls */}
+                          <div className="px-3 pt-1.5 text-[10px] font-semibold text-neutral-500 uppercase">
+                            Column Position
+                          </div>
+                          <div className="grid grid-cols-2 gap-1 px-2 py-1">
                             <button
                               type="button"
-                              onClick={() => {
-                                setActiveMenuStatusId(null);
-                                setIsStatusManagerOpen(true);
-                              }}
-                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-[#262626] text-left cursor-pointer"
+                              disabled={safeIndex === 0}
+                              onClick={() => handleMoveColumn(status.id, 'first')}
+                              className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-300 hover:bg-[#262626] rounded disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                              title="Move to first column"
                             >
-                              <WorkflowIcon className="w-3.5 h-3.5 text-blue-400" />
-                              <span>Workflow &amp; Columns</span>
+                              <ChevronsLeft className="w-3.5 h-3.5 text-neutral-400" />
+                              <span>First</span>
                             </button>
+                            <button
+                              type="button"
+                              disabled={safeIndex === 0}
+                              onClick={() => handleMoveColumn(status.id, 'left')}
+                              className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-300 hover:bg-[#262626] rounded disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                              title="Move column left"
+                            >
+                              <ArrowLeft className="w-3.5 h-3.5 text-neutral-400" />
+                              <span>Left</span>
+                            </button>
+                            <button
+                              type="button"
+                              disabled={safeIndex === sortedVisibleStatuses.length - 1}
+                              onClick={() => handleMoveColumn(status.id, 'right')}
+                              className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-300 hover:bg-[#262626] rounded disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                              title="Move column right"
+                            >
+                              <ArrowRight className="w-3.5 h-3.5 text-neutral-400" />
+                              <span>Right</span>
+                            </button>
+                            <button
+                              type="button"
+                              disabled={safeIndex === sortedVisibleStatuses.length - 1}
+                              onClick={() => handleMoveColumn(status.id, 'last')}
+                              className="flex items-center gap-1.5 px-2 py-1 text-xs text-neutral-300 hover:bg-[#262626] rounded disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                              title="Move to last column"
+                            >
+                              <ChevronsRight className="w-3.5 h-3.5 text-neutral-400" />
+                              <span>Last</span>
+                            </button>
+                          </div>
 
-                            {statuses.length > 1 && (
+                          <div className="border-t border-[#2b2b2b] my-1.5" />
+
+                          {/* In-Column Cards Sorting */}
+                          <div className="px-3 py-1 text-[10px] font-semibold text-neutral-500 uppercase">
+                            Sort Cards in this Column
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setColumnTaskSortOverrides((prev) => {
+                                const next = { ...prev };
+                                delete next[status.id];
+                                return next;
+                              });
+                              setActiveMenuStatusId(null);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left cursor-pointer ${
+                              !columnTaskSortOverrides[status.id]
+                                ? 'text-blue-400 font-semibold bg-[#222222]'
+                                : 'text-neutral-300 hover:bg-[#262626]'
+                            }`}
+                          >
+                            <span>Default (Board Sort)</span>
+                            {!columnTaskSortOverrides[status.id] && <Check className="w-3 h-3" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setColumnTaskSortOverrides((prev) => ({
+                                ...prev,
+                                [status.id]: 'priority-desc'
+                              }));
+                              setActiveMenuStatusId(null);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left cursor-pointer ${
+                              columnTaskSortOverrides[status.id] === 'priority-desc'
+                                ? 'text-blue-400 font-semibold bg-[#222222]'
+                                : 'text-neutral-300 hover:bg-[#262626]'
+                            }`}
+                          >
+                            <span>Priority (Urgent first)</span>
+                            {columnTaskSortOverrides[status.id] === 'priority-desc' && <Check className="w-3 h-3" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setColumnTaskSortOverrides((prev) => ({
+                                ...prev,
+                                [status.id]: 'due-asc'
+                              }));
+                              setActiveMenuStatusId(null);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left cursor-pointer ${
+                              columnTaskSortOverrides[status.id] === 'due-asc'
+                                ? 'text-blue-400 font-semibold bg-[#222222]'
+                                : 'text-neutral-300 hover:bg-[#262626]'
+                            }`}
+                          >
+                            <span>Due Date (Soonest first)</span>
+                            {columnTaskSortOverrides[status.id] === 'due-asc' && <Check className="w-3 h-3" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setColumnTaskSortOverrides((prev) => ({
+                                ...prev,
+                                [status.id]: 'title-asc'
+                              }));
+                              setActiveMenuStatusId(null);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left cursor-pointer ${
+                              columnTaskSortOverrides[status.id] === 'title-asc'
+                                ? 'text-blue-400 font-semibold bg-[#222222]'
+                                : 'text-neutral-300 hover:bg-[#262626]'
+                            }`}
+                          >
+                            <span>Title (A → Z)</span>
+                            {columnTaskSortOverrides[status.id] === 'title-asc' && <Check className="w-3 h-3" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setColumnTaskSortOverrides((prev) => ({
+                                ...prev,
+                                [status.id]: 'newest'
+                              }));
+                              setActiveMenuStatusId(null);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left cursor-pointer ${
+                              columnTaskSortOverrides[status.id] === 'newest'
+                                ? 'text-blue-400 font-semibold bg-[#222222]'
+                                : 'text-neutral-300 hover:bg-[#262626]'
+                            }`}
+                          >
+                            <span>Newest Created First</span>
+                            {columnTaskSortOverrides[status.id] === 'newest' && <Check className="w-3 h-3" />}
+                          </button>
+
+                          <div className="border-t border-[#2b2b2b] my-1.5" />
+
+                          {/* Hide Column option */}
+                          <button
+                            type="button"
+                            onClick={() => handleHideSpecificColumn(status.id)}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-[#262626] text-left cursor-pointer"
+                          >
+                            <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Hide this Column</span>
+                          </button>
+
+                          {canManageStatuses && (
+                            <>
+                              <div className="border-t border-[#2b2b2b] my-1.5" />
+
                               <button
                                 type="button"
                                 onClick={() => {
                                   setActiveMenuStatusId(null);
-                                  if (
-                                    window.confirm(
-                                      `Delete "${status.name}"? Tasks in this column will be moved to the first column.`
-                                    )
-                                  ) {
-                                    deleteStatus(status.id);
-                                  }
+                                  setIsStatusManagerOpen(true);
                                 }}
-                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-950/40 text-left cursor-pointer"
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-300 hover:bg-[#262626] text-left cursor-pointer"
                               >
-                                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                                <span>Delete Column</span>
+                                <WorkflowIcon className="w-3.5 h-3.5 text-blue-400" />
+                                <span>Workflow &amp; Columns</span>
                               </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    )}
+
+                              {statuses.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveMenuStatusId(null);
+                                    if (
+                                      window.confirm(
+                                        `Delete "${status.name}"? Tasks in this column will be moved to the first column.`
+                                      )
+                                    ) {
+                                      deleteStatus(status.id);
+                                    }
+                                  }}
+                                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-950/40 text-left cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                                  <span>Delete Column</span>
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Column Cards Container */}
-              <div className="flex-1 overflow-y-auto space-y-3.5 pr-1 pb-6 scrollbar-thin">
-                {columnTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, task.id)}
+                {/* Column Cards Scrollable Container */}
+                <div className="flex-1 overflow-y-auto space-y-2 sm:space-y-3 pt-2 sm:pt-3 pr-0.5 sm:pr-1 pb-2 sm:pb-3 scrollbar-thin">
+                  {columnTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, task.id)}
+                    >
+                      <TaskCard task={task} />
+                    </div>
+                  ))}
+
+                  {columnTasks.length === 0 && (
+                    <div className="h-48 border-2 border-dashed border-[#262626] rounded-xl flex flex-col items-center justify-center text-neutral-400 p-6 text-center">
+                      <Inbox className="w-8 h-8 mb-2 text-neutral-600" />
+                      <p className="text-sm font-semibold text-neutral-300">No tasks in {status.name}</p>
+                      <p className="text-xs text-neutral-500 mt-1 max-w-xs">
+                        Use the ← and → arrows to explore other columns, drag tasks here, or add a task below.
+                      </p>
+                      {canCreate && (
+                        <button
+                          type="button"
+                          onClick={() => setIsCreateModalOpen(true)}
+                          className="mt-3 px-3 py-1.5 bg-[#1e1e1e] hover:bg-[#282828] border border-neutral-700 text-neutral-200 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                        >
+                          + Add First Task
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick Bottom Navigation Bar for Mobile & Compact Screens */}
+                <div className="pt-2.5 border-t border-[#222222] flex items-center justify-between gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handlePrevColumn}
+                    disabled={safeIndex === 0}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                      safeIndex === 0
+                        ? 'opacity-30 border-transparent text-neutral-600 cursor-not-allowed'
+                        : 'border-[#333333] hover:border-neutral-500 text-neutral-300 hover:text-white bg-[#181818] cursor-pointer'
+                    }`}
+                    title={prevStatus ? `Previous: ${prevStatus.name}` : undefined}
                   >
-                    <TaskCard task={task} />
-                  </div>
-                ))}
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Previous</span>
+                  </button>
 
-                {columnTasks.length === 0 && (
-                  <div className="h-32 border-2 border-dashed border-[#262626] rounded flex flex-col items-center justify-center text-neutral-500 p-4 text-center">
-                    <Inbox className="w-5 h-5 mb-1 text-neutral-600" />
-                    <p className="text-xs font-medium">No tasks here</p>
-                    <p className="text-[10px] text-neutral-500">Drag tasks here or click +</p>
+                  <div className="text-[11px] text-neutral-400 font-medium">
+                    Column <strong className="text-white">{safeIndex + 1}</strong> of {sortedVisibleStatuses.length}
                   </div>
-                )}
+
+                  <button
+                    type="button"
+                    onClick={handleNextColumn}
+                    disabled={safeIndex === sortedVisibleStatuses.length - 1}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                      safeIndex === sortedVisibleStatuses.length - 1
+                        ? 'opacity-30 border-transparent text-neutral-600 cursor-not-allowed'
+                        : 'border-[#333333] hover:border-neutral-500 text-neutral-300 hover:text-white bg-[#181818] cursor-pointer'
+                    }`}
+                    title={nextStatus ? `Next: ${nextStatus.name}` : undefined}
+                  >
+                    <span>Next</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })()}
 
-        {/* Quick Workflow & Columns stage adder card at the end of columns */}
-        {canManageStatuses && visibleStatuses.length > 0 && (
-          <div className="w-64 sm:w-72 shrink-0 flex flex-col pt-1">
+          {/* Flanking Right Arrow Button (Desktop / Tablet quick click) */}
+          <div className="hidden md:flex items-center justify-center absolute right-2 lg:left-auto lg:right-4 top-1/2 -translate-y-1/2 z-20 shrink-0">
             <button
               type="button"
-              id="btn-kanban-add-workflow-column"
-              onClick={() => setIsStatusManagerOpen(true)}
-              className="w-full h-24 border-2 border-dashed border-[#262626] hover:border-blue-500/50 hover:bg-blue-500/5 rounded-lg flex flex-col items-center justify-center gap-1.5 text-neutral-400 hover:text-blue-300 transition-all cursor-pointer group"
-              title="Open Workflow & Columns manager"
+              id="btn-workflow-flank-next"
+              onClick={handleNextColumn}
+              disabled={safeIndex === sortedVisibleStatuses.length - 1}
+              onDragOver={(e) => {
+                if (safeIndex < sortedVisibleStatuses.length - 1) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  setIsDropTargetNext(true);
+                }
+              }}
+              onDragLeave={() => setIsDropTargetNext(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDropTargetNext(false);
+                const taskId = e.dataTransfer.getData('text/plain');
+                if (taskId && nextStatus) {
+                  moveTaskStatus(taskId, nextStatus.id);
+                  addToast('success', `Moved task to ${nextStatus.name}`);
+                }
+              }}
+              className={`w-11 h-11 rounded-full flex items-center justify-center border transition-all shadow-lg ${
+                isDropTargetNext
+                  ? 'bg-blue-600 border-blue-400 text-white ring-4 ring-blue-500/40 scale-110'
+                  : safeIndex === sortedVisibleStatuses.length - 1
+                  ? 'bg-[#141414] border-[#222222] text-neutral-700 opacity-30 cursor-not-allowed'
+                  : 'bg-[#1a1a1a] hover:bg-[#252525] border-[#333333] hover:border-neutral-500 text-neutral-300 hover:text-white hover:scale-105 active:scale-95 cursor-pointer'
+              }`}
+              title={nextStatus ? `Go to ${nextStatus.name} (→)` : 'No next column'}
+              aria-label="Next Column"
             >
-              <div className="w-8 h-8 rounded-full bg-[#181818] border border-[#2a2a2a] group-hover:border-blue-500/40 flex items-center justify-center text-neutral-400 group-hover:text-blue-400 transition-colors">
-                <Plus className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-semibold">Workflow &amp; Columns</span>
-              <span className="text-[10px] text-neutral-500 group-hover:text-neutral-400">Add or configure stages</span>
+              <ArrowRight className="w-5 h-5" />
             </button>
           </div>
-        )}
-
-        {visibleStatuses.length === 0 && (
-          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center text-neutral-400 space-y-3">
-            <EyeOff className="w-10 h-10 text-neutral-600" />
-            <h3 className="text-base font-bold text-white">All columns are currently hidden</h3>
-            <p className="text-xs text-neutral-500 max-w-sm">
-              Use the column visibility menu above to show your workflow columns or reset your board view.
-            </p>
-            <button
-              type="button"
-              onClick={handleShowAllColumns}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded shadow-sm transition-colors cursor-pointer"
-            >
-              Show All Columns
-            </button>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        /* Empty state when all columns are hidden */
+        <div className="flex-1 flex flex-col items-center justify-center p-12 text-center text-neutral-400 space-y-3">
+          <EyeOff className="w-10 h-10 text-neutral-600" />
+          <h3 className="text-base font-bold text-white">All columns are currently hidden</h3>
+          <p className="text-xs text-neutral-500 max-w-sm">
+            Use the column visibility menu above to show your workflow columns or reset your board view.
+          </p>
+          <button
+            type="button"
+            onClick={handleShowAllColumns}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded shadow-sm transition-colors cursor-pointer"
+          >
+            Show All Columns
+          </button>
+        </div>
+      )}
     </div>
   );
 };

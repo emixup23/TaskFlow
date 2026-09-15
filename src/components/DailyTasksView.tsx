@@ -24,6 +24,7 @@ import {
   Code,
   Palette,
   Eye,
+  EyeOff,
   CheckSquare,
   Sparkles,
   Users,
@@ -37,6 +38,7 @@ import { api } from '../api/client';
 import { VoiceToTextButton } from './VoiceToTextButton';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import confetti from 'canvas-confetti';
 
 const TIME_BLOCK_CONFIG: Record<
@@ -142,6 +144,26 @@ export const DailyTasksView: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [showUserFilter, setShowUserFilter] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.DAILY_SHOW_USER_FILTER);
+      return saved !== null ? saved === 'true' : false;
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleUserFilter = () => {
+    setShowUserFilter((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(STORAGE_KEYS.DAILY_SHOW_USER_FILTER, String(next));
+      } catch (err) {
+        console.warn('Failed to save showUserFilter:', err);
+      }
+      return next;
+    });
+  };
 
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
   const [userSummaries, setUserSummaries] = useState<Record<string, { total: number; completed: number; rate: number }>>({});
@@ -421,7 +443,7 @@ export const DailyTasksView: React.FC = () => {
   return (
     <div id="daily-tasks-view" className="flex-1 flex flex-col min-h-0 bg-[#0d0d0d] overflow-y-auto">
       {/* Header & Controls */}
-      <div className="border-b border-[#262626] bg-[#141414] px-6 py-4 sticky top-0 z-20 shadow-sm">
+      <div className="border-b border-[#262626] bg-[#141414] px-3 sm:px-6 py-2.5 sm:py-4 sticky top-0 z-20 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
@@ -435,9 +457,6 @@ export const DailyTasksView: React.FC = () => {
                     Day Planner
                   </span>
                 </h1>
-                <p className="text-xs text-slate-400">
-                  Individual schedules, time blocks, and daily action items for every team member.
-                </p>
               </div>
             </div>
           </div>
@@ -478,6 +497,45 @@ export const DailyTasksView: React.FC = () => {
               </button>
             )}
 
+            {/* Toggle User Filter */}
+            <button
+              id="btn-toggle-filter-user"
+              type="button"
+              onClick={handleToggleUserFilter}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border transition-all ${
+                showUserFilter
+                  ? 'bg-teal-500/20 text-teal-300 border-teal-500/40 shadow-xs'
+                  : selectedUserId !== 'all'
+                  ? 'bg-teal-950/60 text-teal-300 border-teal-600/50'
+                  : 'bg-[#1e1e1e] hover:bg-[#2a2a2a] text-slate-300 border-[#2e2e2e]'
+              }`}
+              title={showUserFilter ? 'Hide User Filter' : 'Show User Filter'}
+            >
+              {showUserFilter ? (
+                <EyeOff className="w-3.5 h-3.5 text-teal-400" />
+              ) : (
+                <Eye className="w-3.5 h-3.5 text-teal-400" />
+              )}
+              {selectedUserId !== 'all' && (
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+              )}
+            </button>
+
+            {/* Quick clear chip if filter strip is closed but a user is selected */}
+            {!showUserFilter && selectedUserId !== 'all' && activeUser && (
+              <button
+                type="button"
+                id="btn-clear-user-filter"
+                onClick={() => setSelectedUserId('all')}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs bg-teal-500/15 border border-teal-500/30 text-teal-300 hover:bg-teal-500/25 transition-colors"
+                title="Filtered user - click to show all members"
+              >
+                <img src={activeUser.avatar} alt={activeUser.name} className="w-4 h-4 rounded-full object-cover" />
+                <span className="max-w-[90px] truncate text-[11px] font-medium">{activeUser.name}</span>
+                <X className="w-3 h-3 text-teal-400" />
+              </button>
+            )}
+
             {/* Rollover Incomplete Tasks */}
             <button
               id="btn-rollover-tasks"
@@ -486,7 +544,6 @@ export const DailyTasksView: React.FC = () => {
               title="Rollover incomplete tasks from yesterday into today"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Rollover</span>
             </button>
 
             {/* Standup Digest Export */}
@@ -497,7 +554,6 @@ export const DailyTasksView: React.FC = () => {
               title="Copy Standup Summary in Markdown"
             >
               {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
-              <span>{isCopied ? 'Copied Digest' : 'Copy Standup'}</span>
             </button>
 
             {/* New Task Button */}
@@ -507,7 +563,6 @@ export const DailyTasksView: React.FC = () => {
               className="flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white shadow-md shadow-teal-900/30 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              <span>Add Daily Task</span>
             </button>
           </div>
         </div>
@@ -526,104 +581,124 @@ export const DailyTasksView: React.FC = () => {
         )}
 
         {/* User Selector Strip */}
-        <div className="mt-4 pt-3 border-t border-[#222222]">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1 flex-shrink-0">
-              <Users className="w-3.5 h-3.5" />
-              Filter User:
-            </span>
-
-            {/* All Members Chip */}
-            <button
-              id="user-chip-all"
-              onClick={() => setSelectedUserId('all')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex-shrink-0 border ${
-                selectedUserId === 'all'
-                  ? 'bg-teal-500/20 text-teal-300 border-teal-500/40 shadow-sm'
-                  : 'bg-[#181818] text-slate-300 border-[#262626] hover:bg-[#222]'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5 text-teal-400" />
-              <span>All Members</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-teal-950/60 text-teal-400 border border-teal-800/40">
-                {totalTasks}
-              </span>
-            </button>
-
-            {/* Individual User Chips */}
-            {users.map((u) => {
-              const uStats = userSummaries[u.id] || { total: 0, completed: 0, rate: 0 };
-              const isSelected = selectedUserId === u.id;
-              const isMe = currentUser?.id === u.id;
-
-              return (
+        {showUserFilter && (
+          <div className="mt-4 pt-3 border-t border-[#222222] animate-fadeIn">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin flex-1 min-w-0">
                 <button
-                  key={u.id}
-                  id={`user-chip-${u.id}`}
-                  onClick={() => setSelectedUserId(u.id)}
-                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all flex-shrink-0 border ${
-                    isSelected
-                      ? 'bg-teal-500/20 text-white border-teal-500/50 shadow-sm ring-1 ring-teal-500/30'
+                  type="button"
+                  onClick={handleToggleUserFilter}
+                  className="text-xs font-semibold text-slate-400 hover:text-teal-300 uppercase tracking-wider mr-1 flex items-center gap-1.5 flex-shrink-0 transition-colors cursor-pointer"
+                  title="Hide User Filter"
+                >
+                  <Eye className="w-3.5 h-3.5 text-teal-400" />
+                  Filter User:
+                </button>
+
+                {/* All Members Chip */}
+                <button
+                  id="user-chip-all"
+                  onClick={() => setSelectedUserId('all')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex-shrink-0 border ${
+                    selectedUserId === 'all'
+                      ? 'bg-teal-500/20 text-teal-300 border-teal-500/40 shadow-sm'
                       : 'bg-[#181818] text-slate-300 border-[#262626] hover:bg-[#222]'
                   }`}
                 >
-                  <img src={u.avatar} alt={u.name} className="w-5 h-5 rounded-full object-cover border border-[#333]" />
-                  <span className="flex items-center gap-1">
-                    {u.name}
-                    {isMe && <span className="text-[10px] text-teal-400 font-bold">(You)</span>}
-                  </span>
-
-                  {/* Micro completion badge */}
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
-                      uStats.total > 0 && uStats.completed === uStats.total
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-[#222] text-slate-400 border border-[#333]'
-                    }`}
-                  >
-                    {uStats.completed}/{uStats.total}
+                  <Users className="w-3.5 h-3.5 text-teal-400" />
+                  <span>All Members</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-teal-950/60 text-teal-400 border border-teal-800/40">
+                    {totalTasks}
                   </span>
                 </button>
-              );
-            })}
+
+                {/* Individual User Chips */}
+                {users.map((u) => {
+                  const uStats = userSummaries[u.id] || { total: 0, completed: 0, rate: 0 };
+                  const isSelected = selectedUserId === u.id;
+                  const isMe = currentUser?.id === u.id;
+
+                  return (
+                    <button
+                      key={u.id}
+                      id={`user-chip-${u.id}`}
+                      onClick={() => setSelectedUserId(u.id)}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all flex-shrink-0 border ${
+                        isSelected
+                          ? 'bg-teal-500/20 text-white border-teal-500/50 shadow-sm ring-1 ring-teal-500/30'
+                          : 'bg-[#181818] text-slate-300 border-[#262626] hover:bg-[#222]'
+                      }`}
+                    >
+                      <img src={u.avatar} alt={u.name} className="w-5 h-5 rounded-full object-cover border border-[#333]" />
+                      <span className="flex items-center gap-1">
+                        {u.name}
+                        {isMe && <span className="text-[10px] text-teal-400 font-bold">(You)</span>}
+                      </span>
+
+                      {/* Micro completion badge */}
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
+                          uStats.total > 0 && uStats.completed === uStats.total
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : 'bg-[#222] text-slate-400 border border-[#333]'
+                        }`}
+                      >
+                        {uStats.completed}/{uStats.total}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Close/Toggle button */}
+              <button
+                type="button"
+                id="btn-close-filter-user"
+                onClick={handleToggleUserFilter}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#222] transition-colors flex-shrink-0"
+                title="Hide User Filter"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Main Content Area */}
-      <div className="p-6 space-y-6">
+      <div className="p-2 sm:p-6 space-y-2.5 sm:space-y-6">
         {/* Pulse / Metrics Banner */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-[#141414] border border-[#262626] rounded-xl p-4 shadow-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+          <div className="bg-[#141414] border border-[#262626] rounded-xl p-2.5 sm:p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Scheduled Tasks</span>
-              <CalendarCheck2 className="w-4 h-4 text-teal-400" />
+              <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Scheduled</span>
+              <CalendarCheck2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-400" />
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-white">{totalTasks}</span>
-              <span className="text-xs text-slate-400">({totalHours} hrs planned)</span>
+            <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
+              <span className="text-xl sm:text-2xl font-bold text-white">{totalTasks}</span>
+              <span className="text-[11px] sm:text-xs text-slate-400">({totalHours}h)</span>
             </div>
           </div>
 
-          <div className="bg-[#141414] border border-[#262626] rounded-xl p-4 shadow-sm">
+          <div className="bg-[#141414] border border-[#262626] rounded-xl p-3 sm:p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Completed</span>
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Completed</span>
+              <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-emerald-400">{completedTasks}</span>
-              <span className="text-xs text-slate-400 font-medium">of {totalTasks} done</span>
+            <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
+              <span className="text-xl sm:text-2xl font-bold text-emerald-400">{completedTasks}</span>
+              <span className="text-[11px] sm:text-xs text-slate-400 font-medium">/{totalTasks}</span>
             </div>
           </div>
 
-          <div className="bg-[#141414] border border-[#262626] rounded-xl p-4 shadow-sm">
+          <div className="bg-[#141414] border border-[#262626] rounded-xl p-3 sm:p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Progress Rate</span>
-              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Progress</span>
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-white">{completionRate}%</span>
-              <div className="flex-1 bg-[#222] h-2 rounded-full overflow-hidden">
+            <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
+              <span className="text-xl sm:text-2xl font-bold text-white">{completionRate}%</span>
+              <div className="flex-1 bg-[#222] h-1.5 sm:h-2 rounded-full overflow-hidden">
                 <div
                   className="bg-gradient-to-r from-teal-500 to-emerald-400 h-full rounded-full transition-all duration-500"
                   style={{ width: `${completionRate}%` }}
@@ -632,20 +707,20 @@ export const DailyTasksView: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-[#141414] border border-[#262626] rounded-xl p-4 shadow-sm">
+          <div className="bg-[#141414] border border-[#262626] rounded-xl p-3 sm:p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pending Action</span>
-              <Clock className="w-4 h-4 text-orange-400" />
+              <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">Pending</span>
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-400" />
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-orange-400">{pendingTasks}</span>
-              <span className="text-xs text-slate-400">remaining today</span>
+            <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2">
+              <span className="text-xl sm:text-2xl font-bold text-orange-400">{pendingTasks}</span>
+              <span className="text-[11px] sm:text-xs text-slate-400">left</span>
             </div>
           </div>
         </div>
 
         {/* Quick Add Bar & Search / Filter Controls */}
-        <div className="bg-[#141414] border border-[#262626] rounded-xl p-4 space-y-3">
+        <div className="bg-[#141414] border border-[#262626] rounded-xl p-3 sm:p-4 space-y-2.5 sm:space-y-3">
           {/* Inline Quick Add */}
           <form onSubmit={handleQuickAdd} className="flex flex-col sm:flex-row items-center gap-2">
             <div className="relative flex-1 w-full">
@@ -1159,7 +1234,7 @@ const TimeBlockSection: React.FC<TimeBlockSectionProps> = ({
           return (
             <div
               key={task.id}
-              className={`p-4 transition-colors group hover:bg-[#181818] flex items-start gap-3.5 ${
+              className={`p-3 sm:p-4 transition-colors group hover:bg-[#181818] flex items-start gap-2.5 sm:gap-3.5 ${
                 task.completed ? 'opacity-70 bg-[#121212]' : ''
               }`}
             >
@@ -1178,10 +1253,10 @@ const TimeBlockSection: React.FC<TimeBlockSectionProps> = ({
 
               {/* Task Content */}
               <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-1">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
                   {/* Title */}
                   <span
-                    className={`text-sm font-semibold tracking-tight ${
+                    className={`text-xs sm:text-sm font-semibold tracking-tight ${
                       task.completed ? 'line-through text-slate-400' : 'text-slate-100'
                     }`}
                   >
@@ -1190,69 +1265,74 @@ const TimeBlockSection: React.FC<TimeBlockSectionProps> = ({
 
                   {/* Priority Badge */}
                   <span
-                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${priorityConfig.bg} ${priorityConfig.border} ${priorityConfig.text}`}
+                    className={`text-[9px] sm:text-[10px] font-semibold px-1.5 sm:px-2 py-0.5 rounded-full border ${priorityConfig.bg} ${priorityConfig.border} ${priorityConfig.text}`}
                   >
                     {priorityConfig.label}
                   </span>
 
                   {/* Category Badge */}
                   <span
-                    className={`text-[10px] font-medium px-2 py-0.5 rounded-full border flex items-center gap-1 ${catConfig.badgeBg} ${catConfig.color}`}
+                    className={`text-[9px] sm:text-[10px] font-medium px-1.5 sm:px-2 py-0.5 rounded-full border flex items-center gap-1 ${catConfig.badgeBg} ${catConfig.color}`}
                   >
                     <CatIcon className="w-2.5 h-2.5" />
-                    {catConfig.label}
+                    <span>{catConfig.label}</span>
                   </span>
 
                   {/* Time Slot / Duration */}
                   {(task.timeSlot || task.estimatedMinutes > 0) && (
-                    <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1 bg-[#202020] px-2 py-0.5 rounded-md border border-[#303030]">
-                      <Clock className="w-3 h-3 text-slate-500" />
-                      {task.timeSlot ? `${task.timeSlot} • ` : ''}
+                    <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 flex items-center gap-1 bg-[#202020] px-1.5 sm:px-2 py-0.5 rounded-md border border-[#303030]">
+                      <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-slate-500" />
+                      <span className="hidden sm:inline">{task.timeSlot ? `${task.timeSlot} • ` : ''}</span>
                       {task.estimatedMinutes}m
                     </span>
                   )}
                 </div>
 
-                {/* Description */}
-                {task.description && <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{task.description}</p>}
+                {/* Description (hidden on mobile to minimize clutter) */}
+                {task.description && (
+                  <p className="hidden sm:block text-xs text-slate-400 mt-0.5 leading-relaxed">
+                    {task.description}
+                  </p>
+                )}
 
                 {/* Linked Sprint Task */}
                 {task.linkedTaskId && (
-                  <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-blue-400 bg-blue-500/10 border border-blue-500/25 px-2.5 py-1 rounded-lg">
-                    <ExternalLink className="w-3 h-3 text-blue-400" />
-                    <span>Linked Sprint Task: </span>
+                  <div className="mt-1.5 sm:mt-2 inline-flex items-center gap-1.5 text-[11px] sm:text-xs text-blue-400 bg-blue-500/10 border border-blue-500/25 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg">
+                    <ExternalLink className="w-3 h-3 text-blue-400 shrink-0" />
+                    <span className="hidden sm:inline">Linked Sprint Task: </span>
                     <button
                       onClick={() => {
                         if (task.linkedTaskId) onOpenTaskDetail(task.linkedTaskId);
                       }}
-                      className="font-medium underline hover:text-blue-300"
+                      className="font-medium underline hover:text-blue-300 truncate max-w-[180px]"
                     >
                       {task.linkedTaskTitle || task.linkedTaskId}
                     </button>
                   </div>
                 )}
 
-                {/* Notes if available */}
+                {/* Notes if available (hidden on mobile) */}
                 {task.notes && (
-                  <div className="mt-1.5 text-[11px] text-amber-300/80 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md">
+                  <div className="hidden sm:block mt-1.5 text-[11px] text-amber-300/80 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md">
                     <span className="font-semibold text-amber-400">Notes:</span> {task.notes}
                   </div>
                 )}
 
                 {/* Bottom Metadata: Assignee & Completed Timestamp */}
-                <div className="mt-2.5 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
+                <div className="mt-1.5 sm:mt-2.5 flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] text-slate-500">
                   {user && (
                     <div className="flex items-center gap-1.5">
-                      <img src={user.avatar} alt={user.name} className="w-4 h-4 rounded-full object-cover" />
+                      <img src={user.avatar} alt={user.name} className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full object-cover" />
                       <span className="text-slate-300 font-medium">{user.name}</span>
-                      <span className="text-slate-500">({user.title || user.role})</span>
+                      <span className="hidden sm:inline text-slate-500">({user.title || user.role})</span>
                     </div>
                   )}
 
                   {task.completed && task.completedAt && (
                     <span className="text-emerald-400 font-medium flex items-center gap-1">
                       <Check className="w-3 h-3" />
-                      Done by {task.completedBy || 'User'}
+                      <span className="hidden sm:inline">Done by </span>
+                      <span>{task.completedBy || 'User'}</span>
                     </span>
                   )}
                 </div>

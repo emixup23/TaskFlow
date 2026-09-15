@@ -86,17 +86,17 @@ export const TimelineView: React.FC = () => {
   ];
 
   return (
-    <div className="flex-1 p-4 sm:p-6 bg-[#0d0d0d] dark:bg-[#0d0d0d] overflow-y-auto space-y-5 max-w-7xl mx-auto w-full transition-colors duration-200">
-      <div className="space-y-5">
+    <div className="flex-1 p-2.5 sm:p-6 bg-[#0d0d0d] dark:bg-[#0d0d0d] overflow-y-auto space-y-3 sm:space-y-5 max-w-7xl mx-auto w-full transition-colors duration-200">
+      <div className="space-y-3 sm:space-y-5">
         {buckets.map((bucket) => {
           if (bucket.count === 0) return null;
 
           return (
             <div
               key={bucket.title}
-              className="bg-[#141414] rounded border border-[#262626] p-5 shadow-xs space-y-4"
+              className="bg-[#141414] rounded border border-[#262626] p-3 sm:p-5 shadow-xs space-y-2.5 sm:space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-[#262626] pb-3">
+              <div className="flex items-center justify-between border-b border-[#262626] pb-2.5 sm:pb-3">
                 <div className="flex items-center gap-2.5">
                   {bucket.icon}
                   <h2 className="text-xs sm:text-sm font-bold text-neutral-100 uppercase tracking-wider">
@@ -110,7 +110,7 @@ export const TimelineView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5">
                 {bucket.tasks.map((task) => {
                   const status = statuses.find((s) => s.id === task.statusId);
                   const assigned = users.filter((u) => task.assigneeIds.includes(u.id));
@@ -123,7 +123,7 @@ export const TimelineView: React.FC = () => {
                     <div
                       key={task.id}
                       onClick={() => setSelectedTaskId(task.id)}
-                      className="p-4 rounded border border-[#262626] hover:border-blue-500/50 hover:shadow-md bg-[#181818] cursor-pointer transition-all space-y-3 group"
+                      className="p-2.5 sm:p-4 rounded border border-[#262626] hover:border-blue-500/50 hover:shadow-md bg-[#181818] cursor-pointer transition-all space-y-2 sm:space-y-3 group"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 min-w-0">

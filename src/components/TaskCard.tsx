@@ -110,18 +110,31 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
     <div
       id={`task-card-${task.id}`}
       onClick={() => setSelectedTaskId(task.id)}
-      className={`group relative p-4 rounded border transition-all duration-150 cursor-pointer shadow-xs hover:shadow-md ${
+      className={`group relative p-2.5 sm:p-4 rounded-lg border transition-all duration-150 cursor-pointer shadow-xs hover:shadow-md ${
         isDone
           ? 'bg-[#141414] border-[#222222] opacity-75'
           : 'bg-[#181818] border-[#262626] hover:border-blue-500/60'
       }`}
     >
       {/* Top Meta: Tag / Priority + Issue ID */}
-      <div className="flex items-center justify-between mb-2.5 gap-2">
+      <div className="flex items-center justify-between mb-1.5 sm:mb-2.5 gap-2">
         <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-          {tagsList.map((tag) => (
-            <TagBadge key={tag} tag={tag} size="xs" />
-          ))}
+          {/* Primary Tag on mobile, all tags on desktop */}
+          {tagsList.length > 0 && (
+            <TagBadge tag={tagsList[0]} size="xs" />
+          )}
+          {tagsList.length > 1 && (
+            <>
+              {tagsList.slice(1).map((tag) => (
+                <span key={tag} className="hidden sm:inline-flex">
+                  <TagBadge tag={tag} size="xs" />
+                </span>
+              ))}
+              <span className="sm:hidden text-[9px] text-neutral-500 font-medium px-1 rounded bg-[#202020]">
+                +{tagsList.length - 1}
+              </span>
+            </>
+          )}
           {task.priority === 'urgent' && (
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-950/60 text-rose-300 border border-rose-800/50 uppercase tracking-wider">
               Urgent
@@ -154,7 +167,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
               type="button"
               onClick={() => setShowStatusMenu(!showStatusMenu)}
               title="Quick Move"
-              className="opacity-0 group-hover:opacity-100 p-0.5 text-neutral-400 hover:text-white rounded hover:bg-[#262626] transition-opacity ml-1 cursor-pointer"
+              className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-0.5 text-neutral-400 hover:text-white rounded hover:bg-[#262626] transition-opacity ml-1 cursor-pointer"
             >
               <MoreVertical className="w-3.5 h-3.5" />
             </button>
@@ -219,7 +232,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           title={`Status: ${currentStatus?.name || 'Task'}`}
         />
         <h4
-          className={`text-sm font-semibold leading-snug text-neutral-100 group-hover:text-blue-400 transition-colors flex-1 ${
+          className={`text-xs sm:text-sm font-semibold leading-snug text-neutral-100 group-hover:text-blue-400 transition-colors flex-1 ${
             isDone ? 'line-through text-neutral-500' : ''
           }`}
         >
@@ -233,26 +246,28 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           {task.isTimerRunning ? (
             <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50 animate-pulse">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-              LIVE TRACKING
+              <span className="sm:hidden">LIVE</span>
+              <span className="hidden sm:inline">LIVE TRACKING</span>
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 text-[10px] font-mono text-neutral-400 bg-[#222222] px-1.5 py-0.5 rounded border border-[#333333]">
               <Clock className="w-3 h-3 text-neutral-500" />
-              {Math.floor((task.timeSpentSeconds || 0) / 3600)}h {Math.floor(((task.timeSpentSeconds || 0) % 3600) / 60)}m logged
+              {Math.floor((task.timeSpentSeconds || 0) / 3600)}h {Math.floor(((task.timeSpentSeconds || 0) % 3600) / 60)}m
+              <span className="hidden sm:inline"> logged</span>
             </span>
           )}
         </div>
       )}
 
-      {/* Optional Description snippet if present and active */}
+      {/* Optional Description snippet - hidden on mobile to reduce card height and clutter */}
       {!isDone && task.description && (
-        <p className="text-[11px] text-neutral-400 line-clamp-2 mb-2 leading-relaxed">
+        <p className="hidden sm:block text-[11px] text-neutral-400 line-clamp-2 mb-2 leading-relaxed">
           {task.description}
         </p>
       )}
 
       {/* Card Footer: Assignees Stack & Status Pill */}
-      <div className="flex items-center justify-between mt-3.5 pt-2 border-t border-[#262626]">
+      <div className="flex items-center justify-between mt-2 sm:mt-3.5 pt-1.5 sm:pt-2 border-t border-[#262626]">
         
         {/* Assignee Avatar Stack */}
         <div className="flex -space-x-1.5 overflow-hidden">
@@ -262,12 +277,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                 <UserAvatar
                   user={u}
                   size="sm"
-                  className="w-6 h-6 border-2 border-[#181818]"
+                  className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-[#181818]"
                 />
               </div>
             ))
           ) : (
-            <div className="w-6 h-6 rounded bg-[#262626] border-2 border-[#181818] flex items-center justify-center text-[9px] text-neutral-400 font-bold">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-[#262626] border-2 border-[#181818] flex items-center justify-center text-[9px] text-neutral-400 font-bold">
               --
             </div>
           )}
@@ -278,20 +293,22 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           {isDone ? (
             <div className="flex items-center gap-1 text-emerald-400 font-bold text-[10px] bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded">
               <Check className="w-3 h-3 stroke-[3]" />
-              <span>COMPLETED</span>
+              <span className="hidden sm:inline">COMPLETED</span>
+              <span className="sm:hidden">DONE</span>
             </div>
           ) : totalSubtasks > 0 ? (
-            <div className="text-[10px] font-bold text-blue-400 bg-blue-950/40 border border-blue-800/40 px-2 py-1 rounded tracking-wide">
-              {completedSubtasks}/{totalSubtasks} SUBTASKS
+            <div className="text-[10px] font-bold text-blue-400 bg-blue-950/40 border border-blue-800/40 px-2 py-0.5 sm:py-1 rounded tracking-wide">
+              {completedSubtasks}/{totalSubtasks}
+              <span className="hidden sm:inline"> SUBTASKS</span>
             </div>
           ) : dueInfo ? (
             <div
-              className={`text-[10px] font-bold px-2 py-1 rounded tracking-wide border border-transparent ${dueInfo.badgeClass}`}
+              className={`text-[10px] font-bold px-2 py-0.5 sm:py-1 rounded tracking-wide border border-transparent ${dueInfo.badgeClass}`}
             >
               {dueInfo.label}
             </div>
           ) : (
-            <div className="text-[10px] font-bold text-neutral-500 bg-[#222222] px-2 py-1 rounded">
+            <div className="hidden sm:block text-[10px] font-bold text-neutral-500 bg-[#222222] px-2 py-1 rounded">
               NO DEADLINE
             </div>
           )}

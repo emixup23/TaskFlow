@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
-import { Note, NoteColor } from '../types';
+import { Note, NoteColor, NoteDirectory } from '../types';
 import { apiClient } from '../api/client';
 import { useAuth } from './AuthContext';
 import { useGamification } from './GamificationContext';
@@ -9,6 +9,10 @@ export type NoteFilterTab = 'all' | 'private' | 'shared' | 'me' | 'shared_with_m
 interface NotepadContextType {
   notes: Note[];
   filteredNotes: Note[];
+  directories: NoteDirectory[];
+  selectedDirectoryId: string | null; // null = all, 'unfiled' = notes without directory, or directory.id
+  setSelectedDirectoryId: (id: string | null) => void;
+  activeDirectory: NoteDirectory | null;
   isLoading: boolean;
   error: string | null;
   activeFilter: NoteFilterTab;
@@ -30,9 +34,15 @@ interface NotepadContextType {
   setIsShareModalOpen: (open: boolean) => void;
   sharingNote: Note | null;
   setSharingNote: (note: Note | null) => void;
+  isDirectoryModalOpen: boolean;
+  setIsDirectoryModalOpen: (open: boolean) => void;
+  editingDirectory: NoteDirectory | null;
+  setEditingDirectory: (dir: NoteDirectory | null) => void;
   refreshNotes: () => Promise<void>;
+  refreshDirectories: () => Promise<void>;
   createNote: (data: Partial<Note>) => Promise<Note>;
   updateNote: (id: string, data: Partial<Note>) => Promise<Note>;
+  moveNoteToDirectory: (id: string, directoryId: string | null) => Promise<Note>;
   shareNote: (
     id: string,
     data: {
@@ -44,11 +54,15 @@ interface NotepadContextType {
   ) => Promise<Note>;
   togglePinNote: (id: string) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
+  createDirectory: (data: Partial<NoteDirectory>) => Promise<NoteDirectory>;
+  updateDirectory: (id: string, data: Partial<NoteDirectory>) => Promise<NoteDirectory>;
+  deleteDirectory: (id: string) => Promise<void>;
   totalCount: number;
   privateCount: number;
   sharedCount: number;
   myNotesCount: number;
   sharedWithMeCount: number;
+  unfiledCount: number;
   allTags: string[];
 }
 
@@ -59,6 +73,8 @@ export const NotepadProvider: React.FC<{ children: ReactNode }> = ({ children })
   const { awardXP } = useGamification();
 
   const [notes, setNotes] = useState<Note[]>([]);
+  const [directories, setDirectories] = useState<NoteDirectory[]>([]);
+  const [selectedDirectoryId, setSelectedDirectoryId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,6 +90,9 @@ export const NotepadProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [sharingNote, setSharingNote] = useState<Note | null>(null);
 
+  const [isDirectoryModalOpen, setIsDirectoryModalOpen] = useState<boolean>(false);
+  const [editingDirectory, setEditingDirectory] = useState<NoteDirectory | null>(null);
+
   const refreshNotes = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
@@ -88,25 +107,42 @@ export const NotepadProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   }, [isAuthenticated]);
 
+  const refreshDirectories = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const data = await apiClient.getNoteDirectories();
+      setDirectories(data || []);
+    } catch (err: any) {
+      console.error('Failed to fetch note directories:', err);
+    }
+  }, [isAuthenticated]);
+
   useEffect(() => {
     if (isAuthenticated) {
       refreshNotes();
+      refreshDirectories();
     } else {
       setNotes([]);
+      setDirectories([]);
       setIsLoading(false);
     }
-  }, [isAuthenticated, refreshNotes]);
+  }, [isAuthenticated, refreshNotes, refreshDirectories]);
 
   // Derived statistics for counters and filter badges
-  const { totalCount, privateCount, sharedCount, myNotesCount, sharedWithMeCount, allTags } = useMemo(() => {
+  const { totalCount, privateCount, sharedCount, myNotesCount, sharedWithMeCount, unfiledCount, allTags } = useMemo(() => {
     const currentId = currentUser?.id;
     let priv = 0;
     let shared = 0;
     let mine = 0;
     let sharedWithMe = 0;
+    let unfiled = 0;
     const tagSet = new Set<string>();
 
     for (const note of notes) {
+      if (!note.directoryId) {
+        unfiled++;
+      }
+
       if (note.authorId === currentId) {
         mine++;
         if (note.isPrivate) {
@@ -134,15 +170,28 @@ export const NotepadProvider: React.FC<{ children: ReactNode }> = ({ children })
       sharedCount: shared,
       myNotesCount: mine,
       sharedWithMeCount: sharedWithMe,
+      unfiledCount: unfiled,
       allTags: Array.from(tagSet).sort()
     };
   }, [notes, currentUser?.id]);
 
-  // Filtered notes based on current tab, search, color, and tag
+  const activeDirectory = useMemo(() => {
+    if (!selectedDirectoryId || selectedDirectoryId === 'unfiled') return null;
+    return directories.find((d) => d.id === selectedDirectoryId) || null;
+  }, [directories, selectedDirectoryId]);
+
+  // Filtered notes based on current tab, directory, search, color, and tag
   const filteredNotes = useMemo(() => {
     const currentId = currentUser?.id;
     return notes.filter((n) => {
-      // 1. Tab Filter
+      // 1. Directory Filter
+      if (selectedDirectoryId === 'unfiled') {
+        if (n.directoryId) return false;
+      } else if (selectedDirectoryId) {
+        if (n.directoryId !== selectedDirectoryId) return false;
+      }
+
+      // 2. Tab Filter
       if (activeFilter === 'private') {
         if (n.authorId !== currentId || !n.isPrivate) return false;
       } else if (activeFilter === 'shared') {
@@ -153,17 +202,17 @@ export const NotepadProvider: React.FC<{ children: ReactNode }> = ({ children })
         if (n.authorId === currentId || n.isPrivate) return false;
       }
 
-      // 2. Color Filter
+      // 3. Color Filter
       if (selectedColor !== 'all') {
         if ((n.color || 'amber') !== selectedColor) return false;
       }
 
-      // 3. Tag Filter
+      // 4. Tag Filter
       if (selectedTag) {
         if (!Array.isArray(n.tags) || !n.tags.includes(selectedTag)) return false;
       }
 
-      // 4. Search Filter
+      // 5. Search Filter
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
         const matchesTitle = n.title.toLowerCase().includes(q);
@@ -177,7 +226,7 @@ export const NotepadProvider: React.FC<{ children: ReactNode }> = ({ children })
 
       return true;
     });
-  }, [notes, activeFilter, selectedColor, selectedTag, searchQuery, currentUser?.id]);
+  }, [notes, selectedDirectoryId, activeFilter, selectedColor, selectedTag, searchQuery, currentUser?.id]);
 
   const selectedNote = useMemo(() => {
     if (!selectedNoteId) return null;
@@ -186,8 +235,17 @@ export const NotepadProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const createNote = useCallback(
     async (data: Partial<Note>): Promise<Note> => {
-      const created = await apiClient.createNote(data);
+      // Default to currently selected directory if in one
+      const payload: Partial<Note> = {
+        ...data,
+        directoryId: data.directoryId !== undefined 
+          ? data.directoryId 
+          : (selectedDirectoryId && selectedDirectoryId !== 'unfiled' ? selectedDirectoryId : null)
+      };
+
+      const created = await apiClient.createNote(payload);
       setNotes((prev) => [created, ...prev]);
+      refreshDirectories();
       try {
         awardXP(15, created.isPrivate ? 'Created private note' : 'Created shared workspace note');
       } catch {
@@ -195,16 +253,27 @@ export const NotepadProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
       return created;
     },
-    [awardXP]
+    [awardXP, selectedDirectoryId, refreshDirectories]
   );
 
   const updateNote = useCallback(
     async (id: string, data: Partial<Note>): Promise<Note> => {
       const updated = await apiClient.updateNote(id, data);
       setNotes((prev) => prev.map((n) => (n.id === id ? updated : n)));
+      refreshDirectories();
       return updated;
     },
-    []
+    [refreshDirectories]
+  );
+
+  const moveNoteToDirectory = useCallback(
+    async (id: string, directoryId: string | null): Promise<Note> => {
+      const updated = await apiClient.moveNoteToDirectory(id, directoryId);
+      setNotes((prev) => prev.map((n) => (n.id === id ? updated : n)));
+      refreshDirectories();
+      return updated;
+    },
+    [refreshDirectories]
   );
 
   const shareNote = useCallback(
@@ -256,18 +325,46 @@ export const NotepadProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
     try {
       await apiClient.deleteNote(id);
+      refreshDirectories();
     } catch (err) {
       console.error('Failed to delete note:', err);
       refreshNotes();
       throw err;
     }
-  }, [selectedNoteId, refreshNotes]);
+  }, [selectedNoteId, refreshNotes, refreshDirectories]);
+
+  // Directory CRUD
+  const createDirectory = useCallback(async (data: Partial<NoteDirectory>): Promise<NoteDirectory> => {
+    const created = await apiClient.createNoteDirectory(data);
+    setDirectories((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+    return created;
+  }, []);
+
+  const updateDirectory = useCallback(async (id: string, data: Partial<NoteDirectory>): Promise<NoteDirectory> => {
+    const updated = await apiClient.updateNoteDirectory(id, data);
+    setDirectories((prev) => prev.map((d) => (d.id === id ? { ...d, ...updated } : d)).sort((a, b) => a.name.localeCompare(b.name)));
+    return updated;
+  }, []);
+
+  const deleteDirectory = useCallback(async (id: string): Promise<void> => {
+    await apiClient.deleteNoteDirectory(id);
+    setDirectories((prev) => prev.filter((d) => d.id !== id));
+    // Any notes in this directory will become unfiled locally
+    setNotes((prev) => prev.map((n) => n.directoryId === id ? { ...n, directoryId: null } : n));
+    if (selectedDirectoryId === id) {
+      setSelectedDirectoryId(null);
+    }
+  }, [selectedDirectoryId]);
 
   return (
     <NotepadContext.Provider
       value={{
         notes,
         filteredNotes,
+        directories,
+        selectedDirectoryId,
+        setSelectedDirectoryId,
+        activeDirectory,
         isLoading,
         error,
         activeFilter,
@@ -289,17 +386,27 @@ export const NotepadProvider: React.FC<{ children: ReactNode }> = ({ children })
         setIsShareModalOpen,
         sharingNote,
         setSharingNote,
+        isDirectoryModalOpen,
+        setIsDirectoryModalOpen,
+        editingDirectory,
+        setEditingDirectory,
         refreshNotes,
+        refreshDirectories,
         createNote,
         updateNote,
+        moveNoteToDirectory,
         shareNote,
         togglePinNote,
         deleteNote,
+        createDirectory,
+        updateDirectory,
+        deleteDirectory,
         totalCount,
         privateCount,
         sharedCount,
         myNotesCount,
         sharedWithMeCount,
+        unfiledCount,
         allTags
       }}
     >

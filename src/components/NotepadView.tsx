@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { NoteCard } from './notepad/NoteCard';
 import { NoteEditorModal } from './notepad/NoteEditorModal';
 import { NoteShareModal } from './notepad/NoteShareModal';
+import { DirectoryManagerModal } from './notepad/DirectoryManagerModal';
 import { UserAvatar } from './UserAvatar';
 import { Note, NoteColor } from '../types';
 import {
@@ -34,7 +35,10 @@ import {
   Eye,
   EyeOff,
   SlidersHorizontal,
-  ChevronLeft
+  ChevronLeft,
+  Folder,
+  FolderPlus,
+  X
 } from 'lucide-react';
 
 export interface NotepadDisplayOptions {
@@ -57,7 +61,12 @@ const COLOR_PALETTES: { key: string; label: string; dot: string }[] = [
 
 export const NotepadView: React.FC = () => {
   const {
+    notes,
     filteredNotes,
+    directories,
+    selectedDirectoryId,
+    setSelectedDirectoryId,
+    activeDirectory,
     isLoading,
     error,
     activeFilter,
@@ -79,20 +88,40 @@ export const NotepadView: React.FC = () => {
     setIsShareModalOpen,
     sharingNote,
     setSharingNote,
+    isDirectoryModalOpen,
+    setIsDirectoryModalOpen,
+    editingDirectory,
+    setEditingDirectory,
     togglePinNote,
     deleteNote,
     updateNote,
+    deleteDirectory,
     totalCount,
     privateCount,
     sharedCount,
     myNotesCount,
     sharedWithMeCount,
+    unfiledCount,
     allTags
   } = useNotepad();
 
   const { currentUser } = useAuth();
   const [viewLayout, setViewLayout] = useState<'grid' | 'split'>('grid');
   const [copiedDetail, setCopiedDetail] = useState<boolean>(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [showMobileSharing, setShowMobileSharing] = useState(false);
+  const [showMobileFolders, setShowMobileFolders] = useState(false);
+
+  // Compute note counts per directory based on loaded notes
+  const directoryCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const n of notes) {
+      if (n.directoryId) {
+        counts[n.directoryId] = (counts[n.directoryId] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [notes]);
 
   // Preview display options for simplifying workspace
   const [displayOptions, setDisplayOptions] = useState<NotepadDisplayOptions>(() => {
@@ -222,21 +251,21 @@ export const NotepadView: React.FC = () => {
   return (
     <div id="notepad-workspace" className="flex-1 flex flex-col h-full overflow-hidden bg-[#0d0d0d]">
       {/* Top Header */}
-      <div className="border-b border-neutral-800 bg-[#121212] px-4 sm:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="border-b border-neutral-800 bg-[#121212] px-2.5 sm:px-6 py-2.5 sm:py-4 flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0">
             <StickyNote className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-bold text-neutral-100">Notepad Space</h1>
               {displayOptions.showSharingStats && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-neutral-800 text-neutral-300 border border-neutral-700">
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-neutral-800 text-neutral-300 border border-neutral-700">
                   {totalCount} notes
                 </span>
               )}
             </div>
-            <p className="text-xs text-neutral-400">
+            <p className="text-xs text-neutral-400 hidden sm:block">
               Personal scratchpads, checklists, and shared team workspace documents
             </p>
           </div>
@@ -244,8 +273,65 @@ export const NotepadView: React.FC = () => {
 
         {/* Right Header Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          {/* Workspace Preview Detail Toggles: Palette, Tags, Sharing Stats & Simplify */}
-          <div className="flex items-center bg-[#181818] p-1 rounded-xl border border-neutral-800 gap-0.5 text-xs shadow-sm">
+          {/* Mobile Search Toggle Button */}
+          <button
+            type="button"
+            id="btn-toggle-notepad-search"
+            onClick={() => setShowMobileSearch((prev) => !prev)}
+            className={`sm:hidden w-8 h-8 rounded-lg border flex items-center justify-center transition-colors cursor-pointer relative ${
+              showMobileSearch || searchQuery
+                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                : 'bg-[#181818] border-neutral-800 text-neutral-400 hover:text-neutral-200'
+            }`}
+            title="Search notes"
+            aria-label="Toggle search"
+          >
+            {showMobileSearch ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
+            {!showMobileSearch && searchQuery && (
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-400" />
+            )}
+          </button>
+
+          {/* Mobile Sharing Status Toggle Button */}
+          <button
+            type="button"
+            id="btn-toggle-notepad-sharing"
+            onClick={() => setShowMobileSharing((prev) => !prev)}
+            className={`sm:hidden w-8 h-8 rounded-lg border flex items-center justify-center transition-colors cursor-pointer relative ${
+              showMobileSharing || activeFilter !== 'all'
+                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                : 'bg-[#181818] border-neutral-800 text-neutral-400 hover:text-neutral-200'
+            }`}
+            title="Sharing status filter"
+            aria-label="Toggle sharing status filters"
+          >
+            {showMobileSharing ? <X className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+            {!showMobileSharing && activeFilter !== 'all' && (
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-400" />
+            )}
+          </button>
+
+          {/* Mobile Folders Filter Toggle Button */}
+          <button
+            type="button"
+            id="btn-toggle-notepad-folders"
+            onClick={() => setShowMobileFolders((prev) => !prev)}
+            className={`sm:hidden w-8 h-8 rounded-lg border flex items-center justify-center transition-colors cursor-pointer relative ${
+              showMobileFolders || selectedDirectoryId !== null
+                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                : 'bg-[#181818] border-neutral-800 text-neutral-400 hover:text-neutral-200'
+            }`}
+            title="Folders navigation"
+            aria-label="Toggle folders filter"
+          >
+            {showMobileFolders ? <X className="w-4 h-4" /> : <Folder className="w-4 h-4" />}
+            {!showMobileFolders && selectedDirectoryId !== null && (
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-400" />
+            )}
+          </button>
+
+          {/* Workspace Preview Detail Toggles: Palette, Tags, Sharing Stats & Simplify (Desktop/Tablet) */}
+          <div className="hidden md:flex items-center bg-[#181818] p-1 rounded-xl border border-neutral-800 gap-0.5 text-xs shadow-sm">
             {/* Quick Simplify Master Toggle */}
             <button
               type="button"
@@ -310,7 +396,7 @@ export const NotepadView: React.FC = () => {
           </div>
 
           {/* Layout Toggle (Grid vs Split) */}
-          <div className="flex items-center bg-[#181818] p-1 rounded-xl border border-neutral-800 gap-0.5 shadow-sm">
+          <div className="hidden sm:flex items-center bg-[#181818] p-1 rounded-xl border border-neutral-800 gap-0.5 shadow-sm">
             <button
               type="button"
               title="Grid view"
@@ -349,7 +435,7 @@ export const NotepadView: React.FC = () => {
             id="btn-create-new-note"
             type="button"
             onClick={handleOpenNewNote}
-            className="h-10 px-3 sm:px-3.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-sm cursor-pointer flex items-center gap-1.5 shrink-0"
+            className="h-8 sm:h-10 px-2.5 sm:px-3.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-lg sm:rounded-xl text-xs font-semibold transition-colors shadow-sm cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">New Note</span>
@@ -358,10 +444,10 @@ export const NotepadView: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Tabs Bar */}
-      <div className="px-3 sm:px-6 py-2.5 border-b border-neutral-800/80 bg-[#141414] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        {/* Visibility Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar touch-pan-x w-full sm:w-auto">
+      {/* Filter Tabs Bar (Sharing Status & Search) - Hidden by default on Mobile */}
+      <div className={`${showMobileSharing || showMobileSearch ? 'flex' : 'hidden'} sm:flex px-2.5 sm:px-6 py-2 sm:py-2.5 border-b border-neutral-800/80 bg-[#141414] flex-col sm:flex-row sm:items-center justify-between gap-2.5`}>
+        {/* Visibility Tabs (Sharing Status) */}
+        <div className={`${showMobileSharing ? 'flex' : 'hidden'} sm:flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar touch-pan-x w-full sm:w-auto`}>
           <button
             type="button"
             onClick={() => setActiveFilter('all')}
@@ -453,16 +539,139 @@ export const NotepadView: React.FC = () => {
         </div>
 
         {/* Search Bar */}
-        <div className="relative w-full sm:w-64">
+        <div className={`${showMobileSearch ? 'relative w-full' : 'hidden'} sm:relative sm:block sm:w-64`}>
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search notes or tags..."
-            className="w-full pl-9 pr-3 py-1.5 bg-[#181818] border border-neutral-800 rounded-lg text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-700"
+            className="w-full pl-9 pr-8 py-1.5 bg-[#181818] border border-neutral-800 rounded-lg text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-700"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
+      </div>
+
+      {/* Directory / Folder Navigation Strip - Hidden by default on Mobile */}
+      <div className={`${showMobileFolders ? 'flex' : 'hidden'} sm:flex px-2.5 sm:px-6 py-2 border-b border-neutral-800/60 bg-[#111111] items-center justify-between gap-3 text-xs overflow-x-auto no-scrollbar`}>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 text-neutral-400 font-medium text-[11px] mr-1 shrink-0">
+            <Folder className="w-3.5 h-3.5 text-blue-400" />
+            <span>Folders:</span>
+          </div>
+
+          {/* All Folders */}
+          <button
+            type="button"
+            onClick={() => setSelectedDirectoryId(null)}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer shrink-0 ${
+              selectedDirectoryId === null
+                ? 'bg-neutral-800 text-white border border-neutral-700 shadow-xs'
+                : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50'
+            }`}
+          >
+            <span>All Notes</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-neutral-900/80 text-neutral-400">
+              {totalCount}
+            </span>
+          </button>
+
+          {/* Custom Directories */}
+          {directories.map((dir) => {
+            const isSelected = selectedDirectoryId === dir.id;
+            const count = directoryCounts[dir.id] || 0;
+            return (
+              <div key={dir.id} className="relative group shrink-0 flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDirectoryId(isSelected ? null : dir.id)}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
+                    isSelected
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-neutral-900/80 border border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700'
+                  }`}
+                >
+                  <Folder className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-blue-400'}`} />
+                  <span>{dir.name}</span>
+                  {dir.isPrivate && <Lock className="w-2.5 h-2.5 opacity-70" />}
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      isSelected ? 'bg-blue-700 text-blue-100' : 'bg-neutral-800 text-neutral-400'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+
+                {/* Edit / Delete directory action buttons on hover/selected */}
+                <div className="hidden group-hover:flex items-center gap-0.5 ml-1 bg-neutral-800 px-1 py-0.5 rounded-md border border-neutral-700">
+                  <button
+                    type="button"
+                    title="Edit Folder"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingDirectory(dir);
+                      setIsDirectoryModalOpen(true);
+                    }}
+                    className="p-1 hover:text-blue-300 text-neutral-400 transition-colors"
+                  >
+                    <Edit2 className="w-2.5 h-2.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Delete Folder"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Delete folder "${dir.name}"? Notes inside will not be deleted.`)) {
+                        deleteDirectory(dir.id);
+                      }
+                    }}
+                    className="p-1 hover:text-rose-400 text-neutral-400 transition-colors"
+                  >
+                    <Trash2 className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Unfiled Notes */}
+          <button
+            type="button"
+            onClick={() => setSelectedDirectoryId(selectedDirectoryId === 'unfiled' ? null : 'unfiled')}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer shrink-0 ${
+              selectedDirectoryId === 'unfiled'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50'
+            }`}
+          >
+            <span>Unfiled</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-neutral-900/80 text-neutral-400">
+              {unfiledCount}
+            </span>
+          </button>
+        </div>
+
+        {/* New Directory Button */}
+        <button
+          type="button"
+          onClick={() => {
+            setEditingDirectory(null);
+            setIsDirectoryModalOpen(true);
+          }}
+          className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-400 hover:text-blue-300 bg-blue-950/40 hover:bg-blue-900/40 border border-blue-800/40 px-2.5 py-1 rounded-lg transition-colors shrink-0 cursor-pointer"
+        >
+          <FolderPlus className="w-3.5 h-3.5" />
+          <span>New Folder</span>
+        </button>
       </div>
 
       {/* Color Filter & Tags Bar */}
@@ -564,7 +773,66 @@ export const NotepadView: React.FC = () => {
           /* ========================================================= */
           /* GRID VIEW                                                 */
           /* ========================================================= */
-          <div className="h-full overflow-y-auto p-4 sm:p-6 space-y-6">
+          <div className="h-full overflow-y-auto p-2.5 sm:p-6 space-y-4 sm:space-y-6">
+            {/* Active Folder Banner */}
+            {activeDirectory && (
+              <div className="flex items-center justify-between p-3.5 bg-[#161616] border border-neutral-800 rounded-xl shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center">
+                    <Folder className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-neutral-100">{activeDirectory.name}</span>
+                      {activeDirectory.isPrivate && (
+                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-800/40">
+                          <Lock className="w-2.5 h-2.5" />
+                          <span>Private</span>
+                        </span>
+                      )}
+                    </div>
+                    {activeDirectory.description && (
+                      <p className="text-xs text-neutral-400 mt-0.5">{activeDirectory.description}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingDirectory(activeDirectory);
+                      setIsDirectoryModalOpen(true);
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 text-xs flex items-center gap-1 border border-neutral-800 transition-colors cursor-pointer"
+                    title="Edit directory"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>Edit Folder</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm(`Delete folder "${activeDirectory.name}"? Notes inside will become unfiled.`)) {
+                        deleteDirectory(activeDirectory.id);
+                      }
+                    }}
+                    className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-400 hover:bg-neutral-800 text-xs border border-neutral-800 transition-colors cursor-pointer"
+                    title="Delete directory"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDirectoryId(null)}
+                    className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 text-xs border border-neutral-800 transition-colors cursor-pointer"
+                    title="Clear folder filter"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Pinned Section */}
             {pinnedNotes.length > 0 && (
               <div className="space-y-3">
@@ -920,6 +1188,15 @@ export const NotepadView: React.FC = () => {
           setSharingNote(null);
         }}
         note={sharingNote}
+      />
+
+      <DirectoryManagerModal
+        isOpen={isDirectoryModalOpen}
+        onClose={() => {
+          setIsDirectoryModalOpen(false);
+          setEditingDirectory(null);
+        }}
+        directoryToEdit={editingDirectory}
       />
     </div>
   );

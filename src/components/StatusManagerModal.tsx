@@ -158,7 +158,7 @@ export const StatusManagerModal: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-white leading-tight">
-                  Workflow Columns & Statuses
+                  Workflow Statuses
                 </h2>
                 <span className="text-[10px] font-semibold uppercase px-1.5 py-0.2 rounded bg-amber-950/60 text-amber-300 border border-amber-800">
                   Admin Only

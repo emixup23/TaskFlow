@@ -16,7 +16,8 @@ import {
   MeetingTopic,
   MeetingAttachment,
   TaskTimeLog,
-  SettingsTab
+  SettingsTab,
+  ListerTask
 } from '../types';
 import { api } from '../api/client';
 import { useAuth } from './AuthContext';
@@ -24,6 +25,11 @@ import { useGamification } from './GamificationContext';
 import { useKudos } from './KudosContext';
 import confetti from 'canvas-confetti';
 import { STORAGE_KEYS } from '../constants/storageKeys';
+import {
+  taskToListerTask,
+  mergeSyncedTasksWithLocal,
+  DEFAULT_LISTER_API_BASE_URL
+} from '../utils/listerSync';
 
 export interface Toast {
   id: string;
@@ -157,6 +163,12 @@ interface TaskContextType {
   // Kudos Delegation
   acceptDelegation: (taskId: string) => Promise<void>;
   declineDelegation: (taskId: string, reason?: string) => Promise<void>;
+  // Lister Task Manager Synchronization
+  isSyncingWithLister: boolean;
+  lastListerSyncTime: string | null;
+  syncWithLister: (customBaseUrl?: string, customApiKey?: string) => Promise<{ success: boolean; message: string; count?: number }>;
+  listerConfig: { baseUrl: string; apiKey: string };
+  setListerConfig: (config: { baseUrl: string; apiKey: string }) => void;
 }
 
 const initialFilters: FilterState = {
@@ -1231,6 +1243,103 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // -------------------------------------------------------------
+  // Lister Task Manager Synchronization Implementation
+  // -------------------------------------------------------------
+  const [isSyncingWithLister, setIsSyncingWithLister] = useState(false);
+  const [lastListerSyncTime, setLastListerSyncTime] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(STORAGE_KEYS.LISTER_LAST_SYNC_TIME) || null;
+    }
+    return null;
+  });
+
+  const [listerConfig, setListerConfigState] = useState<{ baseUrl: string; apiKey: string }>(() => {
+    if (typeof window !== 'undefined') {
+      return {
+        baseUrl: localStorage.getItem(STORAGE_KEYS.LISTER_API_BASE_URL) || DEFAULT_LISTER_API_BASE_URL,
+        apiKey: localStorage.getItem(STORAGE_KEYS.LISTER_API_KEY) || ''
+      };
+    }
+    return {
+      baseUrl: DEFAULT_LISTER_API_BASE_URL,
+      apiKey: ''
+    };
+  });
+
+  const setListerConfig = useCallback((cfg: { baseUrl: string; apiKey: string }) => {
+    setListerConfigState(cfg);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.LISTER_API_BASE_URL, cfg.baseUrl);
+      localStorage.setItem(STORAGE_KEYS.LISTER_API_KEY, cfg.apiKey);
+    }
+  }, []);
+
+  const syncWithLister = useCallback(
+    async (customBaseUrl?: string, customApiKey?: string) => {
+      if (isSyncingWithLister) {
+        return { success: false, message: 'Sync is already in progress.' };
+      }
+      setIsSyncingWithLister(true);
+      try {
+        const payloadTasks: ListerTask[] = tasks.map((t) => taskToListerTask(t, statuses));
+        const lastSync = localStorage.getItem(STORAGE_KEYS.LISTER_LAST_SYNC_TIME) || undefined;
+
+        const effectiveBaseUrl = customBaseUrl || listerConfig.baseUrl;
+        const effectiveApiKey = customApiKey !== undefined ? customApiKey : listerConfig.apiKey;
+
+        const response = await api.syncTasks(
+          {
+            tasks: payloadTasks,
+            lastSyncTime: lastSync
+          },
+          {
+            baseUrl: effectiveBaseUrl,
+            apiKey: effectiveApiKey
+          }
+        );
+
+        if (response && Array.isArray(response.syncedTasks)) {
+          const { mergedTasks, newAddedCount, updatedCount } = mergeSyncedTasksWithLocal(
+            tasks,
+            response.syncedTasks,
+            statuses,
+            currentUser?.id || 'user-admin-1'
+          );
+
+          setTasks(mergedTasks);
+          const syncTimestamp = response.syncTime || new Date().toISOString();
+          setLastListerSyncTime(syncTimestamp);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(STORAGE_KEYS.LISTER_LAST_SYNC_TIME, syncTimestamp);
+          }
+
+          const toastMessage = `Synced with Lister: ${mergedTasks.length} tasks synchronized (${newAddedCount} new, ${updatedCount} updated).`;
+          addToast('success', toastMessage);
+
+          return {
+            success: true,
+            message: toastMessage,
+            count: mergedTasks.length
+          };
+        } else {
+          throw new Error('Sync response did not return a valid syncedTasks list.');
+        }
+      } catch (err: any) {
+        console.error('Lister sync error:', err);
+        const errMsg = err?.message || 'Failed to complete synchronization with Lister.';
+        addToast('error', errMsg);
+        return {
+          success: false,
+          message: errMsg
+        };
+      } finally {
+        setIsSyncingWithLister(false);
+      }
+    },
+    [isSyncingWithLister, tasks, statuses, listerConfig, currentUser, addToast]
+  );
+
   return (
     <TaskContext.Provider
       value={{
@@ -1332,7 +1441,13 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleTaskTimer,
         // Kudos Delegation
         acceptDelegation,
-        declineDelegation
+        declineDelegation,
+        // Lister Sync
+        isSyncingWithLister,
+        lastListerSyncTime,
+        syncWithLister,
+        listerConfig,
+        setListerConfig
       }}
     >
       {children}

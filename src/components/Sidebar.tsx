@@ -202,10 +202,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
             onClick={onClose}
             aria-label="Collapse sidebar"
             title="Collapse sidebar (Ctrl+B)"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-400 hover:text-white hover:bg-[#222222] border border-neutral-800 transition-colors cursor-pointer shrink-0 active:scale-95"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-neutral-300 hover:text-white bg-[#1e1e1e] hover:bg-[#282828] border border-neutral-700/80 transition-colors cursor-pointer shrink-0 active:scale-95 text-xs font-semibold"
           >
-            <PanelLeftClose className="w-5 h-5 hidden lg:block" />
-            <X className="w-5 h-5 lg:hidden" />
+            <PanelLeftClose className="w-4.5 h-4.5 text-blue-400" />
+            <span className="lg:hidden text-neutral-300">Collapse</span>
           </button>
         </div>
 
@@ -611,6 +611,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
               </div>
             </div>
           )}
+        </div>
+
+        {/* Dedicated Mobile Bottom Collapse Button */}
+        <div className="p-3 border-t border-neutral-800 lg:hidden bg-[#111111]">
+          <button
+            type="button"
+            id="sidebar-btn-collapse-mobile-bottom"
+            onClick={onClose}
+            aria-label="Collapse sidebar"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 text-neutral-200 text-xs font-semibold border border-neutral-700 transition-colors cursor-pointer active:scale-98"
+          >
+            <PanelLeftClose className="w-4 h-4 text-blue-400" />
+            <span>Collapse Sidebar</span>
+          </button>
         </div>
 
       </aside>

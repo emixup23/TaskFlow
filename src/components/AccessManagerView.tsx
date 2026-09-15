@@ -1608,7 +1608,7 @@ export const AccessManagerView: React.FC = () => {
               </div>
 
               <div>
-                Showing <span className="font-semibold text-slate-200">{filteredUsers.length}</span> of {users.length} team members
+                <span className="font-semibold text-slate-200">{filteredUsers.length}</span> / {users.length} team members
               </div>
             </div>
           </div>

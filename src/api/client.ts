@@ -32,7 +32,12 @@ import {
   NotificationItem,
   Form,
   FormResponse,
-  Note
+  Note,
+  NoteDirectory,
+  SecurityAuditReport,
+  ListerTask,
+  ListerSyncPayload,
+  ListerSyncResponse
 } from '../types';
 
 import { STORAGE_KEYS } from '../constants/storageKeys';
@@ -256,6 +261,50 @@ export const api = {
     request<{ success: boolean; message: string }>(`/api/tasks/${id}`, {
       method: 'DELETE'
     }),
+
+  // Lister Two-Way Task Synchronization
+  syncTasks: async (
+    payload: ListerSyncPayload,
+    options?: { baseUrl?: string; apiKey?: string }
+  ): Promise<ListerSyncResponse> => {
+    const rawStoredUrl = localStorage.getItem(STORAGE_KEYS.LISTER_API_BASE_URL);
+    const storedApiKey = localStorage.getItem(STORAGE_KEYS.LISTER_API_KEY) || '';
+
+    const defaultUrl = 'https://ais-pre-qyqoe3bbej7dvas46lbdfd-899663363473.europe-west2.run.app';
+    const baseUrl = (options?.baseUrl || rawStoredUrl || defaultUrl).replace(/\/+$/, '');
+    const apiKey = options?.apiKey !== undefined ? options.apiKey : storedApiKey;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    // Attempt 1: Call configured remote Lister endpoint directly
+    try {
+      const response = await fetch(`${baseUrl}/api/sync`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data as ListerSyncResponse;
+      }
+
+      console.warn(`Lister remote sync returned HTTP ${response.status}. Falling back to dev server sync endpoint.`);
+    } catch (err) {
+      console.warn('Network error reaching remote Lister API. Falling back to dev server sync endpoint:', err);
+    }
+
+    // Attempt 2: Fallback to local application dev server /api/sync endpoint
+    return request<ListerSyncResponse>('/api/sync', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
 
   // Subtasks
   addSubtask: (taskId: string, title: string) =>
@@ -679,12 +728,13 @@ export const api = {
     }),
 
   // Notepad Space (Private & Shared Notes)
-  getNotes: (params?: { filter?: string; tag?: string; search?: string; color?: string }) => {
+  getNotes: (params?: { filter?: string; tag?: string; search?: string; color?: string; directoryId?: string }) => {
     const query = new URLSearchParams();
     if (params?.filter) query.set('filter', params.filter);
     if (params?.tag) query.set('tag', params.tag);
     if (params?.search) query.set('search', params.search);
     if (params?.color) query.set('color', params.color);
+    if (params?.directoryId) query.set('directoryId', params.directoryId);
     const qs = query.toString();
     return request<Note[]>(`/api/notes${qs ? `?${qs}` : ''}`);
   },
@@ -701,6 +751,12 @@ export const api = {
     request<Note>(`/api/notes/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data)
+    }),
+
+  moveNoteToDirectory: (id: string, directoryId: string | null) =>
+    request<Note>(`/api/notes/${id}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ directoryId })
     }),
 
   shareNote: (
@@ -725,7 +781,30 @@ export const api = {
   deleteNote: (id: string) =>
     request<{ success: boolean; id: string }>(`/api/notes/${id}`, {
       method: 'DELETE'
-    })
+    }),
+
+  // Note Directories (Folders)
+  getNoteDirectories: () => request<NoteDirectory[]>('/api/notes/directories'),
+
+  createNoteDirectory: (data: Partial<NoteDirectory>) =>
+    request<NoteDirectory>('/api/notes/directories', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
+  updateNoteDirectory: (id: string, data: Partial<NoteDirectory>) =>
+    request<NoteDirectory>(`/api/notes/directories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+
+  deleteNoteDirectory: (id: string) =>
+    request<{ success: boolean; id: string; message?: string }>(`/api/notes/directories/${id}`, {
+      method: 'DELETE'
+    }),
+
+  // Security Audit
+  getSecurityAuditReport: () => request<SecurityAuditReport>('/api/admin/security/audit')
 };
 
 export const apiClient = api;

@@ -69,10 +69,10 @@ export const AdminDashboard: React.FC = () => {
   const subtaskRate = allSubtasks.length > 0 ? Math.round((completedSubtasks / allSubtasks.length) * 100) : 0;
 
   return (
-    <div className="flex-1 p-4 sm:p-6 lg:p-8 bg-[#0d0d0d] dark:bg-[#0d0d0d] overflow-y-auto space-y-6 max-w-7xl mx-auto w-full transition-colors duration-200">
+    <div className="flex-1 p-2.5 sm:p-6 lg:p-8 bg-[#0d0d0d] dark:bg-[#0d0d0d] overflow-y-auto space-y-3 sm:space-y-6 max-w-7xl mx-auto w-full transition-colors duration-200">
       
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#141414] p-5 rounded border border-[#262626] shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#141414] p-3 sm:p-5 rounded border border-[#262626] shadow-xs">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 rounded bg-blue-950/60 text-blue-400">
@@ -118,7 +118,7 @@ export const AdminDashboard: React.FC = () => {
       {/* Top 4 Key Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Tasks */}
-        <div className="bg-[#141414] p-5 rounded border border-[#262626] shadow-xs space-y-2">
+        <div className="bg-[#141414] p-3.5 sm:p-5 rounded border border-[#262626] shadow-xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
               Total Workload
@@ -135,7 +135,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Completion Rate */}
-        <div className="bg-[#141414] p-5 rounded border border-[#262626] shadow-xs space-y-2">
+        <div className="bg-[#141414] p-3.5 sm:p-5 rounded border border-[#262626] shadow-xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
               Completion Rate
@@ -157,7 +157,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Overdue Items */}
-        <div className="bg-[#141414] p-5 rounded border border-[#262626] shadow-xs space-y-2">
+        <div className="bg-[#141414] p-3.5 sm:p-5 rounded border border-[#262626] shadow-xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
               Overdue Tasks
@@ -175,7 +175,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Subtask Execution */}
-        <div className="bg-[#141414] p-5 rounded border border-[#262626] shadow-xs space-y-2">
+        <div className="bg-[#141414] p-3.5 sm:p-5 rounded border border-[#262626] shadow-xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
               Checklist Velocity
@@ -243,7 +243,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Priority Breakdown */}
-        <div className="bg-[#141414] p-5 rounded border border-[#262626] shadow-xs space-y-4">
+        <div className="bg-[#141414] p-3.5 sm:p-5 rounded border border-[#262626] shadow-xs space-y-4">
           <div className="flex items-center justify-between border-b border-[#262626] pb-3">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider">
               Priority Allocation
@@ -281,7 +281,7 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Team Member Workload Allocation */}
-      <div className="bg-[#141414] p-5 rounded border border-[#262626] shadow-xs space-y-4">
+      <div className="bg-[#141414] p-3.5 sm:p-5 rounded border border-[#262626] shadow-xs space-y-4">
         <div className="flex items-center justify-between border-b border-[#262626] pb-3">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-blue-400" />

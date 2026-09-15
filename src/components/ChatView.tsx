@@ -26,6 +26,7 @@ import {
   Check,
   CheckCheck,
   ExternalLink,
+  ChevronLeft,
   ChevronRight,
   ChevronDown,
   Info,
@@ -45,9 +46,12 @@ import {
   Italic,
   Code,
   List,
-  Eye
+  Eye,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { FileViewerModal, FileViewerItem } from './FileViewerModal';
+import { soundManager, playChatMessageSound } from '../utils/sound';
 
 
 const POPULAR_EMOJIS = [
@@ -136,6 +140,7 @@ export const ChatView: React.FC = () => {
   const [isNewDmModalOpen, setIsNewDmModalOpen] = useState(false);
   const [viewerFile, setViewerFile] = useState<FileViewerItem | null>(null);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [isChatAudioEnabled, setIsChatAudioEnabled] = useState(soundManager.isChatSoundEnabled());
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -417,7 +422,9 @@ export const ChatView: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       {/* LEFT SIDEBAR: Channels, Groups & Direct Messages Roster       */}
       {/* ------------------------------------------------------------- */}
-      <aside className="w-64 sm:w-72 bg-[#121212] border-r border-[#262626] flex flex-col shrink-0">
+      <aside className={`w-full md:w-72 bg-[#121212] border-r border-[#262626] flex flex-col shrink-0 ${
+        activeChannelId ? 'hidden md:flex' : 'flex'
+      }`}>
         {/* Top Header */}
         <div className="p-3.5 border-b border-[#262626] flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -693,12 +700,24 @@ export const ChatView: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       {/* CENTER STAGE: Active Chat Room Feed & Composer               */}
       {/* ------------------------------------------------------------- */}
-      <section className="flex-1 flex flex-col min-w-0 h-full bg-[#0d0d0d]">
+      <section className={`flex-1 flex flex-col min-w-0 h-full bg-[#0d0d0d] ${
+        activeChannelId ? 'flex' : 'hidden md:flex'
+      }`}>
         {activeChannel ? (
           <>
             {/* Top Room Banner */}
-            <div className="h-14 px-4 sm:px-6 border-b border-[#262626] bg-[#121212] flex items-center justify-between gap-4 shrink-0">
-              <div className="flex items-center gap-3 min-w-0">
+            <div className="h-14 px-3 sm:px-6 border-b border-[#262626] bg-[#121212] flex items-center justify-between gap-2 sm:gap-4 shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                {/* Mobile Back Button */}
+                <button
+                  type="button"
+                  onClick={() => setActiveChannelId('')}
+                  className="md:hidden p-1.5 -ml-1 text-neutral-400 hover:text-white rounded-md hover:bg-[#202020] transition-colors cursor-pointer shrink-0"
+                  title="Back to conversations list"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+
                 <div
                   className="w-7 h-7 rounded-md flex items-center justify-center text-white shrink-0"
                   style={{ backgroundColor: activeChannel.color || '#3B82F6' }}
@@ -774,6 +793,32 @@ export const ChatView: React.FC = () => {
                   )}
                 </div>
 
+                {/* Sound Alert Toggle / Test */}
+                <button
+                  type="button"
+                  id="btn-toggle-chat-sound"
+                  onClick={() => {
+                    const next = !isChatAudioEnabled;
+                    soundManager.setChatSoundEnabled(next);
+                    setIsChatAudioEnabled(next);
+                    if (next) {
+                      playChatMessageSound();
+                    }
+                  }}
+                  className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                    isChatAudioEnabled
+                      ? 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/30'
+                      : 'text-neutral-500 hover:text-neutral-300 hover:bg-[#202020]'
+                  }`}
+                  title={
+                    isChatAudioEnabled
+                      ? 'Chat audio alerts enabled (Click to mute or test acoustic pop)'
+                      : 'Chat audio alerts muted (Click to enable)'
+                  }
+                >
+                  {isChatAudioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                </button>
+
                 {/* Info Panel Toggle */}
                 <button
                   type="button"
@@ -795,7 +840,7 @@ export const ChatView: React.FC = () => {
               <div className="bg-amber-950/40 border-b border-amber-800/40 px-4 py-1.5 flex items-center justify-between text-xs text-amber-300">
                 <div className="flex items-center gap-2">
                   <Pin className="w-3.5 h-3.5" />
-                  <span>Showing {filteredMessages.length} pinned message(s)</span>
+                  <span>{filteredMessages.length} pinned message(s)</span>
                 </div>
                 <button
                   type="button"
@@ -808,7 +853,7 @@ export const ChatView: React.FC = () => {
             )}
 
             {/* Message Feed Canvas */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-2.5 sm:p-6 space-y-4 sm:space-y-6">
               {isMessagesLoading ? (
                 <div className="flex items-center justify-center h-48 text-neutral-400 text-xs gap-2">
                   <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -1220,7 +1265,7 @@ export const ChatView: React.FC = () => {
             {/* ------------------------------------------------------------- */}
             {/* BOTTOM: Message Composer Bar                                  */}
             {/* ------------------------------------------------------------- */}
-            <div className="p-3 sm:p-4 bg-[#121212] border-t border-[#262626]">
+            <div className="p-2 sm:p-4 bg-[#121212] border-t border-[#262626]">
               {/* Replying banner */}
               {replyingTo && (
                 <div className="mb-2 px-3 py-1.5 bg-[#181818] border-l-2 border-blue-500 rounded flex items-center justify-between text-xs text-neutral-300">
@@ -1305,32 +1350,34 @@ export const ChatView: React.FC = () => {
                   <div className="px-3 py-2 border-t border-[#222222] flex items-center justify-between gap-2">
                     {/* Left: Formatting & Media Actions */}
                     <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => wrapSelection('**')}
-                        className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
-                        title="Bold"
-                      >
-                        <Bold className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => wrapSelection('*')}
-                        className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
-                        title="Italic"
-                      >
-                        <Italic className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => wrapSelection('`')}
-                        className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
-                        title="Code snippet"
-                      >
-                        <Code className="w-3.5 h-3.5" />
-                      </button>
-
-                      <div className="w-[1px] h-3.5 bg-[#2a2a2a] mx-1" />
+                      {/* Secondary markdown formatting hidden on mobile to avoid horizontal squishing */}
+                      <span className="hidden sm:inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => wrapSelection('**')}
+                          className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
+                          title="Bold"
+                        >
+                          <Bold className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => wrapSelection('*')}
+                          className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
+                          title="Italic"
+                        >
+                          <Italic className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => wrapSelection('`')}
+                          className="p-1.5 text-neutral-400 hover:text-white hover:bg-[#262626] rounded transition-colors cursor-pointer"
+                          title="Code snippet"
+                        >
+                          <Code className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="w-[1px] h-3.5 bg-[#2a2a2a] mx-1" />
+                      </span>
 
                       {/* Emoji Popover Button */}
                       <div ref={emojiPickerContainerRef} className="relative">
@@ -1346,7 +1393,7 @@ export const ChatView: React.FC = () => {
                         </button>
 
                         {isEmojiPickerOpen && (
-                          <div className="absolute bottom-full left-0 mb-2 p-3 bg-[#181818] border border-[#2a2a2a] rounded-2xl shadow-2xl z-30 w-80 sm:w-96 max-h-72 overflow-y-auto scrollbar-thin">
+                          <div className="absolute bottom-full left-0 mb-2 p-3 bg-[#181818] border border-[#2a2a2a] rounded-2xl shadow-2xl z-30 w-[calc(100vw-2rem)] max-w-xs sm:w-96 max-h-72 overflow-y-auto scrollbar-thin">
                             <div className="grid grid-cols-7 sm:grid-cols-8 gap-1.5">
                               {POPULAR_EMOJIS.map((em, idx) => (
                                 <button
