@@ -1,0 +1,13 @@
+{
+  "watch": ["server.ts", "src"],
+  "ext": "ts,tsx,js,json",
+  "ignore": [
+    "data/*",
+    "data/**/*",
+    "dist/*",
+    "dist/**/*",
+    "*.json.tmp",
+    "taskflow-db.json*",
+    "node_modules"
+  ]
+}

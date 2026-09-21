@@ -309,7 +309,33 @@ export type ViewMode =
   | 'chat'
   | 'backup';
 
-export type SettingsTab = 'appearance' | 'team' | 'access' | 'audit' | 'backup' | 'data';
+export type SettingsTab = 'appearance' | 'language' | 'voice' | 'team' | 'access' | 'audit' | 'backup' | 'data';
+
+export type VoiceAssistantStatus = 'idle' | 'listening' | 'processing' | 'speaking' | 'disabled';
+
+export interface VoiceAssistantAction {
+  type:
+    | 'NAVIGATE'
+    | 'CREATE_TASK'
+    | 'SEARCH'
+    | 'FILTER_PRIORITY'
+    | 'FILTER_STATUS'
+    | 'CLEAR_FILTERS'
+    | 'OPEN_MODAL'
+    | 'SUMMARIZE'
+    | 'NONE';
+  payload?: any;
+}
+
+export interface VoiceAssistantMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  actionExecuted?: string;
+}
+
+export type AppLanguage = 'en' | 'es' | 'fr' | 'de' | 'ja' | 'zh' | 'pt' | 'ar';
 
 export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -712,6 +738,8 @@ export type RadiusOption = 'sharp' | 'precision' | 'modern' | 'soft' | 'round';
 
 export type DensityOption = 'compact' | 'standard' | 'relaxed';
 
+export type TextSizeOption = 'small' | 'default' | 'large' | 'xl';
+
 export interface CustomThemeConfig {
   id: string;
   name: string;
@@ -730,6 +758,8 @@ export interface CustomThemeConfig {
   fontFamily: FontFamilyOption;
   density: DensityOption;
   highContrast: boolean;
+  borders?: boolean; // Border lines on/off (default: true)
+  textSize?: TextSizeOption; // Default text size scale (default: 'default')
   isCustom?: boolean;
 }
 

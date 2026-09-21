@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Task,
   Status,
@@ -203,7 +203,20 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [tasks, setTasks] = useState<Task[]>([]);
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [activeProjectId, setActiveProjectId] = useState<string>('all');
+  const [activeProjectId, setActiveProjectIdState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEYS.ACTIVE_PROJECT_ID);
+      if (saved) return saved;
+    }
+    return 'all';
+  });
+
+  const setActiveProjectId = useCallback((id: string) => {
+    setActiveProjectIdState(id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_PROJECT_ID, id);
+    }
+  }, []);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
@@ -444,12 +457,14 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     try {
       setIsLoading(true);
-      const [fetchedTasks, fetchedStatuses, fetchedProjects, fetchedLogs, fetchedMeetings] = await Promise.all([
+      // Fetch all core datasets concurrently in a single roundtrip
+      const [fetchedTasks, fetchedStatuses, fetchedProjects, fetchedLogs, fetchedMeetings, fetchedStats] = await Promise.all([
         api.getTasks(),
         api.getStatuses(),
         api.getProjects().catch(() => []),
         api.getActivityLogs(),
-        api.getMeetings().catch(() => [])
+        api.getMeetings().catch(() => []),
+        api.getStats().catch(() => null)
       ]);
 
       const userProjects = (currentUser.role === 'admin')
@@ -461,16 +476,12 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProjects(userProjects);
       setActivityLogs(fetchedLogs);
       setMeetings(fetchedMeetings);
+      if (fetchedStats) {
+        setStats(fetchedStats);
+      }
 
       if (activeProjectId !== 'all' && !userProjects.some((p: Project) => p.id === activeProjectId)) {
         setActiveProjectId('all');
-      }
-
-      try {
-        const fetchedStats = await api.getStats();
-        setStats(fetchedStats);
-      } catch (err) {
-        console.warn('Could not fetch stats:', err);
       }
     } catch (err: any) {
       console.error('Failed to load platform data:', err);
@@ -478,7 +489,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser, addToast]);
+  }, [currentUser, addToast, activeProjectId]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -492,70 +503,99 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setFilters(initialFilters);
   };
 
-  // Filter tasks in memory for responsive UX
-  const filteredTasks = tasks.filter((task) => {
-    // Non-admin users view only tasks and projects they are members in
-    if (currentUser && currentUser.role !== 'admin') {
-      const isTaskMember = Array.isArray(task.assigneeIds) && task.assigneeIds.includes(currentUser.id);
-      const isProjectMember = task.projectId
-        ? projects.some(
-            (p) => p.id === task.projectId && (p.ownerId === currentUser.id || (Array.isArray(p.memberIds) && p.memberIds.includes(currentUser.id)))
-          )
-        : false;
-      if (!isTaskMember && !isProjectMember) return false;
-    }
+  // Precompute lookup sets for fast O(1) membership checks during filtering
+  const userProjectIdsSet = useMemo(() => {
+    if (!currentUser || currentUser.role === 'admin') return null;
+    return new Set(
+      projects
+        .filter((p) => p.ownerId === currentUser.id || (Array.isArray(p.memberIds) && p.memberIds.includes(currentUser.id)))
+        .map((p) => p.id)
+    );
+  }, [projects, currentUser]);
 
-    // Project filter
-    if (activeProjectId !== 'all') {
-      if (task.projectId !== activeProjectId) return false;
-    }
+  const doneStatusIdsSet = useMemo(() => {
+    return new Set(statuses.filter((s) => s.isDone).map((s) => s.id));
+  }, [statuses]);
 
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      const matchTitle = task.title.toLowerCase().includes(q);
-      const matchDesc = task.description?.toLowerCase().includes(q);
-      const matchTag = task.tags.some((t) => t.toLowerCase().includes(q));
-      if (!matchTitle && !matchDesc && !matchTag) return false;
-    }
+  const statusFilterSet = useMemo(() => new Set(filters.statusIds), [filters.statusIds]);
+  const priorityFilterSet = useMemo(() => new Set(filters.priorities), [filters.priorities]);
+  const assigneeFilterSet = useMemo(() => new Set(filters.assigneeIds), [filters.assigneeIds]);
 
-    if (filters.statusIds.length > 0 && !filters.statusIds.includes(task.statusId)) {
-      return false;
-    }
+  // Filter tasks in memory with memoized O(1) lookups for maximum scale & speed
+  const filteredTasks = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const nextWeekStr = nextWeek.toISOString().split('T')[0];
+    const searchLower = filters.search?.trim().toLowerCase() || '';
 
-    if (filters.priorities.length > 0 && !filters.priorities.includes(task.priority)) {
-      return false;
-    }
-
-    if (filters.assigneeIds.length > 0) {
-      const hasMatchingAssignee = task.assigneeIds.some((id) => filters.assigneeIds.includes(id));
-      if (!hasMatchingAssignee) return false;
-    }
-
-    if (filters.tag && !task.tags.includes(filters.tag)) {
-      return false;
-    }
-
-    if (filters.dueDateFilter !== 'all') {
-      const todayStr = new Date().toISOString().split('T')[0];
-      if (filters.dueDateFilter === 'no_date') {
-        if (task.dueDate) return false;
-      } else if (!task.dueDate) {
-        return false;
-      } else if (filters.dueDateFilter === 'overdue') {
-        const isDone = statuses.find((s) => s.id === task.statusId)?.isDone;
-        if (isDone || task.dueDate >= todayStr) return false;
-      } else if (filters.dueDateFilter === 'today') {
-        if (task.dueDate !== todayStr) return false;
-      } else if (filters.dueDateFilter === 'this_week') {
-        const nextWeek = new Date();
-        nextWeek.setDate(nextWeek.getDate() + 7);
-        const nextWeekStr = nextWeek.toISOString().split('T')[0];
-        if (task.dueDate < todayStr || task.dueDate > nextWeekStr) return false;
+    return tasks.filter((task) => {
+      // Non-admin users view only tasks and projects they are members in
+      if (currentUser && currentUser.role !== 'admin') {
+        const isTaskMember = Array.isArray(task.assigneeIds) && task.assigneeIds.includes(currentUser.id);
+        const isProjectMember = task.projectId ? (userProjectIdsSet ? userProjectIdsSet.has(task.projectId) : false) : false;
+        if (!isTaskMember && !isProjectMember) return false;
       }
-    }
 
-    return true;
-  });
+      // Project filter
+      if (activeProjectId !== 'all' && task.projectId !== activeProjectId) {
+        return false;
+      }
+
+      if (searchLower) {
+        const matchTitle = task.title.toLowerCase().includes(searchLower);
+        const matchDesc = task.description?.toLowerCase().includes(searchLower);
+        const matchTag = task.tags?.some((t) => t.toLowerCase().includes(searchLower));
+        if (!matchTitle && !matchDesc && !matchTag) return false;
+      }
+
+      if (statusFilterSet.size > 0 && !statusFilterSet.has(task.statusId)) {
+        return false;
+      }
+
+      if (priorityFilterSet.size > 0 && !priorityFilterSet.has(task.priority)) {
+        return false;
+      }
+
+      if (assigneeFilterSet.size > 0) {
+        const hasMatchingAssignee = task.assigneeIds?.some((id) => assigneeFilterSet.has(id));
+        if (!hasMatchingAssignee) return false;
+      }
+
+      if (filters.tag && !task.tags?.includes(filters.tag)) {
+        return false;
+      }
+
+      if (filters.dueDateFilter !== 'all') {
+        if (filters.dueDateFilter === 'no_date') {
+          if (task.dueDate) return false;
+        } else if (!task.dueDate) {
+          return false;
+        } else if (filters.dueDateFilter === 'overdue') {
+          const isDone = doneStatusIdsSet.has(task.statusId);
+          if (isDone || task.dueDate >= todayStr) return false;
+        } else if (filters.dueDateFilter === 'today') {
+          if (task.dueDate !== todayStr) return false;
+        } else if (filters.dueDateFilter === 'this_week') {
+          if (task.dueDate < todayStr || task.dueDate > nextWeekStr) return false;
+        }
+      }
+
+      return true;
+    });
+  }, [
+    tasks,
+    currentUser,
+    userProjectIdsSet,
+    activeProjectId,
+    filters.search,
+    filters.tag,
+    filters.dueDateFilter,
+    statusFilterSet,
+    priorityFilterSet,
+    assigneeFilterSet,
+    doneStatusIdsSet
+  ]);
 
   const createProject = async (data: {
     name: string;

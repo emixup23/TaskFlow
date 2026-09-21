@@ -308,14 +308,28 @@ export const KanbanBoard: React.FC = () => {
   const canCreate = isAdmin || currentUser?.privileges?.canCreateTask !== false;
   const canManageStatuses = isAdmin || Boolean(currentUser?.privileges?.canManageStatuses);
 
-  // Group tasks by status
-  const tasksByStatus: Record<string, Task[]> = {};
-  statuses.forEach((s) => {
-    tasksByStatus[s.id] = filteredTasks.filter((t) => t.statusId === s.id);
-  });
+  // Group tasks by status in a single pass O(S + T) with memoization
+  const tasksByStatus = useMemo(() => {
+    const map: Record<string, Task[]> = {};
+    for (let i = 0; i < statuses.length; i++) {
+      map[statuses[i].id] = [];
+    }
+    for (let i = 0; i < filteredTasks.length; i++) {
+      const t = filteredTasks[i];
+      if (map[t.statusId]) {
+        map[t.statusId].push(t);
+      } else {
+        map[t.statusId] = [t];
+      }
+    }
+    return map;
+  }, [statuses, filteredTasks]);
 
-  // Filter visible statuses
-  const visibleStatuses = statuses.filter((s) => !hiddenStatusIds.includes(s.id));
+  // Filter visible statuses with fast Set membership
+  const hiddenStatusSet = useMemo(() => new Set(hiddenStatusIds), [hiddenStatusIds]);
+  const visibleStatuses = useMemo(() => {
+    return statuses.filter((s) => !hiddenStatusSet.has(s.id));
+  }, [statuses, hiddenStatusSet]);
   const hiddenCount = statuses.length - visibleStatuses.length;
 
   // Calculate sorted visible status columns
@@ -673,12 +687,12 @@ export const KanbanBoard: React.FC = () => {
             </div>
           )}
 
-          {/* Active Card Sort Pill Indicator */}
+          {/* Active Task Sort Pill Indicator */}
           {(taskSort !== 'default' || hasColumnOverrides) && (
             <div className="flex items-center gap-1 bg-neutral-800/70 border border-neutral-700/80 px-2 py-0.5 rounded text-[11px] text-neutral-300 shrink-0 animate-in fade-in duration-100">
               <activeTaskSortConfig.icon className="w-3 h-3 text-amber-400" />
               <span>
-                Cards: <strong className="text-white font-semibold">{activeTaskSortConfig.badge}</strong>
+                Sort: <strong className="text-white font-semibold">{activeTaskSortConfig.badge}</strong>
               </span>
               {(taskSort !== 'default' || hasColumnOverrides) && (
                 <button
@@ -688,7 +702,7 @@ export const KanbanBoard: React.FC = () => {
                     setColumnTaskSortOverrides({});
                   }}
                   className="ml-1 p-0.5 hover:bg-neutral-700 rounded text-neutral-400 hover:text-white transition-colors cursor-pointer"
-                  title="Reset card sort to manual drag order"
+                  title="Reset tasks sort to manual drag order"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -697,127 +711,13 @@ export const KanbanBoard: React.FC = () => {
           )}
         </div>
 
-        {/* Right: Sort Columns, Sort Cards, Columns visibility & Workflow Manager */}
+        {/* Right: Sort Tasks (inside columns), Columns visibility & Workflow Manager */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* 1. Sort Status Columns Dropdown */}
-          <div className="relative" ref={sortMenuRef}>
-            <button
-              type="button"
-              id="btn-sort-columns-menu"
-              onClick={() => {
-                setShowSortMenu(!showSortMenu);
-                setShowTaskSortMenu(false);
-                setShowColumnsMenu(false);
-              }}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold border transition-all cursor-pointer ${
-                columnSort !== 'default'
-                  ? 'bg-blue-950/70 border-blue-600 text-blue-200'
-                  : 'bg-[#1a1a1a] hover:bg-[#242424] border-[#333333] text-neutral-300 hover:text-white'
-              }`}
-              title="Sort workflow status columns"
-            >
-              <ArrowUpDown className={`w-3.5 h-3.5 ${columnSort !== 'default' ? 'text-blue-400' : 'text-neutral-400'}`} />
-              <span className="hidden sm:inline">Sort Columns</span>
-              <span className="sm:hidden">Sort</span>
-              {columnSort !== 'default' && (
-                <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[10px] font-bold">
-                  {activeColumnSortConfig.badge}
-                </span>
-              )}
-            </button>
-
-            {showSortMenu && (
-              <div
-                id="columns-sort-dropdown"
-                className="absolute right-0 mt-1.5 w-[calc(100vw-1.5rem)] max-w-xs sm:w-72 bg-[#181818] rounded shadow-2xl border border-[#333333] p-3 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs space-y-2.5"
-              >
-                <div className="flex items-center justify-between border-b border-[#2b2b2b] pb-2">
-                  <div>
-                    <h4 className="font-bold text-white text-xs flex items-center gap-1.5">
-                      <ArrowUpDown className="w-3.5 h-3.5 text-blue-400" />
-                      Sort Status Columns
-                    </h4>
-                    <p className="text-[10px] text-neutral-400">Rearrange board columns across your workflow</p>
-                  </div>
-                  {columnSort !== 'default' && (
-                    <button
-                      type="button"
-                      onClick={() => setColumnSort('default')}
-                      className="text-[11px] text-blue-400 hover:text-blue-300 font-semibold cursor-pointer"
-                    >
-                      Reset
-                    </button>
-                  )}
-                </div>
-
-                <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
-                  {COLUMN_SORT_CONFIG.map((option) => {
-                    const isSelected = columnSort === option.id;
-                    const IconComp = option.icon;
-
-                    return (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => {
-                          setColumnSort(option.id);
-                          setShowSortMenu(false);
-                          addToast('info', `Columns sorted by ${option.label}`);
-                        }}
-                        className={`w-full flex items-start justify-between p-2 rounded text-left transition-all cursor-pointer border ${
-                          isSelected
-                            ? 'bg-blue-950/40 border-blue-600/70 text-white shadow-xs'
-                            : 'bg-[#1e1e1e] hover:bg-[#252525] border-transparent text-neutral-300'
-                        }`}
-                      >
-                        <div className="flex items-start gap-2 min-w-0 pr-2">
-                          <IconComp className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isSelected ? 'text-blue-400' : 'text-neutral-400'}`} />
-                          <div>
-                            <div className="font-semibold text-xs text-white leading-tight flex items-center gap-1.5">
-                              {option.label}
-                            </div>
-                            <div className="text-[10px] text-neutral-400 mt-0.5 leading-snug">
-                              {option.desc}
-                            </div>
-                          </div>
-                        </div>
-
-                        {isSelected && (
-                          <div className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Admin Save Action */}
-                {canManageStatuses && columnSort !== 'default' && (
-                  <div className="pt-2 border-t border-[#2b2b2b] space-y-1.5">
-                    <button
-                      type="button"
-                      onClick={handleSaveAsDefaultSequence}
-                      className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-                      title="Save this order as the default sequence for all users"
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                      <span>Save as Workspace Default</span>
-                    </button>
-                    <p className="text-[10px] text-neutral-500 text-center">
-                      Applies this sorted sequence permanently to the database
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* 2. Sort Cards inside Columns Dropdown */}
+          {/* 1. Sort Tasks inside Columns Dropdown */}
           <div className="relative" ref={taskSortMenuRef}>
             <button
               type="button"
-              id="btn-sort-cards-menu"
+              id="btn-sort-columns-menu"
               onClick={() => {
                 setShowTaskSortMenu(!showTaskSortMenu);
                 setShowSortMenu(false);
@@ -828,11 +728,11 @@ export const KanbanBoard: React.FC = () => {
                   ? 'bg-neutral-800 border-neutral-600 text-neutral-200'
                   : 'bg-[#1a1a1a] hover:bg-[#242424] border-[#333333] text-neutral-300 hover:text-white'
               }`}
-              title="Sort task cards within columns"
+              title="Sort tasks inside the workflow columns"
             >
               <activeTaskSortConfig.icon className="w-3.5 h-3.5 text-neutral-400" />
-              <span className="hidden sm:inline">Sort Cards</span>
-              <span className="sm:hidden">Cards</span>
+              <span className="hidden sm:inline">Sort Tasks</span>
+              <span className="sm:hidden">Sort</span>
               {(taskSort !== 'default' || hasColumnOverrides) && (
                 <span className="px-1.5 py-0.2 rounded-full bg-neutral-700 text-white text-[10px] font-bold">
                   {activeTaskSortConfig.badge}
@@ -842,14 +742,14 @@ export const KanbanBoard: React.FC = () => {
 
             {showTaskSortMenu && (
               <div
-                id="cards-sort-dropdown"
+                id="tasks-sort-dropdown"
                 className="absolute right-0 mt-1.5 w-[calc(100vw-1.5rem)] max-w-xs sm:w-72 bg-[#181818] rounded shadow-2xl border border-[#333333] p-3 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs space-y-2.5"
               >
                 <div className="flex items-center justify-between border-b border-[#2b2b2b] pb-2">
                   <div>
                     <h4 className="font-bold text-white text-xs flex items-center gap-1.5">
                       <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
-                      Sort In-Column Cards
+                      Sort Tasks Inside Columns
                     </h4>
                     <p className="text-[10px] text-neutral-400">Order tasks inside every column</p>
                   </div>
@@ -879,7 +779,7 @@ export const KanbanBoard: React.FC = () => {
                         onClick={() => {
                           setTaskSort(option.id);
                           setShowTaskSortMenu(false);
-                          addToast('info', `Cards sorted by ${option.label}`);
+                          addToast('info', `Tasks sorted by ${option.label}`);
                         }}
                         className={`w-full flex items-start justify-between p-2 rounded text-left transition-all cursor-pointer border ${
                           isSelected

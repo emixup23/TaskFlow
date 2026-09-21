@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import {
   Shield,
   Lock,
@@ -12,7 +14,8 @@ import {
   Loader2,
   Sparkles,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  Globe
 } from 'lucide-react';
 
 interface LoginViewProps {
@@ -21,6 +24,7 @@ interface LoginViewProps {
 
 export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
   const { login, users, switchUser } = useAuth();
+  const { t, currentLanguageConfig } = useLanguage();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -78,14 +82,30 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 bg-[#0a0a0a] text-slate-100 font-sans selection:bg-blue-500 selection:text-white">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 sm:p-6 bg-[#0a0a0a] text-slate-100 font-sans relative selection:bg-blue-500 selection:text-white">
       {/* Background Decorative Ambient Glows */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative w-full max-w-md z-10">
+      {/* Top Floating Language Bar */}
+      <div className="absolute top-4 inset-x-4 sm:top-6 sm:inset-x-6 flex items-center justify-between pointer-events-none z-30">
+        <div className="pointer-events-auto flex items-center gap-2">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#141414]/90 border border-[#262626] backdrop-blur-md text-xs text-neutral-300 shadow-md">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-bold text-white tracking-tight">TaskFlow</span>
+            <span className="text-[10px] text-neutral-500 uppercase font-mono">Enterprise</span>
+          </div>
+        </div>
+
+        {/* Top-Right Language Switcher */}
+        <div className="pointer-events-auto flex items-center gap-2">
+          <LanguageSwitcher variant="login" id="login-top-language-switcher" />
+        </div>
+      </div>
+
+      <div className="relative w-full max-w-md z-10 my-auto pt-10 sm:pt-4">
         {/* Brand Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/20 mb-3">
@@ -95,20 +115,26 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
             TaskFlow Workspace
           </h1>
           <p className="text-xs text-neutral-400 mt-1">
-            Enterprise RBAC Authentication &amp; Protected Operations
+            {t('auth.welcomeBack', 'Enterprise RBAC Authentication & Protected Operations')}
           </p>
         </div>
 
         {/* Card Container */}
         <div className="bg-[#141414] border border-[#262626] rounded-2xl shadow-2xl p-6 sm:p-8 backdrop-blur-xl">
-          {/* Sign In Header Banner */}
-          <div className="flex items-center gap-2 pb-4 mb-5 border-b border-[#222222]">
-            <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-              <LogIn className="w-3.5 h-3.5 text-blue-400" />
+          {/* Sign In Header Banner with Inline Language Switcher for smaller screens */}
+          <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#222222]">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                <LogIn className="w-3.5 h-3.5 text-blue-400" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-sm font-bold text-white truncate">{t('auth.signIn', 'Sign In to Your Workspace')}</h2>
+                <p className="text-[11px] text-neutral-400 truncate">{t('header.settingsSub', 'Enter your credentials to access protected projects')}</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-white">Sign In to Your Workspace</h2>
-              <p className="text-[11px] text-neutral-400">Enter your credentials to access protected projects</p>
+
+            <div className="sm:hidden shrink-0 ml-2">
+              <LanguageSwitcher variant="header" id="login-inline-language-switcher" />
             </div>
           </div>
 
@@ -131,7 +157,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-neutral-300 mb-1.5">
-                Work Email Address
+                {t('auth.email', 'Work Email Address')}
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -150,7 +176,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-medium text-neutral-300">
-                  Password
+                  {t('auth.password', 'Password')}
                 </label>
                 <span className="text-[11px] text-neutral-400 font-mono">
                   Demo: password123
@@ -188,12 +214,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Authenticating...</span>
+                  <span>{t('common.loading', 'Authenticating...')}</span>
                 </>
               ) : (
                 <>
                   <LogIn className="w-4 h-4" />
-                  <span>Sign In to Workspace</span>
+                  <span>{t('auth.signIn', 'Sign In to Workspace')}</span>
                 </>
               )}
             </button>
@@ -204,7 +230,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
             <div className="flex items-center justify-between mb-3">
               <span className="text-[11px] font-bold tracking-wider text-neutral-400 uppercase flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                Quick 1-Click Demo Accounts
+                {t('auth.guestDemo', 'Quick 1-Click Demo Accounts')}
               </span>
               <span className="text-[10px] font-mono text-neutral-500">
                 pw: password123
@@ -250,9 +276,24 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
           <div className="mt-5 p-2.5 bg-[#0f0f0f] border border-[#222222] rounded-xl flex items-center justify-between text-[11px] text-neutral-400">
             <div className="flex items-center gap-2">
               <Shield className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Bcrypt Salted Hash &amp; RBAC Token Protection</span>
+              <span>{t('settings.security', 'Bcrypt Salted Hash & RBAC Token Protection')}</span>
             </div>
             <span className="text-[10px] text-emerald-400 font-mono font-bold">ACTIVE</span>
+          </div>
+        </div>
+
+        {/* Footer Language & System Info */}
+        <div className="mt-4 flex items-center justify-between gap-2 text-xs text-neutral-500 px-1">
+          <div className="flex items-center gap-1.5 text-[11px]">
+            <Globe className="w-3.5 h-3.5 text-blue-400" />
+            <span>{t('settings.language', 'Language')}:</span>
+            <span className="font-semibold text-neutral-300">{currentLanguageConfig.name}</span>
+            <span className="text-[10px] bg-[#1a1a1a] border border-[#2a2a2a] px-1 py-0.2 rounded font-mono text-neutral-400 uppercase">
+              {currentLanguageConfig.code}
+            </span>
+          </div>
+          <div className="text-[11px] text-neutral-500">
+            TaskFlow v2.4
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ArrowUpDown,
   Calendar,
@@ -14,7 +14,7 @@ import {
   Plus,
   ShieldCheck
 } from 'lucide-react';
-import { Task, Priority } from '../types';
+import { Task, Priority, User } from '../types';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
 import { TagBadge } from './TagBadge';
@@ -39,23 +39,30 @@ export const TableView: React.FC = () => {
     low: 1
   };
 
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    let cmp = 0;
-    if (sortField === 'title') {
-      cmp = a.title.localeCompare(b.title);
-    } else if (sortField === 'priority') {
-      cmp = priorityWeight[a.priority] - priorityWeight[b.priority];
-    } else if (sortField === 'status') {
-      const sA = statuses.find((s) => s.id === a.statusId)?.order || 0;
-      const sB = statuses.find((s) => s.id === b.statusId)?.order || 0;
-      cmp = sA - sB;
-    } else if (sortField === 'dueDate') {
-      const dA = a.dueDate || '9999-99-99';
-      const dB = b.dueDate || '9999-99-99';
-      cmp = dA.localeCompare(dB);
-    }
-    return sortAsc ? cmp : -cmp;
-  });
+  // Pre-indexed lookup maps for instant O(1) row queries and fast sorting
+  const statusOrderMap = useMemo(() => new Map(statuses.map((s) => [s.id, s.order || 0])), [statuses]);
+  const statusMap = useMemo(() => new Map(statuses.map((s) => [s.id, s])), [statuses]);
+  const userMap = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
+
+  const sortedTasks = useMemo(() => {
+    return [...filteredTasks].sort((a, b) => {
+      let cmp = 0;
+      if (sortField === 'title') {
+        cmp = a.title.localeCompare(b.title);
+      } else if (sortField === 'priority') {
+        cmp = priorityWeight[a.priority] - priorityWeight[b.priority];
+      } else if (sortField === 'status') {
+        const sA = statusOrderMap.get(a.statusId) ?? 0;
+        const sB = statusOrderMap.get(b.statusId) ?? 0;
+        cmp = sA - sB;
+      } else if (sortField === 'dueDate') {
+        const dA = a.dueDate || '9999-99-99';
+        const dB = b.dueDate || '9999-99-99';
+        cmp = dA.localeCompare(dB);
+      }
+      return sortAsc ? cmp : -cmp;
+    });
+  }, [filteredTasks, sortField, sortAsc, statusOrderMap]);
 
   const handleSort = (field: 'title' | 'status' | 'priority' | 'dueDate') => {
     if (sortField === field) {
@@ -137,8 +144,8 @@ export const TableView: React.FC = () => {
             </div>
           ) : (
             sortedTasks.map((task) => {
-              const status = statuses.find((s) => s.id === task.statusId);
-              const assigned = users.filter((u) => task.assigneeIds?.includes(u.id));
+              const status = statusMap.get(task.statusId);
+              const assigned = task.assigneeIds?.map((id) => userMap.get(id)).filter((u): u is User => Boolean(u)) || [];
               const totalSubtasks = task.subtasks?.length || 0;
               const completedSubtasks = task.subtasks?.filter((s) => s.completed).length || 0;
               const pStyle = priorityBadges[task.priority] || priorityBadges.medium;
@@ -263,8 +270,8 @@ export const TableView: React.FC = () => {
 
             <tbody className="divide-y divide-[#222222] text-xs">
               {sortedTasks.map((task) => {
-                const status = statuses.find((s) => s.id === task.statusId);
-                const assigned = users.filter((u) => task.assigneeIds?.includes(u.id));
+                const status = statusMap.get(task.statusId);
+                const assigned = task.assigneeIds?.map((id) => userMap.get(id)).filter((u): u is User => Boolean(u)) || [];
                 const totalSubtasks = task.subtasks?.length || 0;
                 const completedSubtasks = task.subtasks?.filter((s) => s.completed).length || 0;
                 const pStyle = priorityBadges[task.priority] || priorityBadges.medium;

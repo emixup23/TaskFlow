@@ -83,7 +83,7 @@ export const SyncWithListerButton: React.FC<SyncWithListerButtonProps> = ({
           id="sync-lister-btn-compact"
           onClick={handleSyncClick}
           disabled={isSyncingWithLister}
-          title={`Sync with Lister (Last: ${formatLastSync(lastListerSyncTime)})`}
+          title={`Sync (Last: ${formatLastSync(lastListerSyncTime)})`}
           className={`inline-flex items-center justify-center p-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 ${className}`}
         >
           <RefreshCw className={`w-4 h-4 ${isSyncingWithLister ? 'animate-spin text-indigo-400' : ''}`} />
@@ -105,7 +105,7 @@ export const SyncWithListerButton: React.FC<SyncWithListerButtonProps> = ({
             className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-800 rounded-md transition-all focus:outline-none disabled:opacity-60 ${className}`}
           >
             <RefreshCw className={`w-3.5 h-3.5 text-indigo-400 ${isSyncingWithLister ? 'animate-spin' : ''}`} />
-            <span>{isSyncingWithLister ? 'Syncing...' : 'Sync with Lister'}</span>
+            <span>{isSyncingWithLister ? 'Syncing...' : 'Sync'}</span>
             {lastListerSyncTime && (
               <span className="hidden sm:inline-flex items-center gap-1 text-[10px] text-slate-400 border-l border-slate-700 pl-2">
                 <Clock className="w-2.5 h-2.5" />
@@ -201,16 +201,9 @@ export const SyncWithListerButton: React.FC<SyncWithListerButtonProps> = ({
         onClick={handleSyncClick}
         disabled={isSyncingWithLister}
         title={`Sync tasks with Lister (Last: ${formatLastSync(lastListerSyncTime)})`}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 bg-slate-800/70 hover:bg-slate-800 hover:text-white border border-slate-700/70 hover:border-indigo-500/50 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60 shadow-sm ${className}`}
+        className={`inline-flex items-center justify-center h-8 w-8 rounded-lg text-xs font-medium text-slate-300 bg-slate-800/70 hover:bg-slate-800 hover:text-white border border-slate-700/70 hover:border-indigo-500/50 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60 shadow-sm ${className}`}
       >
         <RefreshCw className={`w-3.5 h-3.5 text-indigo-400 ${isSyncingWithLister ? 'animate-spin text-indigo-300' : ''}`} />
-        <span className="hidden md:inline">{isSyncingWithLister ? 'Syncing...' : 'Sync with Lister'}</span>
-        <span className="inline md:hidden">{isSyncingWithLister ? 'Syncing...' : 'Sync'}</span>
-        {lastListerSyncTime && (
-          <span className="hidden xl:inline text-[10px] text-slate-400 font-normal border-l border-slate-700 pl-1.5">
-            {formatLastSync(lastListerSyncTime)}
-          </span>
-        )}
       </button>
 
       {/* Small options toggle on right click or dropdown */}

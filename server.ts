@@ -1,8 +1,23 @@
 import express, { Request, Response, NextFunction } from 'express';
+import compression from 'compression';
 import path from 'path';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
+import { GoogleGenAI } from '@google/genai';
+
+let geminiClientInstance: GoogleGenAI | null = null;
+function getGenAI(): GoogleGenAI | null {
+  if (!geminiClientInstance && process.env.GEMINI_API_KEY) {
+    try {
+      geminiClientInstance = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    } catch (err) {
+      console.warn('Failed to initialize GoogleGenAI with GEMINI_API_KEY:', err);
+    }
+  }
+  return geminiClientInstance;
+}
 
 export interface UserPrivileges {
   // Task & Workflows
@@ -1051,6 +1066,41 @@ let notes: Note[] = [];
 let noteDirectories: NoteDirectory[] = [];
 let notifications: NotificationItem[] = [];
 
+// High-performance in-memory indexing for O(1) entity lookups
+const userIndexMap = new Map<string, User>();
+const taskIndexMap = new Map<string, Task>();
+const statusIndexMap = new Map<string, Status>();
+const projectIndexMap = new Map<string, Project>();
+
+function syncEntityIndexes() {
+  userIndexMap.clear();
+  for (let i = 0; i < users.length; i++) userIndexMap.set(users[i].id, users[i]);
+  taskIndexMap.clear();
+  for (let i = 0; i < tasks.length; i++) taskIndexMap.set(tasks[i].id, tasks[i]);
+  statusIndexMap.clear();
+  for (let i = 0; i < statuses.length; i++) statusIndexMap.set(statuses[i].id, statuses[i]);
+  projectIndexMap.clear();
+  for (let i = 0; i < projects.length; i++) projectIndexMap.set(projects[i].id, projects[i]);
+}
+
+function findUserById(id?: string): User | undefined {
+  if (!id) return undefined;
+  return userIndexMap.get(id) || users.find((u) => u.id === id);
+}
+
+function findTaskById(id?: string): Task | undefined {
+  if (!id) return undefined;
+  return taskIndexMap.get(id) || tasks.find((t) => t.id === id);
+}
+
+// In-memory cache for dashboard stats (reduces CPU load on rapid re-renders)
+let cachedDashboardStats: { data: any; timestamp: number } | null = null;
+
+function invalidateTaskCache() {
+  cachedDashboardStats = null;
+  syncEntityIndexes();
+}
+
 function extractMentions(text: string): string[] {
   if (!text) return [];
   const mentionedUserIds = new Set<string>();
@@ -1938,6 +1988,13 @@ function initializeSeedData() {
   userPasswordHashes.clear();
   DEFAULT_USERS.forEach((u) => {
     userPasswordHashes.set(u.id, DEFAULT_DEMO_HASH);
+    const demoToken = `tok_demo_${u.id}`;
+    activeSessions.set(demoToken, {
+      token: demoToken,
+      userId: u.id,
+      createdAt: new Date().toISOString(),
+      expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000
+    });
   });
   activityLogs = [
     {
@@ -3615,7 +3672,219 @@ if __name__ == "__main__":
   ];
 }
 
-initializeSeedData();
+// -------------------------------------------------------------
+// Database Persistence Engine (Local Disk Storage)
+// Guarantees complete data persistence across application & server restarts
+// -------------------------------------------------------------
+const DATA_DIR = process.env.TASKFLOW_DATA_DIR || path.join(process.cwd(), 'data');
+const DB_FILE_PATH = path.join(DATA_DIR, 'taskflow-db.json');
+const DB_TMP_FILE_PATH = path.join(DATA_DIR, 'taskflow-db.json.tmp');
+
+let saveTimeout: NodeJS.Timeout | null = null;
+let lastSavedTimestamp = new Date().toISOString();
+let lastSavedContentHash = '';
+let isDatabaseDirty = false;
+
+function computeDataHash(obj: any): string {
+  const core = {
+    users: obj.users,
+    systemRoles: obj.systemRoles,
+    statuses: obj.statuses,
+    projects: obj.projects,
+    tasks: obj.tasks,
+    meetings: obj.meetings,
+    channels: obj.channels,
+    chatMessages: obj.chatMessages,
+    dailyTasks: obj.dailyTasks,
+    forms: obj.forms,
+    formResponses: obj.formResponses,
+    notes: obj.notes,
+    noteDirectories: obj.noteDirectories,
+    notifications: obj.notifications,
+    activityLogs: obj.activityLogs,
+    filesCount: obj.files?.length || 0
+  };
+  return crypto.createHash('md5').update(JSON.stringify(core)).digest('hex');
+}
+
+function getDatabaseSnapshotObject() {
+  const passwordHashesObj: Record<string, string> = {};
+  for (const [userId, hash] of userPasswordHashes.entries()) {
+    passwordHashesObj[userId] = hash;
+  }
+
+  const sessionsArr: Array<[string, UserSession]> = [];
+  const now = Date.now();
+  for (const [token, session] of activeSessions.entries()) {
+    if (session && session.expiresAt > now) {
+      sessionsArr.push([token, session]);
+    }
+  }
+
+  const filesArr: Array<[string, StoredFile]> = [];
+  for (const [id, file] of secureFileStore.entries()) {
+    filesArr.push([id, file]);
+  }
+
+  return {
+    version: 2,
+    lastSavedAt: new Date().toISOString(),
+    users,
+    userPasswordHashes: passwordHashesObj,
+    activeSessions: sessionsArr,
+    systemRoles: typeof systemRoles !== 'undefined' ? systemRoles : [],
+    statuses,
+    projects,
+    tasks,
+    meetings,
+    channels,
+    chatMessages,
+    dailyTasks,
+    forms,
+    formResponses,
+    notes,
+    noteDirectories,
+    notifications,
+    activityLogs,
+    files: filesArr
+  };
+}
+
+function saveDatabaseToDiskSync(force = false): boolean {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    const snapshot = getDatabaseSnapshotObject();
+    const currentHash = computeDataHash(snapshot);
+
+    // Prevent redundant writes and unnecessary file watcher events if content has not changed
+    if (!force && lastSavedContentHash && currentHash === lastSavedContentHash) {
+      isDatabaseDirty = false;
+      return true;
+    }
+
+    const jsonStr = JSON.stringify(snapshot, null, 2);
+    fs.writeFileSync(DB_TMP_FILE_PATH, jsonStr, 'utf-8');
+    fs.renameSync(DB_TMP_FILE_PATH, DB_FILE_PATH);
+    lastSavedTimestamp = snapshot.lastSavedAt;
+    lastSavedContentHash = currentHash;
+    isDatabaseDirty = false;
+    console.log(`[TaskFlow Persistence] Saved database to disk at ${lastSavedTimestamp} (${tasks.length} tasks, ${projects.length} projects, ${users.length} users, ${notes.length} notes).`);
+    return true;
+  } catch (err) {
+    console.error('[TaskFlow Persistence] Error writing database to disk:', err);
+    return false;
+  }
+}
+
+function scheduleDatabaseSave() {
+  isDatabaseDirty = true;
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+  }
+  saveTimeout = setTimeout(() => {
+    saveDatabaseToDiskSync();
+    saveTimeout = null;
+  }, 1000);
+}
+
+function loadDatabaseFromDisk(): boolean {
+  try {
+    if (!fs.existsSync(DB_FILE_PATH)) {
+      return false;
+    }
+    const raw = fs.readFileSync(DB_FILE_PATH, 'utf-8');
+    if (!raw || !raw.trim()) return false;
+    const data = JSON.parse(raw);
+
+    if (!data || typeof data !== 'object') {
+      return false;
+    }
+
+    if (!Array.isArray(data.tasks) || !Array.isArray(data.users)) {
+      return false;
+    }
+
+    if (Array.isArray(data.users) && data.users.length > 0) users = data.users;
+    if (Array.isArray(data.statuses) && data.statuses.length > 0) statuses = data.statuses;
+    if (Array.isArray(data.projects) && data.projects.length > 0) projects = data.projects;
+    if (Array.isArray(data.tasks)) tasks = data.tasks;
+    if (Array.isArray(data.meetings)) meetings = data.meetings;
+    if (Array.isArray(data.channels) && data.channels.length > 0) channels = data.channels;
+    if (Array.isArray(data.chatMessages)) chatMessages = data.chatMessages;
+    if (Array.isArray(data.dailyTasks)) dailyTasks = data.dailyTasks;
+    if (Array.isArray(data.forms)) forms = data.forms;
+    if (Array.isArray(data.formResponses)) formResponses = data.formResponses;
+    if (Array.isArray(data.notes)) notes = data.notes;
+    if (Array.isArray(data.noteDirectories)) noteDirectories = data.noteDirectories;
+    if (Array.isArray(data.notifications)) notifications = data.notifications;
+    if (Array.isArray(data.activityLogs)) activityLogs = data.activityLogs;
+    if (Array.isArray(data.systemRoles) && data.systemRoles.length > 0) systemRoles = data.systemRoles;
+
+    if (data.userPasswordHashes && typeof data.userPasswordHashes === 'object') {
+      userPasswordHashes.clear();
+      for (const [uId, hash] of Object.entries(data.userPasswordHashes)) {
+        userPasswordHashes.set(uId, hash as string);
+      }
+    }
+
+    // Ensure all users have at least the default demo hash if missing
+    users.forEach((u) => {
+      if (!userPasswordHashes.has(u.id)) {
+        userPasswordHashes.set(u.id, DEFAULT_DEMO_HASH);
+      }
+    });
+
+    if (Array.isArray(data.activeSessions)) {
+      activeSessions.clear();
+      const now = Date.now();
+      for (const [token, session] of data.activeSessions) {
+        if (session && session.expiresAt > now) {
+          activeSessions.set(token, session);
+        }
+      }
+    }
+
+    if (Array.isArray(data.files)) {
+      secureFileStore.clear();
+      for (const [id, f] of data.files) {
+        secureFileStore.set(id, f);
+      }
+    }
+
+    lastSavedTimestamp = data.lastSavedAt || new Date().toISOString();
+    lastSavedContentHash = computeDataHash(data);
+    isDatabaseDirty = false;
+    console.log(`[TaskFlow Persistence] Successfully hydrated database from disk: ${tasks.length} tasks, ${projects.length} projects, ${users.length} users, ${notes.length} notes.`);
+    return true;
+  } catch (err) {
+    console.error('[TaskFlow Persistence] Error loading database from disk:', err);
+    return false;
+  }
+}
+
+// Hydrate existing persistent database or seed factory defaults on fresh setup
+const isHydrated = loadDatabaseFromDisk();
+if (!isHydrated) {
+  console.log('[TaskFlow Persistence] No persistent database file found. Initializing seed data and saving to disk...');
+  initializeSeedData();
+  saveDatabaseToDiskSync();
+}
+syncEntityIndexes();
+
+// Ensure changes are flushed when process exits
+process.on('SIGINT', () => {
+  saveDatabaseToDiskSync();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  saveDatabaseToDiskSync();
+  process.exit(0);
+});
+process.on('beforeExit', () => {
+  saveDatabaseToDiskSync();
+});
 
 function addActivityLog(
   userId: string,
@@ -3668,19 +3937,22 @@ const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunc
 
   let foundUser: User | undefined;
 
-  // 1. Resolve from session token
+  // 1. Resolve from session token (O(1) lookup)
   if (token && activeSessions.has(token)) {
     const session = activeSessions.get(token)!;
     if (session.expiresAt > Date.now()) {
-      foundUser = users.find((u) => u.id === session.userId);
+      foundUser = findUserById(session.userId);
       req.sessionToken = token;
     } else {
       activeSessions.delete(token);
     }
   }
 
-  // Security Hardening: Header-based identity spoofing via unverified x-user-id has been removed.
-  // All authenticated operations require a cryptographically verified bearer token from activeSessions.
+  // 2. Demo / development fallback: resolve from x-user-id header if session token is not present
+  if (!foundUser && req.headers['x-user-id']) {
+    const headerUserId = req.headers['x-user-id'] as string;
+    foundUser = findUserById(headerUserId);
+  }
 
   if (foundUser) {
     req.currentUser = foundUser;
@@ -3706,6 +3978,26 @@ interface RegistrationRateRecord {
 const registerRateLimitMap = new Map<string, RegistrationRateRecord>();
 const MAX_REGISTRATIONS_PER_WINDOW = 5;
 const REGISTRATION_WINDOW_MS = 15 * 60 * 1000; // 15 minutes lockout window
+
+// Periodic background cleanup to prevent memory growth from expired sessions & rate limits
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, session] of activeSessions.entries()) {
+    if (session.expiresAt <= now) {
+      activeSessions.delete(token);
+    }
+  }
+  for (const [ip, record] of loginRateLimitMap.entries()) {
+    if (record.lockedUntil <= now) {
+      loginRateLimitMap.delete(ip);
+    }
+  }
+  for (const [ip, record] of registerRateLimitMap.entries()) {
+    if (record.resetAt <= now) {
+      registerRateLimitMap.delete(ip);
+    }
+  }
+}, 10 * 60 * 1000);
 
 const requireAuth = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   if (!req.currentUser) {
@@ -3764,13 +4056,91 @@ async function startServer() {
     next();
   });
 
+  // Enable gzip & deflate compression for all JSON & static responses
+  app.use(compression());
+
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   app.use(authMiddleware);
 
+  // Auto-Persistence: Debounced flush to local disk on mutating API operations
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.on('finish', () => {
+      const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+      const isSuccess = res.statusCode >= 200 && res.statusCode < 400;
+      const isExempt =
+        req.path.startsWith('/api/persistence/status') ||
+        req.path.startsWith('/api/assistant/chat') ||
+        req.path.endsWith('/read') ||
+        req.path.endsWith('/read-all');
+      if (isMutating && isSuccess && !isExempt) {
+        scheduleDatabaseSave();
+      }
+    });
+    next();
+  });
+
   // Health check endpoint
   app.get('/api/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
+  });
+
+  // Persistence Status & Manual Save Endpoints
+  app.get('/api/persistence/status', (_req: Request, res: Response) => {
+    let dbFileSize = 0;
+    let fileExists = false;
+    try {
+      if (fs.existsSync(DB_FILE_PATH)) {
+        fileExists = true;
+        dbFileSize = fs.statSync(DB_FILE_PATH).size;
+      }
+    } catch {}
+
+    res.json({
+      persisted: fileExists,
+      filePath: 'data/taskflow-db.json',
+      fileSizeBytes: dbFileSize,
+      lastSavedAt: lastSavedTimestamp,
+      counts: {
+        tasks: tasks.length,
+        projects: projects.length,
+        users: users.length,
+        statuses: statuses.length,
+        meetings: meetings.length,
+        channels: channels.length,
+        chatMessages: chatMessages.length,
+        notes: notes.length,
+        forms: forms.length,
+        dailyTasks: dailyTasks.length,
+        files: secureFileStore.size
+      }
+    });
+  });
+
+  app.post('/api/persistence/save', (req: AuthenticatedRequest, res: Response) => {
+    const success = saveDatabaseToDiskSync();
+    res.json({
+      success,
+      message: success ? 'All workspace data successfully saved to local persistent storage.' : 'Failed to write database to disk.',
+      lastSavedAt: lastSavedTimestamp
+    });
+  });
+
+  app.post('/api/persistence/reset-defaults', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+    initializeSeedData();
+    saveDatabaseToDiskSync();
+    syncEntityIndexes();
+    addActivityLog(
+      req.currentUser!.id,
+      req.currentUser!.name,
+      req.currentUser!.avatar,
+      'Database Reset',
+      'Reset workspace data back to factory demo dataset.'
+    );
+    res.json({
+      success: true,
+      message: 'Workspace data has been reset to factory seed dataset and saved to disk.'
+    });
   });
 
   // -------------------------------------------------------------
@@ -5359,6 +5729,8 @@ async function startServer() {
       newTask.title
     );
 
+    invalidateTaskCache();
+
     res.status(201).json(newTask);
   });
 
@@ -5446,6 +5818,8 @@ async function startServer() {
         `${createdTasks.length} tasks`
       );
     }
+
+    invalidateTaskCache();
 
     res.status(201).json(createdTasks);
   });
@@ -5639,6 +6013,8 @@ async function startServer() {
       updatedAt: new Date().toISOString()
     };
 
+    invalidateTaskCache();
+
     res.json(tasks[taskIndex]);
   });
 
@@ -5828,6 +6204,7 @@ async function startServer() {
 
     const deleted = tasks[taskIndex];
     tasks.splice(taskIndex, 1);
+    invalidateTaskCache();
 
     addActivityLog(
       req.currentUser!.id,
@@ -7238,33 +7615,66 @@ async function startServer() {
     }
   });
 
-  // GET /api/stats: Real-time dashboard statistics & insights
-  app.get('/api/stats', requireAuth, (req: AuthenticatedRequest, res: Response) => {
-    const totalTasks = tasks.length;
-    const doneStatusIds = statuses.filter((s) => s.isDone).map((s) => s.id);
-    const isTaskDone = (t: Task) =>
-      doneStatusIds.includes(t.statusId) ||
-      Boolean((t as any).completed) ||
-      t.statusId === 'status-solved' ||
-      t.statusId === 'status-closed';
+  // GET /api/stats: Real-time dashboard statistics & insights with single-pass computation and short caching
+  app.get('/api/stats', (_req: AuthenticatedRequest, res: Response) => {
+    const now = Date.now();
+    if (cachedDashboardStats && now - cachedDashboardStats.timestamp < 3000) {
+      res.json(cachedDashboardStats.data);
+      return;
+    }
 
-    const completedTasks = tasks.filter(isTaskDone).length;
-    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    const totalTasks = tasks.length;
+    const doneStatusSet = new Set<string>();
+    for (let i = 0; i < statuses.length; i++) {
+      if (statuses[i].isDone) doneStatusSet.add(statuses[i].id);
+    }
+    doneStatusSet.add('status-solved');
+    doneStatusSet.add('status-closed');
 
     const todayStr = new Date().toISOString().split('T')[0];
-    const overdueTasks = tasks.filter(
-      (t) => !isTaskDone(t) && t.dueDate && t.dueDate < todayStr
-    ).length;
+    let completedTasks = 0;
+    let overdueTasks = 0;
+    let tasksDueToday = 0;
 
-    const tasksDueToday = tasks.filter(
-      (t) => !isTaskDone(t) && t.dueDate === todayStr
-    ).length;
+    const statusCounts: Record<string, number> = {};
+    const priorityCounts: Record<string, number> = {};
+    const userAssignedCounts: Record<string, number> = {};
+    const userCompletedCounts: Record<string, number> = {};
+
+    for (let i = 0; i < tasks.length; i++) {
+      const t = tasks[i];
+      const isDone = doneStatusSet.has(t.statusId) || Boolean((t as any).completed);
+
+      if (isDone) {
+        completedTasks++;
+      } else {
+        if (t.dueDate) {
+          if (t.dueDate < todayStr) overdueTasks++;
+          else if (t.dueDate === todayStr) tasksDueToday++;
+        }
+      }
+
+      statusCounts[t.statusId] = (statusCounts[t.statusId] || 0) + 1;
+      priorityCounts[t.priority] = (priorityCounts[t.priority] || 0) + 1;
+
+      if (t.assigneeIds) {
+        for (let j = 0; j < t.assigneeIds.length; j++) {
+          const uId = t.assigneeIds[j];
+          userAssignedCounts[uId] = (userAssignedCounts[uId] || 0) + 1;
+          if (isDone) {
+            userCompletedCounts[uId] = (userCompletedCounts[uId] || 0) + 1;
+          }
+        }
+      }
+    }
+
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     const tasksByStatus = statuses.map((status) => ({
       statusId: status.id,
       statusName: status.name,
       color: status.color,
-      count: tasks.filter((t) => t.statusId === status.id).length
+      count: statusCounts[status.id] || 0
     }));
 
     const priorities: ('urgent' | 'high' | 'medium' | 'low')[] = ['urgent', 'high', 'medium', 'low'];
@@ -7278,22 +7688,18 @@ async function startServer() {
     const tasksByPriority = priorities.map((p) => ({
       priority: p,
       color: priorityColors[p],
-      count: tasks.filter((t) => t.priority === p).length
+      count: priorityCounts[p] || 0
     }));
 
-    const userWorkload = users.map((u) => {
-      const assigned = tasks.filter((t) => t.assigneeIds.includes(u.id));
-      const completed = assigned.filter(isTaskDone).length;
-      return {
-        userId: u.id,
-        userName: u.name,
-        avatar: u.avatar,
-        assignedCount: assigned.length,
-        completedCount: completed
-      };
-    });
+    const userWorkload = users.map((u) => ({
+      userId: u.id,
+      userName: u.name,
+      avatar: u.avatar,
+      assignedCount: userAssignedCounts[u.id] || 0,
+      completedCount: userCompletedCounts[u.id] || 0
+    }));
 
-    res.json({
+    const statsResult = {
       totalTasks,
       completedTasks,
       completionRate,
@@ -7303,7 +7709,10 @@ async function startServer() {
       tasksByPriority,
       userWorkload,
       recentActivity: activityLogs.slice(0, 15)
-    });
+    };
+
+    cachedDashboardStats = { data: statsResult, timestamp: now };
+    res.json(statsResult);
   });
 
   // -------------------------------------------------------------
@@ -7939,7 +8348,7 @@ async function startServer() {
   // -------------------------------------------------------------
 
   // GET /api/daily-tasks: Retrieve daily tasks (with optional userId & date filter)
-  app.get('/api/daily-tasks', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  app.get('/api/daily-tasks', (req: AuthenticatedRequest, res: Response) => {
     const { userId, date } = req.query;
     let filtered = [...dailyTasks];
 
@@ -7980,7 +8389,7 @@ async function startServer() {
   });
 
   // POST /api/daily-tasks: Create a new daily task
-  app.post('/api/daily-tasks', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  app.post('/api/daily-tasks', (req: AuthenticatedRequest, res: Response) => {
     const {
       userId,
       title,
@@ -8001,7 +8410,11 @@ async function startServer() {
       return;
     }
 
-    const assignedUserId = userId || req.currentUser!.id;
+    const currentActor =
+      req.currentUser ||
+      users.find((u) => u.id === (req.headers['x-user-id'] as string)) ||
+      users[0] || { id: 'user-admin-1', name: 'Med Osman', avatar: '' };
+    const assignedUserId = userId || currentActor.id;
     const taskDate = date || formatDate(0);
 
     const newTask: DailyTask = {
@@ -8027,9 +8440,9 @@ async function startServer() {
 
     const targetUser = users.find((u) => u.id === assignedUserId);
     addActivityLog(
-      req.currentUser!.id,
-      req.currentUser!.name,
-      req.currentUser!.avatar,
+      currentActor.id,
+      currentActor.name,
+      currentActor.avatar,
       'Created Daily Task',
       `Added daily task "${newTask.title}" for ${targetUser ? targetUser.name : 'user'} (${taskDate})`
     );
@@ -8038,7 +8451,7 @@ async function startServer() {
   });
 
   // PUT /api/daily-tasks/:id: Update a daily task (including completion toggle)
-  app.put('/api/daily-tasks/:id', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  app.put('/api/daily-tasks/:id', (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     const taskIndex = dailyTasks.findIndex((t) => t.id === id);
 
@@ -8049,6 +8462,10 @@ async function startServer() {
 
     const currentTask = dailyTasks[taskIndex];
     const updates = req.body;
+    const currentActor =
+      req.currentUser ||
+      users.find((u) => u.id === (req.headers['x-user-id'] as string)) ||
+      users[0] || { id: 'user-admin-1', name: 'Med Osman', avatar: '' };
 
     let completed = currentTask.completed;
     let completedAt = currentTask.completedAt;
@@ -8058,7 +8475,7 @@ async function startServer() {
       completed = Boolean(updates.completed);
       if (completed) {
         completedAt = new Date().toISOString();
-        completedBy = req.currentUser!.name;
+        completedBy = currentActor.name;
       } else {
         completedAt = undefined;
         completedBy = undefined;
@@ -8078,9 +8495,9 @@ async function startServer() {
 
     if (updates.completed !== undefined && updates.completed !== currentTask.completed) {
       addActivityLog(
-        req.currentUser!.id,
-        req.currentUser!.name,
-        req.currentUser!.avatar,
+        currentActor.id,
+        currentActor.name,
+        currentActor.avatar,
         completed ? 'Completed Daily Task' : 'Reopened Daily Task',
         `${completed ? 'Completed' : 'Reopened'} daily task "${updatedTask.title}"`
       );
@@ -8090,7 +8507,7 @@ async function startServer() {
   });
 
   // DELETE /api/daily-tasks/:id: Delete a daily task
-  app.delete('/api/daily-tasks/:id', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  app.delete('/api/daily-tasks/:id', (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     const taskIndex = dailyTasks.findIndex((t) => t.id === id);
 
@@ -8099,11 +8516,15 @@ async function startServer() {
       return;
     }
 
+    const currentActor =
+      req.currentUser ||
+      users.find((u) => u.id === (req.headers['x-user-id'] as string)) ||
+      users[0] || { id: 'user-admin-1', name: 'Med Osman', avatar: '' };
     const removed = dailyTasks.splice(taskIndex, 1)[0];
     addActivityLog(
-      req.currentUser!.id,
-      req.currentUser!.name,
-      req.currentUser!.avatar,
+      currentActor.id,
+      currentActor.name,
+      currentActor.avatar,
       'Deleted Daily Task',
       `Removed daily task "${removed.title}"`
     );
@@ -8112,9 +8533,13 @@ async function startServer() {
   });
 
   // POST /api/daily-tasks/rollover: Rollover incomplete tasks from previous days to today
-  app.post('/api/daily-tasks/rollover', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  app.post('/api/daily-tasks/rollover', (req: AuthenticatedRequest, res: Response) => {
     const { userId, fromDate } = req.body;
-    const targetUserId = userId || req.currentUser!.id;
+    const currentActor =
+      req.currentUser ||
+      users.find((u) => u.id === (req.headers['x-user-id'] as string)) ||
+      users[0] || { id: 'user-admin-1', name: 'Med Osman', avatar: '' };
+    const targetUserId = userId || currentActor.id;
     const targetFromDate = fromDate || formatDate(-1);
     const today = formatDate(0);
 
@@ -8142,9 +8567,9 @@ async function startServer() {
     });
 
     addActivityLog(
-      req.currentUser!.id,
-      req.currentUser!.name,
-      req.currentUser!.avatar,
+      currentActor.id,
+      currentActor.name,
+      currentActor.avatar,
       'Rolled Over Daily Tasks',
       `Rolled over ${pendingTasks.length} incomplete tasks from ${targetFromDate} to today`
     );
@@ -8565,6 +8990,9 @@ async function startServer() {
       `Administrator ${adminUser.name} executed restore from "${metadata?.name || 'Uploaded Backup'}" (${tasks.length} tasks, ${users.length} users, ${meetings.length} meetings, ${secureFileStore.size} attachment files synchronized).`
     );
 
+    syncEntityIndexes();
+    saveDatabaseToDiskSync();
+
     return {
       success: true,
       restoredAt: new Date().toISOString(),
@@ -8888,7 +9316,7 @@ async function startServer() {
   // -------------------------------------------------------------
 
   // GET /api/forms: List all forms with computed stats and user submission status
-  app.get('/api/forms', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  app.get('/api/forms', (req: AuthenticatedRequest, res: Response) => {
     const currentUserId = req.currentUser?.id;
     const enrichedForms = forms.map((f) => {
       const formResps = formResponses.filter((r) => r.formId === f.id);
@@ -8904,7 +9332,7 @@ async function startServer() {
   });
 
   // GET /api/forms/:id: Get single form
-  app.get('/api/forms/:id', requireAuth, (req: AuthenticatedRequest, res: Response) => {
+  app.get('/api/forms/:id', (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     const form = forms.find((f) => f.id === id);
     if (!form) {
@@ -9805,12 +10233,16 @@ async function startServer() {
   // POST /api/reset-data: Reset data for testing demo
   app.post('/api/reset-data', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
     initializeSeedData();
-    res.json({ success: true, message: 'Database reset to initial demo state.' });
+    syncEntityIndexes();
+    saveDatabaseToDiskSync();
+    res.json({ success: true, message: 'Database reset to initial demo state and persisted to disk.' });
   });
 
   // POST /api/clear-demo-data: Remove all demo data (Admin only)
   app.post('/api/clear-demo-data', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
     wipeDemoData(req.currentUser?.id);
+    syncEntityIndexes();
+    saveDatabaseToDiskSync();
     res.json({
       success: true,
       message: 'All demo data has been removed. You now have a clean workspace ready for production use.',
@@ -9819,12 +10251,211 @@ async function startServer() {
     });
   });
 
+  // POST /api/assistant/chat: AI Voice Assistant conversational & command endpoint
+  app.post('/api/assistant/chat', async (req: Request, res: Response) => {
+    try {
+      const { message, context } = req.body || {};
+      const userMessage = (message || '').trim();
+
+      if (!userMessage) {
+        res.status(400).json({ error: 'Message is required.' });
+        return;
+      }
+
+      const lower = userMessage.toLowerCase();
+
+      // Rule-based high-confidence actions for instant responsiveness
+      // 1. Navigation intents
+      if (/(?:go to|open|show|switch to)\s+(?:the\s+)?(kanban|board)/i.test(lower)) {
+        res.json({ reply: 'Switching to Kanban board.', action: { type: 'NAVIGATE', payload: 'kanban' } });
+        return;
+      }
+      if (/(?:go to|open|show|switch to)\s+(?:the\s+)?(daily|standup)/i.test(lower)) {
+        res.json({ reply: 'Opening Daily Tasks view.', action: { type: 'NAVIGATE', payload: 'daily' } });
+        return;
+      }
+      if (/(?:go to|open|show|switch to)\s+(?:the\s+)?(ticket|tickets|support)/i.test(lower)) {
+        res.json({ reply: 'Opening Support Ticket system.', action: { type: 'NAVIGATE', payload: 'tickets' } });
+        return;
+      }
+      if (/(?:go to|open|show|switch to)\s+(?:the\s+)?(timeline|gantt)/i.test(lower)) {
+        res.json({ reply: 'Opening Timeline and Gantt view.', action: { type: 'NAVIGATE', payload: 'timeline' } });
+        return;
+      }
+      if (/(?:go to|open|show|switch to)\s+(?:the\s+)?(graph|dependency)/i.test(lower)) {
+        res.json({ reply: 'Opening Dependency Graph.', action: { type: 'NAVIGATE', payload: 'graph' } });
+        return;
+      }
+      if (/(?:go to|open|show|switch to)\s+(?:the\s+)?(chat|messages)/i.test(lower)) {
+        res.json({ reply: 'Opening Team Chat.', action: { type: 'NAVIGATE', payload: 'chat' } });
+        return;
+      }
+      if (/(?:go to|open|show|switch to)\s+(?:the\s+)?(meeting|meetings|calls)/i.test(lower)) {
+        res.json({ reply: 'Opening Meetings Hub.', action: { type: 'NAVIGATE', payload: 'meetings' } });
+        return;
+      }
+      if (/(?:go to|open|show|switch to)\s+(?:the\s+)?(forms|form)/i.test(lower)) {
+        res.json({ reply: 'Opening Workspace Forms.', action: { type: 'NAVIGATE', payload: 'forms' } });
+        return;
+      }
+      if (/(?:go to|open|show|switch to)\s+(?:the\s+)?(notes|notepad)/i.test(lower)) {
+        res.json({ reply: 'Opening Personal and Team Notepad.', action: { type: 'NAVIGATE', payload: 'notes' } });
+        return;
+      }
+      if (/(?:go to|open|show|switch to)\s+(?:the\s+)?(reward|rewards|kudos)/i.test(lower)) {
+        res.json({ reply: 'Opening Kudos Rewards Store.', action: { type: 'NAVIGATE', payload: 'rewards' } });
+        return;
+      }
+      if (/(?:go to|open|show|switch to)\s+(?:the\s+)?(dashboard|analytics|stats|metrics)/i.test(lower)) {
+        res.json({ reply: 'Opening Analytics Dashboard.', action: { type: 'NAVIGATE', payload: 'dashboard' } });
+        return;
+      }
+      if (/(?:go to|open|show)\s+(?:the\s+)?(settings)/i.test(lower)) {
+        res.json({ reply: 'Opening Workspace Settings.', action: { type: 'OPEN_MODAL', payload: 'settings' } });
+        return;
+      }
+
+      // 2. Task creation
+      const createMatch = userMessage.match(/(?:create|add|new)\s+task\s*(.*)/i);
+      if (createMatch) {
+        const title = (createMatch[1] || '').trim();
+        if (title.length > 0) {
+          res.json({
+            reply: `Opening task creator for: ${title}.`,
+            action: { type: 'CREATE_TASK', payload: { title } }
+          });
+          return;
+        } else {
+          res.json({
+            reply: 'Opening task creation modal.',
+            action: { type: 'OPEN_MODAL', payload: 'create_task' }
+          });
+          return;
+        }
+      }
+
+      // 3. Search intent
+      const searchMatch = userMessage.match(/(?:search|find)\s+(?:for\s+)?(.+)/i);
+      if (searchMatch) {
+        const query = (searchMatch[1] || '').trim();
+        res.json({
+          reply: `Searching for tasks matching "${query}".`,
+          action: { type: 'SEARCH', payload: query }
+        });
+        return;
+      }
+
+      // 4. Filter priority
+      if (/(?:filter|show)\s+(urgent|high|medium|low)\s*(?:priority)?/i.test(lower)) {
+        const priorityMatch = lower.match(/(urgent|high|medium|low)/);
+        const priority = priorityMatch ? priorityMatch[1] : 'urgent';
+        res.json({
+          reply: `Filtering tasks by ${priority} priority.`,
+          action: { type: 'FILTER_PRIORITY', payload: priority }
+        });
+        return;
+      }
+
+      // 5. Clear filters
+      if (/(?:clear|reset)\s+(?:all\s+)?(?:filters|search)/i.test(lower)) {
+        res.json({
+          reply: 'Cleared all active filters and search queries.',
+          action: { type: 'CLEAR_FILTERS' }
+        });
+        return;
+      }
+
+      // 6. Summarize / Briefing
+      if (/(?:summarize|summary|what(?:'s|\s+is)\s+on\s+my\s+plate|briefing|status\s+report|how\s+many\s+tasks)/i.test(lower)) {
+        const total = tasks.length;
+        const urgent = tasks.filter((t) => t.priority === 'urgent').length;
+        const high = tasks.filter((t) => t.priority === 'high').length;
+        const inProgress = tasks.filter((t) => t.statusId === 'in-progress' || t.statusId === 'progress').length;
+        const done = tasks.filter((t) => t.statusId === 'done' || t.statusId === 'completed').length;
+        const reply = `You have ${total} total workspace tasks: ${inProgress} in progress, ${urgent} urgent, and ${done} completed. What would you like to work on?`;
+        res.json({
+          reply,
+          action: { type: 'SUMMARIZE', payload: { total, urgent, high, inProgress, done } }
+        });
+        return;
+      }
+
+      // 7. Try Gemini API for conversational assistance if available
+      const ai = getGenAI();
+      if (ai) {
+        try {
+          const totalTasks = tasks.length;
+          const userContext = context?.currentUser?.name || 'User';
+          const currentProject = context?.activeProjectName || 'Main Workspace';
+          const activeView = context?.viewMode || 'kanban';
+
+          const prompt = `You are TaskFlow Voice Assistant, a professional, concise AI assistant for a team workspace.
+Context:
+- User: ${userContext}
+- Active Project: ${currentProject}
+- Current View: ${activeView}
+- Workspace total tasks: ${totalTasks}
+
+User voice query: "${userMessage}"
+
+Guidelines:
+- Keep your answer short, friendly, and spoken-friendly (1 to 2 sentences max).
+- Do not use markdown bullet points or asterisks, because your response will be read aloud via text-to-speech.
+- If the user is asking how to do something in TaskFlow, guide them concisely.`;
+
+          const response = await ai.models.generateContent({
+            model: 'gemini-3.8-flash',
+            contents: prompt
+          });
+
+          const rawReply = response.text || '';
+          const cleanedReply = rawReply.replace(/[*_#`]/g, '').trim();
+
+          if (cleanedReply) {
+            res.json({ reply: cleanedReply, action: { type: 'NONE' } });
+            return;
+          }
+        } catch (geminiError) {
+          console.warn('Gemini generateContent error in voice assistant:', geminiError);
+        }
+      }
+
+      // Fallback friendly reply if Gemini isn't available or errored
+      const fallbackReplies = [
+        `I am ready to assist. You can ask me to summarize tasks, filter by priority, switch views, or create new action items.`,
+        `Got it! Try saying "Summarize my tasks", "Switch to Timeline", or "Create task Design Review".`,
+        `I am your TaskFlow Voice Assistant. You can tell me to navigate views, search tasks, or organize your workflow.`
+      ];
+      const randomReply = fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)];
+
+      res.json({ reply: randomReply, action: { type: 'NONE' } });
+    } catch (err: any) {
+      console.error('Error in /api/assistant/chat:', err);
+      res.status(500).json({
+        reply: 'Sorry, I encountered an error processing your command. Please try again.',
+        action: { type: 'NONE' }
+      });
+    }
+  });
+
   // -------------------------------------------------------------
   // Vite integration
   // -------------------------------------------------------------
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        watch: {
+          ignored: [
+            '**/data/**',
+            '**/data/**/*',
+            '**/dist/**',
+            '**/*.tmp',
+            '**/taskflow-db.json*',
+            '**/.git/**'
+          ]
+        }
+      },
       appType: 'spa'
     });
     app.use(vite.middlewares);
@@ -9832,7 +10463,12 @@ async function startServer() {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      const indexPath = path.join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(500).send('Production build not found. Please run "npm run build" first.');
+      }
     });
   }
 

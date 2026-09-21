@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from './context/AuthContext';
 import { useTasks } from './context/TaskContext';
 import { useTheme } from './context/ThemeContext';
+import { useVoiceAssistant } from './context/VoiceAssistantContext';
 import { AppProviders } from './components/providers/AppProviders';
 import { WorkspaceLayout } from './components/workspace/WorkspaceLayout';
 import { WorkspaceViewRouter } from './components/workspace/WorkspaceViewRouter';
@@ -15,11 +16,13 @@ const WorkspaceContent: React.FC = () => {
   const { viewMode, isLoading, isSidebarOpen, setIsSidebarOpen, toggleSidebar } = useTasks();
   const { isLoading: isAuthLoading, isAuthenticated, currentUser } = useAuth();
   const { setIsThemeEditorOpen } = useTheme();
+  const { toggleVoiceAssistant } = useVoiceAssistant();
 
-  // Encapsulated keyboard shortcuts (Ctrl+B: Sidebar, Ctrl+Shift+T: Theme Studio)
+  // Encapsulated keyboard shortcuts (Ctrl+B: Sidebar, Ctrl+Shift+T: Theme Studio, Ctrl+Shift+V: Voice Assistant)
   useGlobalKeyboardShortcuts({
     onToggleSidebar: toggleSidebar,
-    onToggleThemeEditor: () => setIsThemeEditorOpen((prev) => !prev)
+    onToggleThemeEditor: () => setIsThemeEditorOpen((prev) => !prev),
+    onToggleVoiceAssistant: toggleVoiceAssistant
   });
 
   // Global initial loading state

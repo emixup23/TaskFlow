@@ -20,6 +20,7 @@ import {
 import { useNotifications } from '../context/NotificationContext';
 import { useTasks } from '../context/TaskContext';
 import { useChat } from '../context/ChatContext';
+import { useLanguage } from '../context/LanguageContext';
 import { NotificationItem, NotificationType } from '../types';
 import { soundManager, playNotificationSound } from '../utils/sound';
 
@@ -43,6 +44,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
 
   const { setSelectedTaskId, setViewMode, setFilters } = useTasks();
   const { setActiveChannelId } = useChat();
+  const { t } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [isAudioEnabled, setIsAudioEnabled] = useState(soundManager.isSoundEnabled());
@@ -105,14 +107,14 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
       const diffHr = Math.floor(diffMin / 60);
       const diffDays = Math.floor(diffHr / 24);
 
-      if (diffSec < 60) return 'Just now';
+      if (diffSec < 60) return t('notifications.justNow', 'Just now');
       if (diffMin < 60) return `${diffMin}m ago`;
       if (diffHr < 24) return `${diffHr}h ago`;
-      if (diffDays === 1) return 'Yesterday';
+      if (diffDays === 1) return t('common.yesterday', 'Yesterday');
       if (diffDays < 7) return `${diffDays}d ago`;
       return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     } catch {
-      return 'Recently';
+      return t('notifications.recently', 'Recently');
     }
   };
 
@@ -184,10 +186,10 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
             </div>
             <div>
               <h3 className="font-semibold text-xs sm:text-sm text-white flex items-center gap-2">
-                Notifications
+                {t('header.notifications', 'Notifications')}
                 {unreadCount > 0 && (
                   <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    {unreadCount} new
+                    {unreadCount} {t('common.new', 'new')}
                   </span>
                 )}
               </h3>
@@ -199,7 +201,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
               type="button"
               id="btn-toggle-notification-sound"
               onClick={toggleSound}
-              title={isAudioEnabled ? "Audio alerts enabled (Click to mute or preview chime)" : "Audio alerts muted (Click to enable)"}
+              title={isAudioEnabled ? "Audio alerts enabled" : "Audio alerts muted"}
               className={`p-1.5 rounded transition-colors text-[11px] font-medium flex items-center gap-1 cursor-pointer ${
                 isAudioEnabled
                   ? 'text-emerald-400 hover:bg-emerald-950/40 hover:text-emerald-300'
@@ -218,7 +220,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
                 className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-[#222222] rounded transition-colors text-[11px] font-medium flex items-center gap-1 cursor-pointer"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Mark all read</span>
+                <span className="hidden sm:inline">{t('notifications.markAllAsRead', 'Mark all read')}</span>
               </button>
             )}
 
@@ -231,7 +233,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
                 className="p-1.5 text-neutral-400 hover:text-rose-400 hover:bg-[#222222] rounded transition-colors text-[11px] font-medium flex items-center gap-1 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Clear</span>
+                <span className="hidden sm:inline">{t('common.clear', 'Clear')}</span>
               </button>
             )}
 
@@ -259,7 +261,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
               : 'text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          All ({notifications.length})
+          {t('common.all', 'All')} ({notifications.length})
         </button>
         <button
           type="button"
@@ -270,7 +272,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
               : 'text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          Unread ({unreadCount})
+          {t('notifications.unread', 'Unread')} ({unreadCount})
         </button>
         <button
           type="button"
@@ -281,7 +283,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
               : 'text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          Mentions ({notifications.filter((n) => n.type === 'mention').length})
+          {t('notifications.mentions', 'Mentions')} ({notifications.filter((n) => n.type === 'mention').length})
         </button>
         <button
           type="button"
@@ -292,7 +294,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
               : 'text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          Assigned (
+          {t('notifications.assigned', 'Assigned')} (
           {
             notifications.filter(
               (n) =>
@@ -310,7 +312,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
         {filteredNotifications.length === 0 ? (
           <div className="p-8 text-center text-neutral-400 flex flex-col items-center justify-center gap-2">
             <Inbox className="w-8 h-8 opacity-40 text-neutral-500" />
-            <p className="text-xs font-medium text-neutral-300">No notifications in this view</p>
+            <p className="text-xs font-medium text-neutral-300">{t('notifications.noNotifications', 'No notifications in this view')}</p>
             <p className="text-[11px] text-neutral-500 max-w-[200px]">
               You'll be alerted when assigned to tasks, tickets, projects, or mentioned in chat.
             </p>

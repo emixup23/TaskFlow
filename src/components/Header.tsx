@@ -20,18 +20,25 @@ import {
   RotateCcw,
   Check,
   ExternalLink,
-  X
+  X,
+  Globe,
+  Mic,
+  Sliders,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
 import { useTheme } from '../context/ThemeContext';
 import { useNotifications } from '../context/NotificationContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useFeatures } from '../context/FeatureContext';
 import { Logo } from './Logo';
 import { UserAvatar } from './UserAvatar';
 import { RemoveDemoDataModal } from './RemoveDemoDataModal';
 import { NotificationDropdown } from './NotificationDropdown';
 import { GamificationHeaderPill } from './GamificationHeaderPill';
 import { SyncWithListerButton } from './SyncWithListerButton';
+import { VoiceAssistantHeaderToggle } from './voice/VoiceAssistantHeaderToggle';
 
 interface HeaderProps {
   isSidebarOpen?: boolean;
@@ -54,6 +61,8 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
   } = useTasks();
   const { theme, setTheme, setIsThemeEditorOpen, themeConfig } = useTheme();
   const { unreadCount } = useNotifications();
+  const { t, language, setLanguage, languages, currentLanguageConfig } = useLanguage();
+  const { isFeatureVisible, openFeaturesModal, visibleCount, totalCount } = useFeatures();
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [isSettingsDropdownOpen, setIsSettingsDropdownOpen] = useState(false);
@@ -118,34 +127,39 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
         </div>
 
         {/* Quick Search */}
-        <div className="relative hidden sm:block w-48 md:w-120 lg:w-72">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
-          <input
-            type="text"
-            value={filters.search}
-            onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-            placeholder="Quick search tasks..."
-            className="w-full bg-[#1a1a1a] border border-[#333333] rounded pl-8.5 pr-7 py-1.5 text-xs sm:text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all h-8"
-          />
-          {filters.search && (
-            <button
-              type="button"
-              onClick={() => setFilters((prev) => ({ ...prev, search: '' }))}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-200 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-neutral-800"
-            >
-              ×
-            </button>
-          )}
-        </div>
+        {isFeatureVisible('quick_search') && (
+          <div className="relative hidden sm:block w-48 md:w-120 lg:w-72">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+            <input
+              type="text"
+              value={filters.search}
+              onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+              placeholder={t('header.searchPlaceholder', 'Quick search tasks...')}
+              className="w-full bg-[#1a1a1a] border border-[#333333] rounded pl-8.5 pr-7 py-1.5 text-xs sm:text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all h-8"
+            />
+            {filters.search && (
+              <button
+                type="button"
+                onClick={() => setFilters((prev) => ({ ...prev, search: '' }))}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-200 text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full hover:bg-neutral-800"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Right Controls: Gamification Badge, Settings Dropdown, Notification Bell, Create Task Button, Profile */}
+      {/* Right Controls: Lister Sync, Gamification, Language Switcher, Settings Dropdown, Notification Bell, Create Task Button, Profile */}
       <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
         {/* Two-Way Lister Sync Button */}
-        <SyncWithListerButton variant="header" />
+        {isFeatureVisible('lister_sync') && <SyncWithListerButton variant="header" />}
 
         {/* Gamification Badge next to Settings Dropdown Menu */}
-        <GamificationHeaderPill />
+        {isFeatureVisible('gamification_badge') && <GamificationHeaderPill />}
+
+        {/* Global Voice Assistant Toggle (Turn on/off) */}
+        {isFeatureVisible('voice_assistant') && <VoiceAssistantHeaderToggle />}
 
         {/* Settings Dropdown Menu */}
         <div className="relative" ref={settingsRef}>
@@ -153,7 +167,7 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
             type="button"
             id="btn-header-settings"
             onClick={() => setIsSettingsDropdownOpen(!isSettingsDropdownOpen)}
-            title="Settings & Workspace Tools"
+            title={t('header.settings', 'Settings & Workspace Tools')}
             className={`h-8 px-2.5 rounded flex items-center gap-1.5 border text-xs font-medium transition-all cursor-pointer active:scale-95 group ${
               isSettingsDropdownOpen
                 ? 'bg-blue-600/20 border-blue-500/50 text-white shadow-blue-500/10'
@@ -201,6 +215,42 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
                     <X className="w-4 h-4" />
                   </button>
                 </div>
+              </div>
+
+              {/* Features Customization Button */}
+              <div className="p-2.5 bg-gradient-to-r from-blue-950/40 via-[#181818] to-[#151515]">
+                <button
+                  type="button"
+                  id="dropdown-btn-open-features"
+                  onClick={() => {
+                    setIsSettingsDropdownOpen(false);
+                    openFeaturesModal();
+                  }}
+                  className="w-full flex items-center justify-between p-2.5 rounded-lg bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/40 hover:border-blue-400 text-white transition-all cursor-pointer group active:scale-98 shadow-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-md bg-blue-600/30 border border-blue-500/50 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform">
+                      <Sliders className="w-4 h-4" />
+                    </div>
+                    <div className="text-left">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-xs text-white group-hover:text-blue-200">
+                          Features
+                        </span>
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                          Config
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-neutral-400">Show or hide any app feature</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono font-bold text-blue-300 bg-[#121212] px-1.5 py-0.5 rounded border border-blue-500/30">
+                      {visibleCount}/{totalCount}
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-blue-300 transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                </button>
               </div>
 
               {/* Theme Mode & Studio Section */}
@@ -280,11 +330,75 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
                 </button>
               </div>
 
+              {/* Language & Locale Quick Selector */}
+              <div className="px-3.5 py-2.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1">
+                    <Globe className="w-3 h-3 text-blue-400" />
+                    <span>{t('settings.language', 'Language & Region')}</span>
+                  </span>
+                  <button
+                    type="button"
+                    id="dropdown-view-all-languages"
+                    onClick={() => {
+                      setIsSettingsDropdownOpen(false);
+                      openSettings('language');
+                    }}
+                    className="text-[10px] text-blue-400 hover:text-blue-300 font-semibold cursor-pointer"
+                  >
+                    All ({languages.length}) &rarr;
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1.5">
+                  {languages.slice(0, 4).map((lang) => (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      id={`dropdown-lang-quick-${lang.code}`}
+                      onClick={() => setLanguage(lang.code)}
+                      className={`flex items-center gap-1.5 py-1.5 px-2 rounded text-[11px] font-medium transition-all cursor-pointer ${
+                        language === lang.code
+                          ? 'bg-blue-600/25 border border-blue-500/50 text-white font-semibold'
+                          : 'bg-[#1e1e1e] text-neutral-300 hover:text-white hover:bg-[#252525] border border-transparent'
+                      }`}
+                    >
+                      <span className="select-none">{lang.flag}</span>
+                      <span className="truncate">{lang.nativeName}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Workspace Views & Admin (moved from sidebar) */}
               <div className="py-1">
                 <div className="px-3.5 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
                   Workspace Administration
                 </div>
+
+                {/* Voice Assistant Settings */}
+                <button
+                  type="button"
+                  id="dropdown-nav-voice"
+                  onClick={() => {
+                    setIsSettingsDropdownOpen(false);
+                    openSettings('voice');
+                  }}
+                  className="w-full flex items-center justify-between px-3.5 py-2 text-left hover:bg-[#1f1f1f] transition-colors cursor-pointer group text-neutral-200"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-blue-950/60 border border-blue-500/30 flex items-center justify-center shrink-0">
+                      <Mic className="w-3.5 h-3.5 text-blue-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-xs text-white group-hover:text-blue-300 transition-colors">
+                        Voice Assistant
+                      </p>
+                      <p className="text-[10px] text-neutral-400 truncate">Controls, commands &amp; audio feedback</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-neutral-500 group-hover:text-blue-400">&rarr;</span>
+                </button>
 
                 {/* Team */}
                 <button
@@ -460,40 +574,42 @@ export const Header: React.FC<HeaderProps> = ({ isSidebarOpen = true, onToggleSi
         </div>
 
         {/* Notification Bell */}
-        <div className="relative" ref={notifRef}>
-          <button
-            type="button"
-            id="btn-notifications-bell"
-            onClick={() => setShowNotifications(!showNotifications)}
-            className={`w-8 h-8 rounded flex items-center justify-center border transition-all relative cursor-pointer ${
-              showNotifications
-                ? 'bg-blue-600/20 text-blue-400 border-blue-500/40'
-                : 'bg-[#1a1a1a] text-neutral-400 hover:text-white border-[#333333] hover:bg-[#262626]'
-            }`}
-            title="Notifications & Alerts"
-          >
-            <Bell className="w-4 h-4" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-4.5 h-4.5 px-1 bg-red-600 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center border-2 border-[#121212] shadow-sm animate-in zoom-in duration-200">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </button>
+        {isFeatureVisible('notifications') && (
+          <div className="relative" ref={notifRef}>
+            <button
+              type="button"
+              id="btn-notifications-bell"
+              onClick={() => setShowNotifications(!showNotifications)}
+              className={`w-8 h-8 rounded flex items-center justify-center border transition-all relative cursor-pointer ${
+                showNotifications
+                  ? 'bg-blue-600/20 text-blue-400 border-blue-500/40'
+                  : 'bg-[#1a1a1a] text-neutral-400 hover:text-white border-[#333333] hover:bg-[#262626]'
+              }`}
+              title={t('header.notifications', 'Notifications & Alerts')}
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-4.5 h-4.5 px-1 bg-red-600 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center border-2 border-[#121212] shadow-sm animate-in zoom-in duration-200">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
 
-          <NotificationDropdown
-            isOpen={showNotifications}
-            onClose={() => setShowNotifications(false)}
-          />
-        </div>
+            <NotificationDropdown
+              isOpen={showNotifications}
+              onClose={() => setShowNotifications(false)}
+            />
+          </div>
+        )}
 
-        {/* Create Task Action - Gated by RBAC privilege */}
-        {(isAdmin || currentUser?.privileges?.canCreateTask !== false) && (
+        {/* Create Task Action - Gated by RBAC privilege & Feature Visibility */}
+        {isFeatureVisible('new_task_btn') && (isAdmin || currentUser?.privileges?.canCreateTask !== false) && (
           <button
             type="button"
             id="btn-create-task"
             onClick={() => setIsCreateModalOpen(true)}
-            title="Create new task (N)"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold h-8 w-8 sm:w-auto px-2 sm:px-3.5 rounded transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
+            title={t('tasks.newTask', 'Create new task (N)')}
+            className="bg-blue-600 hover:bg-blue-700 text-white h-8 w-8 rounded transition-all shadow-md shadow-blue-600/20 flex items-center justify-center shrink-0 active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
           </button>

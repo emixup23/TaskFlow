@@ -260,7 +260,7 @@ export const StatusManagerModal: React.FC = () => {
                             : 'border-[#333333] hover:scale-105'
                         }`}
                         style={{ backgroundColor: c }}
-                      />
+                      ></button>
                     ))}
                   </div>
                 </div>
@@ -373,7 +373,7 @@ export const StatusManagerModal: React.FC = () => {
                                 editColor === c ? 'border-white scale-110' : 'border-transparent'
                               }`}
                               style={{ backgroundColor: c }}
-                            />
+                            ></button>
                           ))}
                         </div>
                         <label className="flex items-center gap-1 text-xs text-neutral-300 cursor-pointer">

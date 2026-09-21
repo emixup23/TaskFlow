@@ -19,7 +19,11 @@ export const STORAGE_KEYS = {
   DAILY_SHOW_USER_FILTER: 'taskflow_daily_show_user_filter',
   LISTER_API_BASE_URL: 'taskflow_lister_api_base_url',
   LISTER_API_KEY: 'taskflow_lister_api_key',
-  LISTER_LAST_SYNC_TIME: 'taskflow_lister_last_sync_time'
+  LISTER_LAST_SYNC_TIME: 'taskflow_lister_last_sync_time',
+  ACTIVE_PROJECT_ID: 'taskflow_active_project_id',
+  VOICE_ASSISTANT_ENABLED: 'taskflow_voice_assistant_enabled',
+  VOICE_ASSISTANT_MUTED: 'taskflow_voice_assistant_muted',
+  VOICE_ASSISTANT_WIDGET_OPEN: 'taskflow_voice_assistant_widget_open'
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];

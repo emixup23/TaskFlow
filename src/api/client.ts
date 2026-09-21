@@ -42,8 +42,8 @@ import {
 
 import { STORAGE_KEYS } from '../constants/storageKeys';
 
-let currentUserId = '';
-let currentAuthToken = '';
+let currentUserId = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.USER_ID) || '' : '';
+let currentAuthToken = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) || '' : '';
 
 export function setApiUserId(id: string) {
   currentUserId = id;
@@ -804,7 +804,58 @@ export const api = {
     }),
 
   // Security Audit
-  getSecurityAuditReport: () => request<SecurityAuditReport>('/api/admin/security/audit')
+  getSecurityAuditReport: () => request<SecurityAuditReport>('/api/admin/security/audit'),
+
+  // AI Voice Assistant
+  assistantChat: (data: {
+    message: string;
+    context?: any;
+    conversationHistory?: Array<{ role: 'user' | 'assistant'; text: string }>;
+  }) =>
+    request<{
+      reply: string;
+      action?: {
+        type:
+          | 'NAVIGATE'
+          | 'CREATE_TASK'
+          | 'SEARCH'
+          | 'FILTER_PRIORITY'
+          | 'FILTER_STATUS'
+          | 'CLEAR_FILTERS'
+          | 'OPEN_MODAL'
+          | 'SUMMARIZE'
+          | 'NONE';
+        payload?: any;
+      };
+    }>('/api/assistant/chat', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+
+  // Persistence & Storage Health
+  getPersistenceStatus: () =>
+    request<{
+      persisted: boolean;
+      filePath: string;
+      fileSizeBytes: number;
+      lastSavedAt: string;
+      counts: Record<string, number>;
+    }>('/api/persistence/status'),
+  savePersistenceNow: () =>
+    request<{
+      success: boolean;
+      message: string;
+      lastSavedAt: string;
+    }>('/api/persistence/save', {
+      method: 'POST'
+    }),
+  resetDefaultData: () =>
+    request<{
+      success: boolean;
+      message: string;
+    }>('/api/persistence/reset-defaults', {
+      method: 'POST'
+    })
 };
 
 export const apiClient = api;

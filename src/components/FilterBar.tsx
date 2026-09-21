@@ -21,10 +21,12 @@ import { Priority } from '../types';
 import { getTagStyle } from '../utils/tagColors';
 import { UserAvatar } from './UserAvatar';
 import { SyncWithListerButton } from './SyncWithListerButton';
+import { useLanguage } from '../context/LanguageContext';
 
 export const FilterBar: React.FC = () => {
   const { filters, setFilters, resetFilters, statuses, tasks, filteredTasks } = useTasks();
   const { users } = useAuth();
+  const { t } = useLanguage();
 
   // Dropdown open states
   const [openDropdown, setOpenDropdown] = useState<'status' | 'priority' | 'assignee' | 'date' | 'tag' | null>(null);
@@ -56,61 +58,59 @@ export const FilterBar: React.FC = () => {
     };
   }, []);
 
-  const priorities: { value: Priority; label: string; dotColor: string; bgClass: string; textClass: string }[] = [
-    { value: 'urgent', label: 'Urgent', dotColor: 'bg-rose-500', bgClass: 'bg-rose-500/15', textClass: 'text-rose-400' },
-    { value: 'high', label: 'High', dotColor: 'bg-amber-500', bgClass: 'bg-amber-500/15', textClass: 'text-amber-400' },
-    { value: 'medium', label: 'Medium', dotColor: 'bg-blue-500', bgClass: 'bg-blue-500/15', textClass: 'text-blue-400' },
-    { value: 'low', label: 'Low', dotColor: 'bg-slate-400', bgClass: 'bg-slate-500/15', textClass: 'text-slate-300' }
-  ];
+  const priorities: { value: Priority; label: string; dotColor: string; bgClass: string; textClass: string }[] = useMemo(() => [
+    { value: 'urgent', label: t('priority.urgent', 'Urgent'), dotColor: 'bg-rose-500', bgClass: 'bg-rose-500/15', textClass: 'text-rose-400' },
+    { value: 'high', label: t('priority.high', 'High'), dotColor: 'bg-amber-500', bgClass: 'bg-amber-500/15', textClass: 'text-amber-400' },
+    { value: 'medium', label: t('priority.medium', 'Medium'), dotColor: 'bg-blue-500', bgClass: 'bg-blue-500/15', textClass: 'text-blue-400' },
+    { value: 'low', label: t('priority.low', 'Low'), dotColor: 'bg-slate-400', bgClass: 'bg-slate-500/15', textClass: 'text-slate-300' }
+  ], [t]);
 
-  const dueDates: { value: 'all' | 'overdue' | 'today' | 'this_week' | 'no_date'; label: string; icon?: React.ReactNode }[] = [
-    { value: 'all', label: 'All Deadlines' },
-    { value: 'overdue', label: 'Overdue', icon: <AlertCircle className="w-3.5 h-3.5 text-rose-500" /> },
-    { value: 'today', label: 'Due Today', icon: <Clock className="w-3.5 h-3.5 text-amber-500" /> },
-    { value: 'this_week', label: 'Due This Week', icon: <Calendar className="w-3.5 h-3.5 text-blue-500" /> },
-    { value: 'no_date', label: 'No Deadline' }
-  ];
+  const dueDates: { value: 'all' | 'overdue' | 'today' | 'this_week' | 'no_date'; label: string; icon?: React.ReactNode }[] = useMemo(() => [
+    { value: 'all', label: t('filter.allStatuses', 'All Deadlines') },
+    { value: 'overdue', label: t('filter.overdue', 'Overdue'), icon: <AlertCircle className="w-3.5 h-3.5 text-rose-500" /> },
+    { value: 'today', label: t('filter.dueToday', 'Due Today'), icon: <Clock className="w-3.5 h-3.5 text-amber-500" /> },
+    { value: 'this_week', label: t('filter.dueThisWeek', 'Due This Week'), icon: <Calendar className="w-3.5 h-3.5 text-blue-500" /> },
+    { value: 'no_date', label: t('filter.noDeadline', 'No Deadline') }
+  ], [t]);
 
-  // Collect all unique tags
-  const allTags = useMemo(() => {
-    return Array.from(new Set(tasks.flatMap((t) => t.tags || []))).filter(Boolean);
-  }, [tasks]);
+  // Single-pass compilation of tag indices and counts for optimal performance
+  const { allTags, countByStatus, countByPriority, countByAssignee, countByTag } = useMemo(() => {
+    const statusCounts: Record<string, number> = {};
+    const priorityCounts: Record<string, number> = {};
+    const assigneeCounts: Record<string, number> = {};
+    const tagCounts: Record<string, number> = {};
+    const tagSet = new Set<string>();
 
-  // Task count helpers
-  const countByStatus = useMemo(() => {
-    const counts: Record<string, number> = {};
-    tasks.forEach((t) => {
-      counts[t.statusId] = (counts[t.statusId] || 0) + 1;
-    });
-    return counts;
-  }, [tasks]);
+    for (let i = 0; i < tasks.length; i++) {
+      const t = tasks[i];
+      statusCounts[t.statusId] = (statusCounts[t.statusId] || 0) + 1;
+      priorityCounts[t.priority] = (priorityCounts[t.priority] || 0) + 1;
 
-  const countByPriority = useMemo(() => {
-    const counts: Record<string, number> = {};
-    tasks.forEach((t) => {
-      counts[t.priority] = (counts[t.priority] || 0) + 1;
-    });
-    return counts;
-  }, [tasks]);
+      if (t.assigneeIds) {
+        for (let j = 0; j < t.assigneeIds.length; j++) {
+          const uId = t.assigneeIds[j];
+          assigneeCounts[uId] = (assigneeCounts[uId] || 0) + 1;
+        }
+      }
 
-  const countByAssignee = useMemo(() => {
-    const counts: Record<string, number> = {};
-    tasks.forEach((t) => {
-      (t.assigneeIds || []).forEach((userId) => {
-        counts[userId] = (counts[userId] || 0) + 1;
-      });
-    });
-    return counts;
-  }, [tasks]);
+      if (t.tags) {
+        for (let j = 0; j < t.tags.length; j++) {
+          const tag = t.tags[j];
+          if (tag) {
+            tagSet.add(tag);
+            tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+          }
+        }
+      }
+    }
 
-  const countByTag = useMemo(() => {
-    const counts: Record<string, number> = {};
-    tasks.forEach((t) => {
-      (t.tags || []).forEach((tag) => {
-        counts[tag] = (counts[tag] || 0) + 1;
-      });
-    });
-    return counts;
+    return {
+      allTags: Array.from(tagSet),
+      countByStatus: statusCounts,
+      countByPriority: priorityCounts,
+      countByAssignee: assigneeCounts,
+      countByTag: tagCounts
+    };
   }, [tasks]);
 
   const togglePriority = (p: Priority) => {
@@ -160,42 +160,46 @@ export const FilterBar: React.FC = () => {
 
   // Active label summaries for dropdown buttons
   const statusButtonLabel = useMemo(() => {
-    if (filters.statusIds.length === 0) return 'Status';
+    const statusLabel = t('common.status', 'Status');
+    if (filters.statusIds.length === 0) return statusLabel;
     if (filters.statusIds.length === 1) {
       const s = statuses.find((st) => st.id === filters.statusIds[0]);
-      return s ? `Status: ${s.name}` : 'Status (1)';
+      return s ? `${statusLabel}: ${s.name}` : `${statusLabel} (1)`;
     }
-    return `Status (${filters.statusIds.length})`;
-  }, [filters.statusIds, statuses]);
+    return `${statusLabel} (${filters.statusIds.length})`;
+  }, [filters.statusIds, statuses, t]);
 
   const priorityButtonLabel = useMemo(() => {
-    if (filters.priorities.length === 0) return 'Priority';
+    const priorityLabel = t('common.priority', 'Priority');
+    if (filters.priorities.length === 0) return priorityLabel;
     if (filters.priorities.length === 1) {
       const p = priorities.find((pr) => pr.value === filters.priorities[0]);
-      return p ? `Priority: ${p.label}` : 'Priority (1)';
+      return p ? `${priorityLabel}: ${p.label}` : `${priorityLabel} (1)`;
     }
-    return `Priority (${filters.priorities.length})`;
-  }, [filters.priorities, priorities]);
+    return `${priorityLabel} (${filters.priorities.length})`;
+  }, [filters.priorities, priorities, t]);
 
   const assigneeButtonLabel = useMemo(() => {
-    if (filters.assigneeIds.length === 0) return 'Assignee';
+    const assigneeLabel = t('common.assignee', 'Assignee');
+    if (filters.assigneeIds.length === 0) return assigneeLabel;
     if (filters.assigneeIds.length === 1) {
       const u = users.find((usr) => usr.id === filters.assigneeIds[0]);
-      return u ? `Assignee: ${u.name.split(' ')[0]}` : 'Assignee (1)';
+      return u ? `${assigneeLabel}: ${u.name.split(' ')[0]}` : `${assigneeLabel} (1)`;
     }
-    return `Assignee (${filters.assigneeIds.length})`;
-  }, [filters.assigneeIds, users]);
+    return `${assigneeLabel} (${filters.assigneeIds.length})`;
+  }, [filters.assigneeIds, users, t]);
 
   const dueDateButtonLabel = useMemo(() => {
-    if (filters.dueDateFilter === 'all') return 'Deadline';
+    const deadlineLabel = t('common.dueDate', 'Deadline');
+    if (filters.dueDateFilter === 'all') return deadlineLabel;
     const d = dueDates.find((dd) => dd.value === filters.dueDateFilter);
-    return d ? d.label : 'Deadline';
-  }, [filters.dueDateFilter, dueDates]);
+    return d ? d.label : deadlineLabel;
+  }, [filters.dueDateFilter, dueDates, t]);
 
   const tagButtonLabel = useMemo(() => {
-    if (!filters.tag) return 'Tag';
+    if (!filters.tag) return t('common.tags', 'Tag');
     return `#${filters.tag}`;
-  }, [filters.tag]);
+  }, [filters.tag, t]);
 
   // Filtered dropdown lists
   const filteredUsers = useMemo(() => {
@@ -226,7 +230,7 @@ export const FilterBar: React.FC = () => {
                 id="filter-search-input"
                 value={filters.search}
                 onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                placeholder="Search tasks or tags..."
+                placeholder={t('filter.searchPlaceholder', 'Search tasks or tags...')}
                 className="w-full pl-8 pr-7 py-1.5 bg-[#181818] border border-[#333333] rounded text-xs text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all h-8"
               />
               {filters.search && (

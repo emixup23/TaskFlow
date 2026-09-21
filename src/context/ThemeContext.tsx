@@ -5,8 +5,16 @@ import {
   ThemePreset,
   FontFamilyOption,
   RadiusOption,
-  DensityOption
+  DensityOption,
+  TextSizeOption
 } from '../types';
+
+export const TEXT_SIZE_MAP: Record<TextSizeOption, { label: string; size: string; rootFontSize: string; desc: string }> = {
+  small: { label: 'Small', size: '13px', rootFontSize: '87.5%', desc: 'Compact typography for high information density' },
+  default: { label: 'Default', size: '14px', rootFontSize: '100%', desc: 'Standard balanced typography scale' },
+  large: { label: 'Large', size: '16px', rootFontSize: '112.5%', desc: 'Enhanced legibility and comfortable reading' },
+  xl: { label: 'Extra Large', size: '18px', rootFontSize: '125%', desc: 'High visibility and large display scale' }
+};
 
 export const FONT_FAMILY_MAP: Record<FontFamilyOption, { label: string; family: string }> = {
   system: {
@@ -367,13 +375,21 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const parsed = JSON.parse(saved);
         // If stored theme was the old obsidian default, seamlessly upgrade to the new Cyberpunk Neon default
         if (parsed && parsed.id && parsed.id !== 'obsidian') {
-          return parsed;
+          return {
+            borders: true,
+            textSize: 'default',
+            ...parsed
+          };
         }
       }
     } catch {
       // ignore
     }
-    return PRESET_THEMES[0].config;
+    return {
+      borders: true,
+      textSize: 'default',
+      ...PRESET_THEMES[0].config
+    };
   });
 
   const [activePresetId, setActivePresetId] = useState<string>(() => {
@@ -425,6 +441,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.setAttribute('data-theme-preset', themeConfig.id || 'custom');
       root.setAttribute('data-theme-font', themeConfig.fontFamily || 'system');
       root.setAttribute('data-theme-radius', themeConfig.radius || 'precision');
+      root.setAttribute('data-theme-borders', themeConfig.borders === false ? 'off' : 'on');
+      body.setAttribute('data-theme-borders', themeConfig.borders === false ? 'off' : 'on');
+      root.setAttribute('data-theme-text-size', themeConfig.textSize || 'default');
+      body.setAttribute('data-theme-text-size', themeConfig.textSize || 'default');
     };
 
     updateActualTheme();
@@ -437,7 +457,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     mediaQuery.addEventListener('change', handleSystemChange);
     return () => mediaQuery.removeEventListener('change', handleSystemChange);
-  }, [theme, themeConfig.mode, themeConfig.id, themeConfig.fontFamily, themeConfig.radius]);
+  }, [theme, themeConfig.mode, themeConfig.id, themeConfig.fontFamily, themeConfig.radius, themeConfig.borders, themeConfig.textSize]);
 
   // Sync theme configuration CSS variables to DOM
   useEffect(() => {
@@ -449,6 +469,23 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       body.style.setProperty(name, value);
     };
 
+    // Border line configuration (on / off)
+    const bordersEnabled = themeConfig.borders !== false;
+    const activeBorderColor = bordersEnabled ? themeConfig.borderColor : 'transparent';
+    applyVar('--app-border', activeBorderColor);
+    applyVar('--app-border-width', bordersEnabled ? '1px' : '0px');
+    root.setAttribute('data-theme-borders', bordersEnabled ? 'on' : 'off');
+    body.setAttribute('data-theme-borders', bordersEnabled ? 'on' : 'off');
+
+    // Default text size scale configuration
+    const textSize = themeConfig.textSize || 'default';
+    const textSizeInfo = TEXT_SIZE_MAP[textSize] || TEXT_SIZE_MAP.default;
+    root.setAttribute('data-theme-text-size', textSize);
+    body.setAttribute('data-theme-text-size', textSize);
+    root.style.fontSize = textSizeInfo.rootFontSize;
+    applyVar('--app-text-size', textSizeInfo.size);
+    applyVar('--app-root-font-size', textSizeInfo.rootFontSize);
+
     // Inject dynamic CSS custom properties
     applyVar('--app-primary', themeConfig.primaryColor);
     applyVar('--app-primary-hover', themeConfig.primaryHoverColor || themeConfig.primaryColor);
@@ -456,7 +493,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     applyVar('--app-bg', themeConfig.backgroundColor);
     applyVar('--app-surface', themeConfig.surfaceColor);
     applyVar('--app-surface-secondary', themeConfig.surfaceSecondaryColor);
-    applyVar('--app-border', themeConfig.borderColor);
     applyVar('--app-text', themeConfig.textColor);
     applyVar('--app-text-muted', themeConfig.textMutedColor);
     applyVar('--app-radius', themeConfig.radiusPx || RADIUS_MAP[themeConfig.radius]?.px || '3px');

@@ -26,18 +26,22 @@ import {
   CheckCircle2,
   Clock,
   ArrowRight,
-  Code2
+  Code2,
+  Square,
+  SquareDashed
 } from 'lucide-react';
 import {
   useTheme,
   PRESET_THEMES,
   FONT_FAMILY_MAP,
-  RADIUS_MAP
+  RADIUS_MAP,
+  TEXT_SIZE_MAP
 } from '../context/ThemeContext';
 import {
   FontFamilyOption,
   RadiusOption,
-  DensityOption
+  DensityOption,
+  TextSizeOption
 } from '../types';
 import { useTasks } from '../context/TaskContext';
 
@@ -227,6 +231,27 @@ export const ThemeEditorModal: React.FC = () => {
               </button>
             </div>
 
+            {/* Quick Borders On/Off Switcher in Header */}
+            <button
+              type="button"
+              id="btn-quick-toggle-borders"
+              onClick={() => updateThemeConfig({ borders: !(themeConfig.borders !== false) })}
+              className={`px-2.5 py-1 text-xs font-semibold rounded border flex items-center gap-1.5 transition-all cursor-pointer ${
+                themeConfig.borders !== false
+                  ? 'bg-[#202020] border-[#333333] text-neutral-300 hover:text-white hover:border-[#444444]'
+                  : 'bg-blue-950/40 border-blue-500/50 text-blue-400'
+              }`}
+              title={themeConfig.borders !== false ? 'Turn borders OFF' : 'Turn borders ON'}
+            >
+              {themeConfig.borders !== false ? (
+                <Square className="w-3.5 h-3.5 text-blue-400" />
+              ) : (
+                <SquareDashed className="w-3.5 h-3.5 text-neutral-400" />
+              )}
+              <span className="hidden sm:inline">Borders:</span>
+              <span className="font-bold">{themeConfig.borders !== false ? 'ON' : 'OFF'}</span>
+            </button>
+
             <button
               type="button"
               id="btn-close-theme-editor"
@@ -243,7 +268,7 @@ export const ThemeEditorModal: React.FC = () => {
           {[
             { id: 'presets', label: 'Preset Themes', icon: <Layers className="w-4 h-4" /> },
             { id: 'palette', label: 'Colors & Contrast', icon: <Sliders className="w-4 h-4" /> },
-            { id: 'typography', label: 'Geometry & Font', icon: <Type className="w-4 h-4" /> },
+            { id: 'typography', label: 'Borders & Typography', icon: <Type className="w-4 h-4" /> },
             { id: 'custom', label: 'Save & Export JSON', icon: <Bookmark className="w-4 h-4" /> }
           ].map((tab) => (
             <button
@@ -499,11 +524,78 @@ export const ThemeEditorModal: React.FC = () => {
               </div>
             )}
 
-            {/* TAB 3: GEOMETRY & TYPOGRAPHY */}
+            {/* TAB 3: BORDERS & TYPOGRAPHY */}
             {activeTab === 'typography' && (
               <div className="space-y-5">
-                {/* Corner Radius Selection */}
+                {/* 1. Border On / Off Selection */}
                 <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-neutral-300 flex items-center gap-2">
+                      <Square className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Interface Borders</span>
+                    </label>
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                      themeConfig.borders !== false
+                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                        : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
+                    }`}>
+                      {themeConfig.borders !== false ? 'Borders ON' : 'Borders OFF (Flat)'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      id="theme-borders-on-btn"
+                      onClick={() => updateThemeConfig({ borders: true })}
+                      className={`p-3 rounded border text-left transition-all cursor-pointer flex items-center gap-3 ${
+                        themeConfig.borders !== false
+                          ? 'border-blue-500 bg-blue-950/30 text-white shadow-sm'
+                          : 'border-[#282828] bg-[#161616] text-neutral-400 hover:border-[#383838] hover:text-neutral-200'
+                      }`}
+                    >
+                      <div className="w-8 h-8 rounded border-2 border-blue-400 bg-blue-500/20 flex items-center justify-center shrink-0">
+                        <Square className="w-4 h-4 text-blue-400" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold">Borders On</span>
+                          {themeConfig.borders !== false && <Check className="w-3.5 h-3.5 text-blue-400" />}
+                        </div>
+                        <p className="text-[10px] text-neutral-400 leading-tight mt-0.5">
+                          Outlined cards, panels, tables, and dividers
+                        </p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      id="theme-borders-off-btn"
+                      onClick={() => updateThemeConfig({ borders: false })}
+                      className={`p-3 rounded border text-left transition-all cursor-pointer flex items-center gap-3 ${
+                        themeConfig.borders === false
+                          ? 'border-blue-500 bg-blue-950/30 text-white shadow-sm'
+                          : 'border-[#282828] bg-[#161616] text-neutral-400 hover:border-[#383838] hover:text-neutral-200'
+                      }`}
+                    >
+                      <div className="w-8 h-8 rounded border border-dashed border-neutral-600 bg-neutral-800/60 flex items-center justify-center shrink-0">
+                        <SquareDashed className="w-4 h-4 text-neutral-400" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold">Borders Off</span>
+                          {themeConfig.borders === false && <Check className="w-3.5 h-3.5 text-blue-400" />}
+                        </div>
+                        <p className="text-[10px] text-neutral-400 leading-tight mt-0.5">
+                          Clean borderless surfaces for modern flat aesthetic
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Corner Radius Selection */}
+                <div className="space-y-2.5 pt-3 border-t border-[#262626]">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold uppercase tracking-wider text-neutral-300">
                       Corner Radius (Border-Radius)
@@ -540,7 +632,64 @@ export const ThemeEditorModal: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Font Family Selection */}
+                {/* 3. Default Text Size Selection */}
+                <div className="space-y-2.5 pt-3 border-t border-[#262626]">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-neutral-300 flex items-center gap-2">
+                      <Type className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Default Text Size</span>
+                    </label>
+                    <span className="text-xs font-mono font-bold text-blue-400">
+                      {TEXT_SIZE_MAP[themeConfig.textSize || 'default']?.label} ({TEXT_SIZE_MAP[themeConfig.textSize || 'default']?.size})
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {(['small', 'default', 'large', 'xl'] as TextSizeOption[]).map((sizeKey) => {
+                      const isSelected = (themeConfig.textSize || 'default') === sizeKey;
+                      const sizeInfo = TEXT_SIZE_MAP[sizeKey];
+
+                      const sampleSizeClass =
+                        sizeKey === 'small'
+                          ? 'text-xs'
+                          : sizeKey === 'default'
+                          ? 'text-sm'
+                          : sizeKey === 'large'
+                          ? 'text-base font-medium'
+                          : 'text-lg font-semibold';
+
+                      return (
+                        <button
+                          key={sizeKey}
+                          type="button"
+                          id={`theme-text-size-${sizeKey}-btn`}
+                          onClick={() => updateThemeConfig({ textSize: sizeKey })}
+                          className={`p-2.5 rounded border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                            isSelected
+                              ? 'border-blue-500 bg-blue-950/30 text-white shadow-sm'
+                              : 'border-[#282828] bg-[#161616] text-neutral-300 hover:border-[#383838]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-bold">{sizeInfo.label}</span>
+                            {isSelected && <Check className="w-3.5 h-3.5 text-blue-400" />}
+                          </div>
+
+                          <div className="h-7 flex items-center">
+                            <span className={`text-neutral-200 ${sampleSizeClass}`}>Aa 123</span>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1 border-t border-[#262626] text-[10px] text-neutral-400 font-mono">
+                            <span>{sizeInfo.size}</span>
+                            <span>{sizeInfo.rootFontSize}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 4. Font Family Selection */}
                 <div className="space-y-2.5 pt-3 border-t border-[#262626]">
                   <label className="text-xs font-bold uppercase tracking-wider text-neutral-300">
                     Typography & Font Family
@@ -576,7 +725,7 @@ export const ThemeEditorModal: React.FC = () => {
                   </div>
                 </div>
 
-                {/* UI Density Selector */}
+                {/* 5. UI Density Selector */}
                 <div className="space-y-2.5 pt-3 border-t border-[#262626]">
                   <label className="text-xs font-bold uppercase tracking-wider text-neutral-300">
                     Layout Density
@@ -715,7 +864,20 @@ export const ThemeEditorModal: React.FC = () => {
                 <Eye className="w-3.5 h-3.5 text-blue-400" />
                 <span>Live Component Preview</span>
               </div>
-              <span className="text-[10px] text-neutral-500 font-mono">Reacts in real-time</span>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold ${
+                    themeConfig.borders !== false
+                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                      : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
+                  }`}
+                >
+                  {themeConfig.borders !== false ? 'Borders ON' : 'Borders OFF'}
+                </span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold bg-neutral-800 text-neutral-300 border border-neutral-700">
+                  {TEXT_SIZE_MAP[themeConfig.textSize || 'default']?.label} ({TEXT_SIZE_MAP[themeConfig.textSize || 'default']?.size})
+                </span>
+              </div>
             </div>
 
             {/* Interactive Mock Workspace Card */}
@@ -723,8 +885,9 @@ export const ThemeEditorModal: React.FC = () => {
               className="p-4 rounded-lg border shadow-xl flex-1 flex flex-col justify-between space-y-4 transition-all duration-200"
               style={{
                 backgroundColor: themeConfig.surfaceColor,
-                borderColor: themeConfig.borderColor,
-                borderRadius: themeConfig.radiusPx || '3px'
+                borderColor: themeConfig.borders !== false ? themeConfig.borderColor : 'transparent',
+                borderRadius: themeConfig.radiusPx || '3px',
+                fontSize: TEXT_SIZE_MAP[themeConfig.textSize || 'default']?.rootFontSize || '100%'
               }}
             >
               {/* Mock Task Card */}
@@ -732,7 +895,7 @@ export const ThemeEditorModal: React.FC = () => {
                 className="p-3.5 rounded border shadow-sm space-y-3"
                 style={{
                   backgroundColor: themeConfig.surfaceSecondaryColor,
-                  borderColor: themeConfig.borderColor,
+                  borderColor: themeConfig.borders !== false ? themeConfig.borderColor : 'transparent',
                   borderRadius: themeConfig.radiusPx || '3px'
                 }}
               >
@@ -821,7 +984,7 @@ export const ThemeEditorModal: React.FC = () => {
                     className="flex-1 py-1.5 text-xs font-semibold border text-neutral-300 hover:text-white transition-all cursor-pointer active:scale-95"
                     style={{
                       backgroundColor: themeConfig.surfaceSecondaryColor,
-                      borderColor: themeConfig.borderColor,
+                      borderColor: themeConfig.borders !== false ? themeConfig.borderColor : 'transparent',
                       borderRadius: themeConfig.radiusPx || '3px'
                     }}
                   >

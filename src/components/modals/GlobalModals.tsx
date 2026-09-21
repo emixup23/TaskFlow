@@ -12,9 +12,11 @@ import { KudosModal } from '../KudosModal';
 import { LevelUpModal } from '../LevelUpModal';
 import { ThemeEditorModal } from '../ThemeEditorModal';
 import { SettingsModal } from '../SettingsModal';
+import { FeaturesModal } from '../FeaturesModal';
 import { FloatingXpToast } from '../FloatingXpToast';
 import { ToastContainer } from '../ToastContainer';
 import { NotificationBannerToast } from '../NotificationBannerToast';
+import { VoiceAssistantHUD } from '../voice/VoiceAssistantHUD';
 
 /**
  * Encapsulates all global modal dialogs and notification toasts in a single container.
@@ -36,9 +38,11 @@ export const GlobalModals: React.FC = () => {
       <LevelUpModal />
       <ThemeEditorModal />
       <SettingsModal />
+      <FeaturesModal />
       <FloatingXpToast />
       <ToastContainer />
       <NotificationBannerToast />
+      <VoiceAssistantHUD />
     </>
   );
 };

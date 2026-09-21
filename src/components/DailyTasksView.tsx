@@ -204,8 +204,8 @@ export const DailyTasksView: React.FC = () => {
       if (res.userSummaries) {
         setUserSummaries(res.userSummaries);
       }
-    } catch (err) {
-      console.error('Failed to load daily tasks:', err);
+    } catch (err: any) {
+      console.warn('Could not load daily tasks:', err?.message || err);
     } finally {
       setIsLoading(false);
     }
@@ -213,7 +213,7 @@ export const DailyTasksView: React.FC = () => {
 
   useEffect(() => {
     fetchTasks();
-  }, [selectedUserId, selectedDate]);
+  }, [selectedUserId, selectedDate, currentUser?.id]);
 
   // Open Create Modal
   const handleOpenCreateModal = (timeBlock?: DailyTimeBlock) => {

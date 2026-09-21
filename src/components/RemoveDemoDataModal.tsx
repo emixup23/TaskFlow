@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Trash2, AlertTriangle, CheckCircle2, Shield, X, Loader2 } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface RemoveDemoDataModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface RemoveDemoDataModalProps {
 export const RemoveDemoDataModal: React.FC<RemoveDemoDataModalProps> = ({ isOpen, onClose }) => {
   const { clearDemoData } = useTasks();
   const { currentUser, isAdmin } = useAuth();
+  const { t } = useLanguage();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -59,7 +61,7 @@ export const RemoveDemoDataModal: React.FC<RemoveDemoDataModalProps> = ({ isOpen
             <div className="w-12 h-12 rounded-full bg-emerald-950/80 border border-emerald-600/50 text-emerald-400 mx-auto flex items-center justify-center">
               <CheckCircle2 className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-white">Demo Data Removed</h3>
+            <h3 className="text-base font-bold text-white">{t('settings.demoDataRemoved', 'Demo Data Removed')}</h3>
             <p className="text-xs text-neutral-400 max-w-xs mx-auto">
               Your workspace has been cleaned. All demo tasks, projects, and logs have been cleared.
             </p>
@@ -73,7 +75,7 @@ export const RemoveDemoDataModal: React.FC<RemoveDemoDataModalProps> = ({ isOpen
               </div>
               <div className="min-w-0 pr-6">
                 <h3 id="remove-demo-data-title" className="text-base font-bold text-white tracking-tight">
-                  Remove Demo Data
+                  {t('settings.removeDemoData', 'Remove Demo Data')}
                 </h3>
                 <p className="text-xs text-neutral-400 mt-0.5">
                   Clear pre-seeded sample records for a clean production workspace.
@@ -109,7 +111,7 @@ export const RemoveDemoDataModal: React.FC<RemoveDemoDataModalProps> = ({ isOpen
                 disabled={isDeleting}
                 className="px-4 py-2 rounded-xl bg-[#222222] hover:bg-[#2a2a2a] text-xs font-semibold text-neutral-300 transition-colors cursor-pointer border border-[#333] disabled:opacity-50"
               >
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </button>
 
               <button
@@ -122,12 +124,12 @@ export const RemoveDemoDataModal: React.FC<RemoveDemoDataModalProps> = ({ isOpen
                 {isDeleting ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Removing Data...</span>
+                    <span>{t('common.loading', 'Removing Data...')}</span>
                   </>
                 ) : (
                   <>
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Remove Demo Data</span>
+                    <span>{t('settings.removeDemoData', 'Remove Demo Data')}</span>
                   </>
                 )}
               </button>

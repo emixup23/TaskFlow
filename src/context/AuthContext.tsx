@@ -39,10 +39,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const allUsers = await api.getUsers();
       setUsers(allUsers);
 
-      // Explicit requirement: the app should load and users deauthenticated
-      setCurrentUser(null);
-      setApiUserId('');
-      setApiAuthToken('');
+      // Restore active user session if valid token exists in storage
+      const token = getApiAuthToken();
+      if (token) {
+        try {
+          const authMe = await api.getAuthMe();
+          if (authMe && authMe.user) {
+            setCurrentUser(authMe.user);
+            setApiUserId(authMe.user.id);
+            return;
+          }
+        } catch {
+          // Token expired or invalid
+          setApiAuthToken('');
+          setApiUserId('');
+          setCurrentUser(null);
+        }
+      } else {
+        setCurrentUser(null);
+      }
     } catch (err) {
       console.error('Failed to load user auth context:', err);
     } finally {

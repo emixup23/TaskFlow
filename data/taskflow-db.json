@@ -1,0 +1,3360 @@
+{
+  "version": 2,
+  "lastSavedAt": "2026-09-20T09:07:00.969Z",
+  "users": [
+    {
+      "id": "user-admin-emixup",
+      "name": "Emixup (Lead Admin)",
+      "email": "emixup23@gmail.com",
+      "role": "admin",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "title": "Lead Administrator & Security Officer",
+      "department": "Security & Operations",
+      "bio": "Lead Workspace Administrator and Security Operations Lead.",
+      "phone": "+1 (555) 019-2834",
+      "status": "active",
+      "privileges": {
+        "canCreateTask": true,
+        "canEditAnyTask": true,
+        "canDeleteTask": true,
+        "canManageStatuses": true,
+        "canManageUsers": true,
+        "canManageRoles": true,
+        "canManageProjects": true,
+        "canUploadAttachments": true,
+        "canDeleteAttachments": true,
+        "canViewAuditLogs": true,
+        "canManageBackups": true,
+        "canExportData": true,
+        "canHostMeetings": true,
+        "canManageChannels": true
+      },
+      "lastLoginAt": "2026-09-20T09:06:30.701Z",
+      "createdAt": "2026-09-20T09:06:30.701Z"
+    },
+    {
+      "id": "user-admin-1",
+      "name": "Med Osman",
+      "email": "contac@abc.fr",
+      "role": "admin",
+      "avatar": "https://medosman.com/src/assets/images/mohamed-osman-pro-photo.jpg",
+      "title": "Director of Engineering",
+      "department": "Core Infrastructure",
+      "bio": "Overseeing core cloud infrastructure, security compliance, and engineering operations.",
+      "phone": "+216 (51) 000-099",
+      "status": "active",
+      "privileges": {
+        "canCreateTask": true,
+        "canEditAnyTask": true,
+        "canDeleteTask": true,
+        "canManageStatuses": true,
+        "canManageUsers": true,
+        "canManageRoles": true,
+        "canManageProjects": true,
+        "canUploadAttachments": true,
+        "canDeleteAttachments": true,
+        "canViewAuditLogs": true,
+        "canManageBackups": true,
+        "canExportData": true,
+        "canHostMeetings": true,
+        "canManageChannels": true
+      },
+      "lastLoginAt": "2026-09-20T08:56:30.701Z",
+      "createdAt": "2026-03-24T09:06:30.701Z"
+    },
+    {
+      "id": "user-admin-2",
+      "name": "Meriam Heni",
+      "email": "Team2@techcorp.io",
+      "role": "manager",
+      "avatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+      "title": "RH Manager",
+      "department": "Customer Support",
+      "bio": "Lead customer support.",
+      "phone": "+1 (555) 876-5432",
+      "status": "active",
+      "privileges": {
+        "canCreateTask": true,
+        "canEditAnyTask": true,
+        "canDeleteTask": true,
+        "canManageStatuses": true,
+        "canManageUsers": false,
+        "canManageRoles": false,
+        "canManageProjects": true,
+        "canUploadAttachments": true,
+        "canDeleteAttachments": true,
+        "canViewAuditLogs": true,
+        "canManageBackups": false,
+        "canExportData": true,
+        "canHostMeetings": true,
+        "canManageChannels": true
+      },
+      "lastLoginAt": "2026-09-20T08:21:30.701Z",
+      "createdAt": "2026-04-23T09:06:30.701Z"
+    },
+    {
+      "id": "user-admin-3",
+      "name": "Marcus Vance",
+      "email": "marcus.vance@techcorp.io",
+      "role": "manager",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "title": "Project & Operations Manager",
+      "department": "DevOps & Security",
+      "bio": "Lead DevOps & operations manager handling cluster orchestration, sprint timelines, and project governance.",
+      "phone": "+1 (555) 876-5432",
+      "status": "active",
+      "privileges": {
+        "canCreateTask": true,
+        "canEditAnyTask": true,
+        "canDeleteTask": true,
+        "canManageStatuses": true,
+        "canManageUsers": false,
+        "canManageRoles": false,
+        "canManageProjects": true,
+        "canUploadAttachments": true,
+        "canDeleteAttachments": true,
+        "canViewAuditLogs": true,
+        "canManageBackups": false,
+        "canExportData": true,
+        "canHostMeetings": true,
+        "canManageChannels": true
+      },
+      "lastLoginAt": "2026-09-20T08:21:30.701Z",
+      "createdAt": "2026-04-23T09:06:30.701Z"
+    },
+    {
+      "id": "user-basic-1",
+      "name": "Alex Rivera",
+      "email": "alex.rivera@techcorp.io",
+      "role": "lead",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+      "title": "Senior Backend Tech Lead",
+      "department": "API & Services",
+      "bio": "Full-stack TypeScript & Go developer building high-throughput microservices and mentoring engineers.",
+      "phone": "+1 (555) 345-6789",
+      "status": "active",
+      "privileges": {
+        "canCreateTask": true,
+        "canEditAnyTask": true,
+        "canDeleteTask": false,
+        "canManageStatuses": true,
+        "canManageUsers": false,
+        "canManageRoles": false,
+        "canManageProjects": false,
+        "canUploadAttachments": true,
+        "canDeleteAttachments": true,
+        "canViewAuditLogs": true,
+        "canManageBackups": false,
+        "canExportData": true,
+        "canHostMeetings": true,
+        "canManageChannels": false
+      },
+      "lastLoginAt": "2026-09-20T07:06:30.701Z",
+      "createdAt": "2026-05-23T09:06:30.701Z"
+    },
+    {
+      "id": "user-basic-2",
+      "name": "Maria Garcia",
+      "email": "maria.garcia@techcorp.io",
+      "role": "member",
+      "avatar": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80",
+      "title": "Senior Frontend Engineer",
+      "department": "Web Experience",
+      "bio": "Frontend architect specializing in React, responsive interaction design, and web performance.",
+      "phone": "+1 (555) 456-7890",
+      "status": "active",
+      "privileges": {
+        "canCreateTask": true,
+        "canEditAnyTask": false,
+        "canDeleteTask": false,
+        "canManageStatuses": false,
+        "canManageUsers": false,
+        "canManageRoles": false,
+        "canManageProjects": false,
+        "canUploadAttachments": true,
+        "canDeleteAttachments": true,
+        "canViewAuditLogs": false,
+        "canManageBackups": false,
+        "canExportData": false,
+        "canHostMeetings": false,
+        "canManageChannels": false
+      },
+      "lastLoginAt": "2026-09-20T04:06:30.701Z",
+      "createdAt": "2026-06-22T09:06:30.701Z"
+    },
+    {
+      "id": "user-basic-3",
+      "name": "Liam Taylor",
+      "email": "liam.taylor@techcorp.io",
+      "role": "member",
+      "avatar": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
+      "title": "Lead UI/UX Designer",
+      "department": "Product Design",
+      "bio": "Design systems lead creating design tokens, component accessibility, and dark theme UI.",
+      "phone": "+1 (555) 567-8901",
+      "status": "active",
+      "privileges": {
+        "canCreateTask": true,
+        "canEditAnyTask": false,
+        "canDeleteTask": false,
+        "canManageStatuses": false,
+        "canManageUsers": false,
+        "canManageRoles": false,
+        "canManageProjects": false,
+        "canUploadAttachments": true,
+        "canDeleteAttachments": true,
+        "canViewAuditLogs": false,
+        "canManageBackups": false,
+        "canExportData": false,
+        "canHostMeetings": false,
+        "canManageChannels": false
+      },
+      "lastLoginAt": "2026-09-20T01:06:30.701Z",
+      "createdAt": "2026-07-22T09:06:30.701Z"
+    },
+    {
+      "id": "user-basic-4",
+      "name": "Chloe Bennett",
+      "email": "chloe.bennett@techcorp.io",
+      "role": "auditor",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "title": "Security & Compliance Auditor",
+      "department": "Quality & Governance",
+      "bio": "Audit & compliance inspector focusing on system security controls, audit logs, and risk reports.",
+      "phone": "+1 (555) 678-9012",
+      "status": "active",
+      "privileges": {
+        "canCreateTask": false,
+        "canEditAnyTask": false,
+        "canDeleteTask": false,
+        "canManageStatuses": false,
+        "canManageUsers": false,
+        "canManageRoles": false,
+        "canManageProjects": false,
+        "canUploadAttachments": false,
+        "canDeleteAttachments": false,
+        "canViewAuditLogs": true,
+        "canManageBackups": false,
+        "canExportData": true,
+        "canHostMeetings": false,
+        "canManageChannels": false
+      },
+      "lastLoginAt": "2026-09-19T19:06:30.701Z",
+      "createdAt": "2026-08-06T09:06:30.701Z"
+    }
+  ],
+  "userPasswordHashes": {
+    "user-admin-emixup": "$2b$10$C3GOFUyMaTjbV8LD5MjQxuhF/80eBLuBhws2vGreq6PyJKfNcZoyK",
+    "user-admin-1": "$2b$10$C3GOFUyMaTjbV8LD5MjQxuhF/80eBLuBhws2vGreq6PyJKfNcZoyK",
+    "user-admin-2": "$2b$10$C3GOFUyMaTjbV8LD5MjQxuhF/80eBLuBhws2vGreq6PyJKfNcZoyK",
+    "user-admin-3": "$2b$10$C3GOFUyMaTjbV8LD5MjQxuhF/80eBLuBhws2vGreq6PyJKfNcZoyK",
+    "user-basic-1": "$2b$10$C3GOFUyMaTjbV8LD5MjQxuhF/80eBLuBhws2vGreq6PyJKfNcZoyK",
+    "user-basic-2": "$2b$10$C3GOFUyMaTjbV8LD5MjQxuhF/80eBLuBhws2vGreq6PyJKfNcZoyK",
+    "user-basic-3": "$2b$10$C3GOFUyMaTjbV8LD5MjQxuhF/80eBLuBhws2vGreq6PyJKfNcZoyK",
+    "user-basic-4": "$2b$10$C3GOFUyMaTjbV8LD5MjQxuhF/80eBLuBhws2vGreq6PyJKfNcZoyK"
+  },
+  "activeSessions": [
+    [
+      "tok_demo_user-admin-emixup",
+      {
+        "token": "tok_demo_user-admin-emixup",
+        "userId": "user-admin-emixup",
+        "createdAt": "2026-09-20T09:06:30.705Z",
+        "expiresAt": 1821431190705
+      }
+    ],
+    [
+      "tok_demo_user-admin-1",
+      {
+        "token": "tok_demo_user-admin-1",
+        "userId": "user-admin-1",
+        "createdAt": "2026-09-20T09:06:30.705Z",
+        "expiresAt": 1821431190705
+      }
+    ],
+    [
+      "tok_demo_user-admin-2",
+      {
+        "token": "tok_demo_user-admin-2",
+        "userId": "user-admin-2",
+        "createdAt": "2026-09-20T09:06:30.705Z",
+        "expiresAt": 1821431190705
+      }
+    ],
+    [
+      "tok_demo_user-admin-3",
+      {
+        "token": "tok_demo_user-admin-3",
+        "userId": "user-admin-3",
+        "createdAt": "2026-09-20T09:06:30.705Z",
+        "expiresAt": 1821431190705
+      }
+    ],
+    [
+      "tok_demo_user-basic-1",
+      {
+        "token": "tok_demo_user-basic-1",
+        "userId": "user-basic-1",
+        "createdAt": "2026-09-20T09:06:30.705Z",
+        "expiresAt": 1821431190705
+      }
+    ],
+    [
+      "tok_demo_user-basic-2",
+      {
+        "token": "tok_demo_user-basic-2",
+        "userId": "user-basic-2",
+        "createdAt": "2026-09-20T09:06:30.705Z",
+        "expiresAt": 1821431190705
+      }
+    ],
+    [
+      "tok_demo_user-basic-3",
+      {
+        "token": "tok_demo_user-basic-3",
+        "userId": "user-basic-3",
+        "createdAt": "2026-09-20T09:06:30.705Z",
+        "expiresAt": 1821431190705
+      }
+    ],
+    [
+      "tok_demo_user-basic-4",
+      {
+        "token": "tok_demo_user-basic-4",
+        "userId": "user-basic-4",
+        "createdAt": "2026-09-20T09:06:30.705Z",
+        "expiresAt": 1821431190705
+      }
+    ]
+  ],
+  "systemRoles": [
+    {
+      "id": "admin",
+      "name": "Administrator",
+      "description": "Full unrestricted governance, security configuration, user management, and system disaster recovery.",
+      "color": "#10B981",
+      "badge": "SUPER ADMIN",
+      "icon": "Shield",
+      "isSystemRole": true,
+      "isEditable": false,
+      "defaultPrivileges": {
+        "canCreateTask": true,
+        "canEditAnyTask": true,
+        "canDeleteTask": true,
+        "canManageStatuses": true,
+        "canManageUsers": true,
+        "canManageRoles": true,
+        "canManageProjects": true,
+        "canUploadAttachments": true,
+        "canDeleteAttachments": true,
+        "canViewAuditLogs": true,
+        "canManageBackups": true,
+        "canExportData": true,
+        "canHostMeetings": true,
+        "canManageChannels": true
+      }
+    },
+    {
+      "id": "manager",
+      "name": "Project & Operations Manager",
+      "description": "Project governance, workflow status design, member task administration, and team reporting.",
+      "color": "#3B82F6",
+      "badge": "OPERATIONS",
+      "icon": "Briefcase",
+      "isSystemRole": true,
+      "isEditable": true,
+      "defaultPrivileges": {
+        "canCreateTask": true,
+        "canEditAnyTask": true,
+        "canDeleteTask": true,
+        "canManageStatuses": true,
+        "canManageUsers": false,
+        "canManageRoles": false,
+        "canManageProjects": true,
+        "canUploadAttachments": true,
+        "canDeleteAttachments": true,
+        "canViewAuditLogs": true,
+        "canManageBackups": false,
+        "canExportData": true,
+        "canHostMeetings": true,
+        "canManageChannels": true
+      }
+    },
+    {
+      "id": "lead",
+      "name": "Team Lead / Tech Specialist",
+      "description": "Senior contributor with elevated workflow authority, cross-task editing, and meeting moderation.",
+      "color": "#8B5CF6",
+      "badge": "TECH LEAD",
+      "icon": "Sparkles",
+      "isSystemRole": true,
+      "isEditable": true,
+      "defaultPrivileges": {
+        "canCreateTask": true,
+        "canEditAnyTask": true,
+        "canDeleteTask": false,
+        "canManageStatuses": true,
+        "canManageUsers": false,
+        "canManageRoles": false,
+        "canManageProjects": false,
+        "canUploadAttachments": true,
+        "canDeleteAttachments": true,
+        "canViewAuditLogs": true,
+        "canManageBackups": false,
+        "canExportData": true,
+        "canHostMeetings": true,
+        "canManageChannels": false
+      }
+    },
+    {
+      "id": "member",
+      "name": "Standard Contributor",
+      "description": "Core team member creating tasks, updating assigned work items, uploading files, and participating in chats.",
+      "color": "#F59E0B",
+      "badge": "CONTRIBUTOR",
+      "icon": "User",
+      "isSystemRole": true,
+      "isEditable": true,
+      "defaultPrivileges": {
+        "canCreateTask": true,
+        "canEditAnyTask": false,
+        "canDeleteTask": false,
+        "canManageStatuses": false,
+        "canManageUsers": false,
+        "canManageRoles": false,
+        "canManageProjects": false,
+        "canUploadAttachments": true,
+        "canDeleteAttachments": true,
+        "canViewAuditLogs": false,
+        "canManageBackups": false,
+        "canExportData": false,
+        "canHostMeetings": false,
+        "canManageChannels": false
+      }
+    },
+    {
+      "id": "auditor",
+      "name": "Security & Compliance Auditor",
+      "description": "Specialized read-only access for compliance review, security inspection, audit log monitoring, and reporting.",
+      "color": "#06B6D4",
+      "badge": "SECURITY AUDIT",
+      "icon": "FileCheck",
+      "isSystemRole": true,
+      "isEditable": true,
+      "defaultPrivileges": {
+        "canCreateTask": false,
+        "canEditAnyTask": false,
+        "canDeleteTask": false,
+        "canManageStatuses": false,
+        "canManageUsers": false,
+        "canManageRoles": false,
+        "canManageProjects": false,
+        "canUploadAttachments": false,
+        "canDeleteAttachments": false,
+        "canViewAuditLogs": true,
+        "canManageBackups": false,
+        "canExportData": true,
+        "canHostMeetings": false,
+        "canManageChannels": false
+      }
+    },
+    {
+      "id": "viewer",
+      "name": "Guest / External Stakeholder",
+      "description": "Restricted read-only access to view task status and boards without modification or deletion capabilities.",
+      "color": "#64748B",
+      "badge": "EXTERNAL GUEST",
+      "icon": "Eye",
+      "isSystemRole": true,
+      "isEditable": true,
+      "defaultPrivileges": {
+        "canCreateTask": false,
+        "canEditAnyTask": false,
+        "canDeleteTask": false,
+        "canManageStatuses": false,
+        "canManageUsers": false,
+        "canManageRoles": false,
+        "canManageProjects": false,
+        "canUploadAttachments": false,
+        "canDeleteAttachments": false,
+        "canViewAuditLogs": false,
+        "canManageBackups": false,
+        "canExportData": false,
+        "canHostMeetings": false,
+        "canManageChannels": false
+      }
+    }
+  ],
+  "statuses": [
+    {
+      "id": "status-created-assigned",
+      "name": "Created assigned",
+      "color": "#3B82F6",
+      "order": 0,
+      "description": "Newly logged ticket created and assigned for triage or handling",
+      "isDefault": true
+    },
+    {
+      "id": "status-in-progress",
+      "name": "In progress",
+      "color": "#F59E0B",
+      "order": 1,
+      "description": "Ticket is actively being investigated or worked on"
+    },
+    {
+      "id": "status-on-hold",
+      "name": "On hold",
+      "color": "#8B5CF6",
+      "order": 2,
+      "description": "Work paused waiting on customer feedback, third-party dependency, or blockers"
+    },
+    {
+      "id": "status-solved",
+      "name": "Solved",
+      "color": "#10B981",
+      "order": 3,
+      "description": "Resolution provided and verified with requester",
+      "isDone": true
+    },
+    {
+      "id": "status-closed",
+      "name": "Closed",
+      "color": "#64748B",
+      "order": 4,
+      "description": "Ticket confirmed resolved and permanently closed",
+      "isDone": true
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-1",
+      "name": "Cloud Infrastructure & Platform",
+      "description": "Scalable Kubernetes microservices mesh, multi-region cluster failover, and cloud security compliance.",
+      "color": "#3B82F6",
+      "ownerId": "user-admin-1",
+      "memberIds": [
+        "user-admin-1",
+        "user-admin-2",
+        "user-basic-1",
+        "user-basic-4"
+      ],
+      "status": "active",
+      "createdAt": "2026-07-22T09:06:30.701Z",
+      "updatedAt": "2026-09-15T09:06:30.701Z"
+    },
+    {
+      "id": "proj-2",
+      "name": "Customer Portal & Web App",
+      "description": "Next-generation client workspace, responsive Kanban workflows, real-time collaboration, and design tokens.",
+      "color": "#8B5CF6",
+      "ownerId": "user-admin-2",
+      "memberIds": [
+        "user-admin-2",
+        "user-basic-2",
+        "user-basic-3",
+        "user-basic-1"
+      ],
+      "status": "active",
+      "createdAt": "2026-08-06T09:06:30.701Z",
+      "updatedAt": "2026-09-18T09:06:30.701Z"
+    },
+    {
+      "id": "proj-3",
+      "name": "Quality & Automation Test Suite",
+      "description": "Automated end-to-end regression suites, load testing harnesses, and CI/CD security scanning gates.",
+      "color": "#10B981",
+      "ownerId": "user-basic-4",
+      "memberIds": [
+        "user-basic-4",
+        "user-admin-1",
+        "user-basic-1",
+        "user-basic-2"
+      ],
+      "status": "active",
+      "createdAt": "2026-08-21T09:06:30.701Z",
+      "updatedAt": "2026-09-19T09:06:30.701Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "Implement OAuth 2.0 and RBAC Middleware",
+      "description": "Design and deploy robust server-side token validation and role-based permissions matrix for Administrators vs Basic Users. Ensure all API endpoints enforce access control independently of frontend routes.",
+      "statusId": "status-in-progress",
+      "priority": "urgent",
+      "assigneeIds": [
+        "user-basic-1",
+        "user-admin-1"
+      ],
+      "dueDate": "2026-09-22",
+      "tags": [
+        "Security",
+        "Backend",
+        "Auth"
+      ],
+      "subtasks": [
+        {
+          "id": "sub-1",
+          "title": "Write token authorization middleware",
+          "completed": true,
+          "completedAt": "2026-09-19",
+          "completedBy": "Alex Rivera"
+        },
+        {
+          "id": "sub-2",
+          "title": "Implement RBAC role checker for admin routes",
+          "completed": true,
+          "completedAt": "2026-09-19",
+          "completedBy": "Alex Rivera"
+        },
+        {
+          "id": "sub-3",
+          "title": "Add audit logging hook for unauthorized attempts",
+          "completed": false
+        },
+        {
+          "id": "sub-4",
+          "title": "Perform penetration test on task isolation",
+          "completed": false
+        }
+      ],
+      "comments": [
+        {
+          "id": "comm-1",
+          "userId": "user-admin-1",
+          "userName": "Sarah Chen",
+          "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+          "content": "Hey @Alex Rivera, please make sure basic users can never query tasks outside their assigned IDs, even if guessing UUIDs! 🔒🛡️",
+          "createdAt": "2026-09-18T21:06:30.705Z",
+          "reactions": {
+            "👍": [
+              "user-basic-1",
+              "user-admin-2"
+            ],
+            "🔥": [
+              "user-basic-1"
+            ]
+          },
+          "mentions": [
+            "user-basic-1"
+          ]
+        },
+        {
+          "id": "comm-2",
+          "userId": "user-basic-1",
+          "userName": "Alex Rivera",
+          "userAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+          "content": "Confirmed @Sarah Chen! Backend route strictly filters by req.user.id and returns 403 Forbidden on direct ID access. Ready for review! 🚀✨",
+          "createdAt": "2026-09-19T13:06:30.705Z",
+          "reactions": {
+            "🚀": [
+              "user-admin-1",
+              "user-basic-1"
+            ],
+            "❤️": [
+              "user-admin-1"
+            ]
+          },
+          "mentions": [
+            "user-admin-1"
+          ]
+        }
+      ],
+      "attachments": [
+        {
+          "id": "att-1",
+          "name": "rbac_security_architecture.png",
+          "size": 420000,
+          "type": "image/png",
+          "url": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&auto=format&fit=crop&q=80",
+          "uploadedBy": "user-admin-1",
+          "uploadedByName": "Med Osman",
+          "uploadedAt": "2026-09-18T17:06:30.706Z"
+        },
+        {
+          "id": "att-pdf-1",
+          "name": "Sprint_14_Security_Compliance_Audit.pdf",
+          "size": 102400,
+          "type": "application/pdf",
+          "url": "/api/attachments/att-pdf-1/view",
+          "downloadUrl": "/api/attachments/att-pdf-1/download",
+          "uploadedBy": "user-admin-1",
+          "uploadedByName": "Med Osman",
+          "uploadedAt": "2026-09-19T13:06:30.706Z",
+          "checksum": "sha256-a94f83b271d4"
+        },
+        {
+          "id": "att-csv-1",
+          "name": "rbac_role_permission_matrix.csv",
+          "size": 1840,
+          "type": "text/csv",
+          "url": "/api/attachments/att-csv-1/view",
+          "downloadUrl": "/api/attachments/att-csv-1/download",
+          "uploadedBy": "user-admin-2",
+          "uploadedByName": "Meriam Heni",
+          "uploadedAt": "2026-09-19T19:06:30.706Z",
+          "checksum": "sha256-c77e21a084bc"
+        },
+        {
+          "id": "att-txt-1",
+          "name": "security_implementation_notes.txt",
+          "size": 920,
+          "type": "text/plain",
+          "url": "/api/attachments/att-txt-1/view",
+          "downloadUrl": "/api/attachments/att-txt-1/download",
+          "uploadedBy": "user-basic-1",
+          "uploadedByName": "Alex Rivera",
+          "uploadedAt": "2026-09-20T01:06:30.706Z",
+          "checksum": "sha256-d41d8cd98f00"
+        }
+      ],
+      "codeLanguage": "javascript",
+      "codeSnippet": "// RBAC Middleware & Token Verifier\nimport { Request, Response, NextFunction } from 'express';\n\nexport interface AuthContext {\n  userId: string;\n  role: 'admin' | 'basic';\n  privileges: Record<string, boolean>;\n}\n\nexport function authorizeRole(requiredRole: 'admin' | 'basic') {\n  return (req: Request, res: Response, next: NextFunction) => {\n    const authHeader = req.headers['authorization'];\n    if (!authHeader) {\n      return res.status(401).json({ error: 'Missing authentication credentials' });\n    }\n\n    const userRole = (req as any).user?.role;\n    if (requiredRole === 'admin' && userRole !== 'admin') {\n      return res.status(403).json({ error: 'Access forbidden: Admin privilege required' });\n    }\n\n    next();\n  };\n}",
+      "codeSnippets": [
+        {
+          "id": "snip-1-1",
+          "title": "authMiddleware.ts",
+          "language": "javascript",
+          "code": "// RBAC Middleware & Token Verifier\nimport { Request, Response, NextFunction } from 'express';\n\nexport function authorizeRole(requiredRole: 'admin' | 'basic') {\n  return (req: Request, res: Response, next: NextFunction) => {\n    const authHeader = req.headers['authorization'];\n    if (!authHeader) {\n      return res.status(401).json({ error: 'Missing authentication credentials' });\n    }\n\n    const userRole = (req as any).user?.role;\n    if (requiredRole === 'admin' && userRole !== 'admin') {\n      return res.status(403).json({ error: 'Access forbidden: Admin privilege required' });\n    }\n\n    next();\n  };\n}",
+          "description": "Express authorization guard ensuring basic users cannot access elevated endpoints."
+        },
+        {
+          "id": "snip-1-2",
+          "title": "security_policy.xml",
+          "language": "xml",
+          "code": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SecurityConfiguration xmlns=\"http://taskflow.io/security/v1\">\n  <Policy id=\"rbac-default\" version=\"2.4\">\n    <Roles>\n      <Role name=\"admin\" allowAll=\"true\">\n        <Permissions>\n          <Permission name=\"system:manage_users\" />\n          <Permission name=\"system:manage_workflows\" />\n          <Permission name=\"tasks:delete_any\" />\n        </Permissions>\n      </Role>\n      <Role name=\"basic\" allowAll=\"false\">\n        <Permissions>\n          <Permission name=\"tasks:create\" />\n          <Permission name=\"tasks:read_assigned\" />\n          <Permission name=\"attachments:upload_1024kb\" />\n        </Permissions>\n      </Role>\n    </Roles>\n  </Policy>\n</SecurityConfiguration>",
+          "description": "XML security schema defining permissions matrix for TaskFlow RBAC."
+        },
+        {
+          "id": "snip-1-3",
+          "title": "audit_checker.py",
+          "language": "python",
+          "code": "import hashlib\nimport time\n\ndef verify_token_signature(token: str, secret_key: str) -> bool:\n    \"\"\"Verifies token integrity using SHA-256 HMAC\"\"\"\n    if not token or \":\" not in token:\n        return False\n    payload, signature = token.split(\":\", 1)\n    expected = hashlib.sha256(f\"{payload}{secret_key}\".encode('utf-8')).hexdigest()\n    return signature == expected\n\ndef rate_limit_check(user_id: str, max_requests: int = 100) -> bool:\n    current_sec = int(time.time())\n    print(f\"[AUDIT] Checking rate limit for user {user_id} at epoch {current_sec}\")\n    return True\n\nif __name__ == \"__main__\":\n    test_user = \"user-basic-1\"\n    assert rate_limit_check(test_user) is True\n    print(\"RBAC security self-check passed!\")",
+          "description": "Python security verifier for token signatures and rate limiting."
+        }
+      ],
+      "createdAt": "2026-09-18T09:06:30.706Z",
+      "updatedAt": "2026-09-19T13:06:30.706Z",
+      "createdBy": "user-admin-1",
+      "createdByName": "Sarah Chen",
+      "timeSpentSeconds": 14400,
+      "estimatedHours": 8,
+      "timeLogs": [
+        {
+          "id": "tlog-1",
+          "taskId": "task-1",
+          "userId": "user-basic-1",
+          "userName": "Alex Rivera",
+          "userAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+          "startTime": "2026-09-19T05:06:30.706Z",
+          "endTime": "2026-09-19T07:06:30.706Z",
+          "durationSeconds": 7200,
+          "description": "Wrote OAuth authentication middleware and token verification logic",
+          "isBillable": true,
+          "createdAt": "2026-09-19T07:06:30.706Z"
+        },
+        {
+          "id": "tlog-2",
+          "taskId": "task-1",
+          "userId": "user-admin-1",
+          "userName": "Sarah Chen",
+          "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+          "startTime": "2026-09-19T13:06:30.706Z",
+          "endTime": "2026-09-19T14:06:30.706Z",
+          "durationSeconds": 3600,
+          "description": "Reviewed RBAC security policy and role checker implementation",
+          "isBillable": true,
+          "createdAt": "2026-09-19T14:06:30.706Z"
+        },
+        {
+          "id": "tlog-3",
+          "taskId": "task-1",
+          "userId": "user-basic-1",
+          "userName": "Alex Rivera",
+          "userAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+          "startTime": "2026-09-20T03:06:30.706Z",
+          "endTime": "2026-09-20T04:06:30.706Z",
+          "durationSeconds": 3600,
+          "description": "Unit tested endpoint authorization handlers and mock token cases",
+          "isBillable": true,
+          "createdAt": "2026-09-20T04:06:30.706Z"
+        }
+      ]
+    },
+    {
+      "id": "task-2",
+      "title": "Responsive Kanban Drag & Drop Board UI",
+      "description": "Build an ultra-fluid, accessible Kanban board with customizable columns, fluid card animations, keyboard navigation, and responsive touch gestures for tablet and mobile devices.",
+      "statusId": "status-in-progress",
+      "priority": "high",
+      "assigneeIds": [
+        "user-basic-2",
+        "user-basic-3"
+      ],
+      "dueDate": "2026-09-23",
+      "tags": [
+        "Frontend",
+        "UI/UX",
+        "Performance"
+      ],
+      "subtasks": [
+        {
+          "id": "sub-2-1",
+          "title": "Layout column containers with adaptive flex grid",
+          "completed": true,
+          "completedAt": "2026-09-18",
+          "completedBy": "Maria Garcia"
+        },
+        {
+          "id": "sub-2-2",
+          "title": "Implement smooth drag/drop interaction handlers",
+          "completed": true,
+          "completedAt": "2026-09-19",
+          "completedBy": "Maria Garcia"
+        },
+        {
+          "id": "sub-2-3",
+          "title": "Add touch listener support for mobile viewports",
+          "completed": true,
+          "completedAt": "2026-09-20",
+          "completedBy": "Maria Garcia"
+        },
+        {
+          "id": "sub-2-4",
+          "title": "Add quick-move status dropdown menu on cards",
+          "completed": false
+        }
+      ],
+      "comments": [
+        {
+          "id": "comm-2-1",
+          "userId": "user-basic-3",
+          "userName": "Liam Taylor",
+          "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+          "content": "Hey @Maria Garcia, I updated the color hex codes for the status column headers in the design specs attachment! 🎨✨",
+          "createdAt": "2026-09-19T18:06:30.706Z",
+          "reactions": {
+            "🙌": [
+              "user-basic-2"
+            ],
+            "💡": [
+              "user-admin-1"
+            ]
+          },
+          "mentions": [
+            "user-basic-2"
+          ]
+        },
+        {
+          "id": "comm-2-2",
+          "userId": "user-basic-2",
+          "userName": "Maria Garcia",
+          "userAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+          "content": "Awesome work @Liam Taylor! Applying the changes now to the drag-and-drop animation handlers. 🚀🎉",
+          "createdAt": "2026-09-19T21:06:30.706Z",
+          "reactions": {
+            "🔥": [
+              "user-basic-3",
+              "user-admin-1"
+            ]
+          },
+          "mentions": [
+            "user-basic-3"
+          ]
+        }
+      ],
+      "attachments": [
+        {
+          "id": "att-2-1",
+          "name": "kanban_ui_spec_v2.png",
+          "size": 854000,
+          "type": "image/png",
+          "url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
+          "uploadedBy": "user-basic-3",
+          "uploadedByName": "Liam Taylor",
+          "uploadedAt": "2026-09-19T15:06:30.706Z"
+        }
+      ],
+      "codeLanguage": "html",
+      "codeSnippet": "<!-- Kanban Column Template -->\n<div class=\"kanban-column\" id=\"col-in-progress\" data-status=\"in-progress\">\n  <div class=\"column-header flex justify-between items-center px-4 py-3 bg-amber-500/10 border-b border-amber-500/20\">\n    <span class=\"font-semibold text-amber-400\">In Progress</span>\n    <span class=\"badge rounded-full px-2 py-0.5 text-xs bg-amber-500/20 text-amber-300\">3 tasks</span>\n  </div>\n  <div class=\"column-droppable p-3 space-y-3 min-h-[400px]\" ondragover=\"event.preventDefault()\" ondrop=\"handleTaskDrop(event)\">\n    <!-- Dynamic Cards Injected Here -->\n  </div>\n</div>",
+      "codeSnippets": [
+        {
+          "id": "snip-2-1",
+          "title": "kanban_layout.html",
+          "language": "html",
+          "code": "<!-- Accessible Kanban Board Layout Skeleton -->\n<div class=\"kanban-board-container\" role=\"region\" aria-label=\"Task Workflow Board\">\n  <div class=\"kanban-grid grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 p-6\">\n    <div class=\"kanban-column\" id=\"col-todo\" tabindex=\"0\" role=\"list\">\n      <header class=\"column-header\">\n        <h3 class=\"text-sm font-semibold\">To Do</h3>\n      </header>\n      <div class=\"card-list space-y-3 mt-3\"></div>\n    </div>\n  </div>\n</div>",
+          "description": "Semantic HTML markup for accessible drag and drop Kanban columns."
+        },
+        {
+          "id": "snip-2-2",
+          "title": "kanban_animations.css",
+          "language": "css",
+          "code": "/* Smooth card drag transitions */\n.kanban-card {\n  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease;\n  will-change: transform;\n}\n\n.kanban-card.is-dragging {\n  opacity: 0.75;\n  transform: rotate(2deg) scale(1.04);\n  box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.4);\n}\n\n.kanban-dropzone.drag-active {\n  background-color: rgba(59, 130, 246, 0.08);\n  border: 2px dashed rgba(59, 130, 246, 0.5);\n  border-radius: 0.75rem;\n}",
+          "description": "Custom CSS animations and transitions for drag gestures and drop zones."
+        }
+      ],
+      "createdAt": "2026-09-17T21:06:30.706Z",
+      "updatedAt": "2026-09-19T23:06:30.706Z",
+      "createdBy": "user-admin-1",
+      "createdByName": "Sarah Chen",
+      "timeSpentSeconds": 9000,
+      "estimatedHours": 6,
+      "timeLogs": [
+        {
+          "id": "tlog-4",
+          "taskId": "task-2",
+          "userId": "user-basic-2",
+          "userName": "Maria Garcia",
+          "userAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+          "startTime": "2026-09-19T15:06:30.706Z",
+          "endTime": "2026-09-19T16:36:30.706Z",
+          "durationSeconds": 5400,
+          "description": "Built Kanban board drag & drop column handlers and card states",
+          "isBillable": true,
+          "createdAt": "2026-09-19T16:36:30.706Z"
+        },
+        {
+          "id": "tlog-5",
+          "taskId": "task-2",
+          "userId": "user-basic-2",
+          "userName": "Maria Garcia",
+          "userAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+          "startTime": "2026-09-20T01:06:30.706Z",
+          "endTime": "2026-09-20T02:06:30.706Z",
+          "durationSeconds": 3600,
+          "description": "Added mobile touch listeners and responsive viewport layout",
+          "isBillable": true,
+          "createdAt": "2026-09-20T02:06:30.706Z"
+        }
+      ]
+    },
+    {
+      "id": "task-3",
+      "title": "Design System & Component Tokens Update",
+      "description": "Harmonize typography scale, badge color contrast, border radius calculations, and accessible focus states across desktop and mobile task views.",
+      "statusId": "status-on-hold",
+      "priority": "medium",
+      "assigneeIds": [
+        "user-basic-3"
+      ],
+      "dueDate": "2026-09-21",
+      "tags": [
+        "Design",
+        "Tokens",
+        "Accessibility"
+      ],
+      "subtasks": [
+        {
+          "id": "sub-3-1",
+          "title": "Audit WCAG AA color contrast on all priority tags",
+          "completed": true,
+          "completedAt": "2026-09-19",
+          "completedBy": "Liam Taylor"
+        },
+        {
+          "id": "sub-3-2",
+          "title": "Ensure inner border-radius = outer radius - padding",
+          "completed": true,
+          "completedAt": "2026-09-20",
+          "completedBy": "Liam Taylor"
+        },
+        {
+          "id": "sub-3-3",
+          "title": "Export tokens to Tailwind theme config",
+          "completed": true,
+          "completedAt": "2026-09-20",
+          "completedBy": "Liam Taylor"
+        }
+      ],
+      "comments": [
+        {
+          "id": "comm-3-1",
+          "userId": "user-basic-2",
+          "userName": "Maria Garcia",
+          "userAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+          "content": "Reviewed the tokens! Waiting on external design team signoff before moving to In progress.",
+          "createdAt": "2026-09-20T05:06:30.706Z"
+        }
+      ],
+      "attachments": [],
+      "codeLanguage": "css",
+      "codeSnippet": "/* Design Tokens: CSS Custom Properties */\n:root {\n  --color-brand-primary: #3b82f6;\n  --color-brand-accent: #6366f1;\n  --radius-card-outer: 1rem;     /* 16px */\n  --spacing-card-padding: 1.25rem;/* 20px */\n  --radius-card-inner: calc(var(--radius-card-outer) - 4px);\n  --font-family-mono: 'JetBrains Mono', ui-monospace, monospace;\n}\n\n.theme-card {\n  border-radius: var(--radius-card-outer);\n  padding: var(--spacing-card-padding);\n}",
+      "codeSnippets": [
+        {
+          "id": "snip-3-1",
+          "title": "theme_variables.css",
+          "language": "css",
+          "code": "/* Design tokens and mathematical border-radii */\n:root {\n  --color-surface-900: #0f172a;\n  --color-surface-800: #1e293b;\n  --color-surface-700: #334155;\n  --radius-outer: 16px;\n  --radius-inner: calc(16px - 6px); /* 10px */\n}",
+          "description": "CSS custom properties governing geometric radius harmony and palette."
+        }
+      ],
+      "createdAt": "2026-09-17T09:06:30.706Z",
+      "updatedAt": "2026-09-20T05:06:30.706Z",
+      "createdBy": "user-admin-2",
+      "createdByName": "Marcus Vance",
+      "timeSpentSeconds": 7200,
+      "estimatedHours": 4,
+      "timeLogs": [
+        {
+          "id": "tlog-6",
+          "taskId": "task-3",
+          "userId": "user-basic-3",
+          "userName": "Liam Taylor",
+          "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+          "startTime": "2026-09-19T19:06:30.706Z",
+          "endTime": "2026-09-19T21:06:30.706Z",
+          "durationSeconds": 7200,
+          "description": "Updated design tokens, contrast tokens, and Tailwind theme variables",
+          "isBillable": true,
+          "createdAt": "2026-09-19T21:06:30.706Z"
+        }
+      ]
+    },
+    {
+      "id": "task-4",
+      "title": "Real-time Analytics Dashboard for Admins",
+      "description": "Implement aggregation engine for task completion velocity, workload distribution per user, overdue task alerting, and priority distribution graphs.",
+      "statusId": "status-created-assigned",
+      "priority": "high",
+      "assigneeIds": [
+        "user-admin-1",
+        "user-basic-1"
+      ],
+      "dueDate": "2026-09-25",
+      "tags": [
+        "Analytics",
+        "Admin",
+        "Reporting"
+      ],
+      "subtasks": [
+        {
+          "id": "sub-4-1",
+          "title": "Create stats aggregation API endpoint with RBAC check",
+          "completed": true,
+          "completedAt": "2026-09-20",
+          "completedBy": "Alex Rivera"
+        },
+        {
+          "id": "sub-4-2",
+          "title": "Render team workload breakdown component",
+          "completed": false
+        },
+        {
+          "id": "sub-4-3",
+          "title": "Add priority distribution pie/bar charts",
+          "completed": false
+        },
+        {
+          "id": "sub-4-4",
+          "title": "Add export summary report button",
+          "completed": false
+        }
+      ],
+      "comments": [],
+      "attachments": [],
+      "createdAt": "2026-09-19T03:06:30.706Z",
+      "updatedAt": "2026-09-20T04:06:30.706Z",
+      "createdBy": "user-admin-1",
+      "createdByName": "Sarah Chen"
+    },
+    {
+      "id": "task-5",
+      "title": "Automated E2E Regression Testing Suite",
+      "description": "Set up automated tests to verify permission isolation between Basic and Admin users, status reordering, subtask progress calculation, and activity log tracking.",
+      "statusId": "status-created-assigned",
+      "priority": "medium",
+      "assigneeIds": [
+        "user-basic-4"
+      ],
+      "dueDate": "2026-09-26",
+      "tags": [
+        "QA",
+        "Automation",
+        "CI/CD"
+      ],
+      "subtasks": [
+        {
+          "id": "sub-5-1",
+          "title": "Write tests for Basic User view restriction",
+          "completed": false
+        },
+        {
+          "id": "sub-5-2",
+          "title": "Write tests for Admin status management",
+          "completed": false
+        },
+        {
+          "id": "sub-5-3",
+          "title": "Verify comment and attachment audit logging",
+          "completed": false
+        }
+      ],
+      "comments": [],
+      "attachments": [],
+      "createdAt": "2026-09-19T13:06:30.706Z",
+      "updatedAt": "2026-09-19T13:06:30.706Z",
+      "createdBy": "user-admin-2",
+      "createdByName": "Marcus Vance"
+    },
+    {
+      "id": "task-6",
+      "title": "Database Schema Optimization & Indexing",
+      "description": "Index tasks by assignee ID, status ID, and updated timestamp to guarantee sub-50ms query latency under heavy concurrency.",
+      "statusId": "status-solved",
+      "priority": "low",
+      "assigneeIds": [
+        "user-basic-1",
+        "user-admin-2"
+      ],
+      "dueDate": "2026-09-18",
+      "tags": [
+        "Database",
+        "Optimization"
+      ],
+      "subtasks": [
+        {
+          "id": "sub-6-1",
+          "title": "Analyze slow query logs",
+          "completed": true,
+          "completedAt": "2026-09-17",
+          "completedBy": "Alex Rivera"
+        },
+        {
+          "id": "sub-6-2",
+          "title": "Add compound indices on assignee + status",
+          "completed": true,
+          "completedAt": "2026-09-18",
+          "completedBy": "Marcus Vance"
+        }
+      ],
+      "comments": [
+        {
+          "id": "comm-6-1",
+          "userId": "user-admin-2",
+          "userName": "Marcus Vance",
+          "userAvatar": "https://medosman.com/src/assets/images/mohamed-osman-pro-photo.jpg",
+          "content": "Benchmark results show query times dropped from 140ms to 8ms. Solution verified and marked Solved!",
+          "createdAt": "2026-09-18T09:06:30.706Z"
+        }
+      ],
+      "attachments": [],
+      "createdAt": "2026-09-16T09:06:30.706Z",
+      "updatedAt": "2026-09-18T09:06:30.706Z",
+      "createdBy": "user-admin-2",
+      "createdByName": "Marcus Vance"
+    },
+    {
+      "id": "task-7",
+      "title": "Customer Feedback Triage for Sprint 14",
+      "description": "Review incoming customer requests, categorize into feature requests or bugs, assign urgency and assignees.",
+      "statusId": "status-closed",
+      "priority": "low",
+      "assigneeIds": [
+        "user-admin-1",
+        "user-basic-4"
+      ],
+      "dueDate": "2026-09-27",
+      "tags": [
+        "Triage",
+        "Support",
+        "Tickets"
+      ],
+      "subtasks": [
+        {
+          "id": "sub-7-1",
+          "title": "Export customer tickets",
+          "completed": true
+        },
+        {
+          "id": "sub-7-2",
+          "title": "Tag recurring UX friction points",
+          "completed": true
+        }
+      ],
+      "comments": [
+        {
+          "id": "comm-7-1",
+          "userId": "user-admin-1",
+          "userName": "Sarah Chen",
+          "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+          "content": "All feedback categorized and tickets closed for Sprint 14.",
+          "createdAt": "2026-09-19T23:06:30.706Z"
+        }
+      ],
+      "attachments": [],
+      "createdAt": "2026-09-19T23:06:30.706Z",
+      "updatedAt": "2026-09-19T23:06:30.706Z",
+      "createdBy": "user-admin-1",
+      "createdByName": "Sarah Chen"
+    },
+    {
+      "id": "task-8",
+      "title": "Overdue Audit: Security Certificate Rotation",
+      "description": "Rotate internal SSL/TLS mutual authentication certs and update secrets manager vault before expiration.",
+      "statusId": "status-in-progress",
+      "priority": "urgent",
+      "assigneeIds": [
+        "user-basic-1",
+        "user-admin-2"
+      ],
+      "dueDate": "2026-09-19",
+      "tags": [
+        "Security",
+        "Infra",
+        "Certificates"
+      ],
+      "subtasks": [
+        {
+          "id": "sub-8-1",
+          "title": "Generate new 4096-bit RSA keys",
+          "completed": true,
+          "completedAt": "2026-09-18",
+          "completedBy": "Marcus Vance"
+        },
+        {
+          "id": "sub-8-2",
+          "title": "Stage keys in test environment",
+          "completed": true,
+          "completedAt": "2026-09-19",
+          "completedBy": "Alex Rivera"
+        },
+        {
+          "id": "sub-8-3",
+          "title": "Trigger production rolling restart",
+          "completed": false
+        }
+      ],
+      "comments": [
+        {
+          "id": "comm-8-1",
+          "userId": "user-admin-1",
+          "userName": "Sarah Chen",
+          "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+          "content": "Flagging this as urgent since due date was yesterday. Let us complete step 3 today.",
+          "createdAt": "2026-09-20T07:06:30.706Z"
+        }
+      ],
+      "attachments": [],
+      "createdAt": "2026-09-17T01:06:30.706Z",
+      "updatedAt": "2026-09-20T07:06:30.706Z",
+      "createdBy": "user-admin-1",
+      "createdByName": "Sarah Chen"
+    },
+    {
+      "id": "task-9",
+      "title": "VPN Gateway SSL Handshake Latency Spike [TCK-109]",
+      "description": "Multiple remote engineers reported 3000ms+ timeout spikes when negotiating tunnel keys with the US-East VPN concentrator during morning peak hours.",
+      "statusId": "status-created-assigned",
+      "priority": "urgent",
+      "assigneeIds": [
+        "user-admin-1",
+        "user-basic-1"
+      ],
+      "dueDate": "2026-09-21",
+      "tags": [
+        "IT Support",
+        "Network",
+        "Infrastructure"
+      ],
+      "subtasks": [
+        {
+          "id": "sub-9-1",
+          "title": "Inspect VPN gateway CPU thread exhaustion",
+          "completed": false
+        },
+        {
+          "id": "sub-9-2",
+          "title": "Provision secondary standby VPN node in US-East",
+          "completed": false
+        }
+      ],
+      "comments": [
+        {
+          "id": "comm-9-1",
+          "userId": "user-basic-1",
+          "userName": "Alex Rivera",
+          "userAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+          "content": "Ticket created and assigned. Beginning log inspection now.",
+          "createdAt": "2026-09-20T08:06:30.706Z"
+        }
+      ],
+      "attachments": [],
+      "createdAt": "2026-09-20T07:06:30.706Z",
+      "updatedAt": "2026-09-20T08:06:30.706Z",
+      "createdBy": "user-admin-1",
+      "createdByName": "Sarah Chen"
+    },
+    {
+      "id": "task-10",
+      "title": "SSO Integration with Okta & Azure AD [TCK-110]",
+      "description": "Configure SAML 2.0 and OIDC identity providers for enterprise single sign-on. Waiting on corporate IT for client secrets and metadata XML.",
+      "statusId": "status-on-hold",
+      "priority": "high",
+      "assigneeIds": [
+        "user-admin-2",
+        "user-basic-4"
+      ],
+      "dueDate": "2026-09-24",
+      "tags": [
+        "Security",
+        "SSO",
+        "Enterprise"
+      ],
+      "subtasks": [
+        {
+          "id": "sub-10-1",
+          "title": "Draft SAML SP metadata XML document",
+          "completed": true
+        },
+        {
+          "id": "sub-10-2",
+          "title": "Receive Azure AD tenant ID and certificate from client IT",
+          "completed": false
+        },
+        {
+          "id": "sub-10-3",
+          "title": "Test user attribute mapping and SCIM provisioning",
+          "completed": false
+        }
+      ],
+      "comments": [
+        {
+          "id": "comm-10-1",
+          "userId": "user-admin-2",
+          "userName": "Marcus Vance",
+          "userAvatar": "https://medosman.com/src/assets/images/mohamed-osman-pro-photo.jpg",
+          "content": "Placed on hold pending reply from enterprise IT security officer.",
+          "createdAt": "2026-09-20T01:06:30.706Z"
+        }
+      ],
+      "attachments": [],
+      "createdAt": "2026-09-19T15:06:30.706Z",
+      "updatedAt": "2026-09-20T01:06:30.706Z",
+      "createdBy": "user-admin-2",
+      "createdByName": "Marcus Vance"
+    },
+    {
+      "id": "task-11",
+      "title": "Fix CSV Data Export Encoding for Non-ASCII Characters [TCK-111]",
+      "description": "UTF-8 BOM header missing in generated spreadsheet exports causing umlauts and accented characters to display as garbled symbols in Excel.",
+      "statusId": "status-solved",
+      "priority": "medium",
+      "assigneeIds": [
+        "user-basic-2"
+      ],
+      "dueDate": "2026-09-19",
+      "tags": [
+        "Bug",
+        "Export",
+        "UI"
+      ],
+      "subtasks": [
+        {
+          "id": "sub-11-1",
+          "title": "Prepend EF BB BF byte order mark to CSV buffer",
+          "completed": true
+        },
+        {
+          "id": "sub-11-2",
+          "title": "Test with German, French, and Japanese test cases in MS Excel",
+          "completed": true
+        }
+      ],
+      "comments": [
+        {
+          "id": "comm-11-1",
+          "userId": "user-basic-2",
+          "userName": "Maria Garcia",
+          "userAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+          "content": "Fix deployed to staging and verified with Excel. Ticket solved!",
+          "createdAt": "2026-09-19T21:06:30.706Z"
+        }
+      ],
+      "attachments": [],
+      "createdAt": "2026-09-18T17:06:30.706Z",
+      "updatedAt": "2026-09-19T21:06:30.706Z",
+      "createdBy": "user-basic-2",
+      "createdByName": "Maria Garcia"
+    },
+    {
+      "id": "task-12",
+      "title": "Quarterly Infrastructure Capacity Planning [TCK-112]",
+      "description": "Audit monthly Cloud Run container compute usage and bandwidth trends. Archive previous quarter budget reconciliation report.",
+      "statusId": "status-closed",
+      "priority": "low",
+      "assigneeIds": [
+        "user-admin-1"
+      ],
+      "dueDate": "2026-09-15",
+      "tags": [
+        "Operations",
+        "Finance",
+        "Reports"
+      ],
+      "subtasks": [
+        {
+          "id": "sub-12-1",
+          "title": "Extract Cloud Billing cost breakdown by service",
+          "completed": true
+        },
+        {
+          "id": "sub-12-2",
+          "title": "Present quarterly capacity forecast to leadership",
+          "completed": true
+        }
+      ],
+      "comments": [
+        {
+          "id": "comm-12-1",
+          "userId": "user-admin-1",
+          "userName": "Sarah Chen",
+          "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+          "content": "Presented to CTO and approved. Closing ticket.",
+          "createdAt": "2026-09-17T09:06:30.706Z"
+        }
+      ],
+      "attachments": [],
+      "createdAt": "2026-09-15T09:06:30.706Z",
+      "updatedAt": "2026-09-17T09:06:30.706Z",
+      "createdBy": "user-admin-1",
+      "createdByName": "Sarah Chen"
+    }
+  ],
+  "meetings": [
+    {
+      "id": "meet-1",
+      "title": "Sprint 14 Planning & Architecture Review",
+      "description": "Cross-functional engineering and product alignment for Sprint 14 delivery milestones, RBAC security gates, Task Time Tracker, and Meetings system.",
+      "startTime": "2026-09-20T11:06:30.706Z",
+      "endTime": "2026-09-20T12:06:30.706Z",
+      "durationMinutes": 60,
+      "location": "Conference Room 4B & Google Meet",
+      "meetingUrl": "https://meet.google.com/ais-taskflow-sync",
+      "memberIds": [
+        "user-admin-1",
+        "user-basic-1",
+        "user-basic-2",
+        "user-admin-2",
+        "user-basic-3"
+      ],
+      "status": "scheduled",
+      "topics": [
+        {
+          "id": "top-1",
+          "title": "Review RBAC Middleware & Token Verification",
+          "durationMinutes": 20,
+          "presenterId": "user-basic-1",
+          "presenterName": "Alex Rivera",
+          "completed": false,
+          "notes": "Ensure all API routes validate user credentials and prevent unauthorized ID escalation."
+        },
+        {
+          "id": "top-2",
+          "title": "Task Time Tracking & Live Stopwatch Module",
+          "durationMinutes": 15,
+          "presenterId": "user-admin-1",
+          "presenterName": "Sarah Chen",
+          "completed": false,
+          "notes": "Demonstrate live timer widget, manual log entry, billable calculations, and task dot badges."
+        },
+        {
+          "id": "top-3",
+          "title": "Interactive Meetings Hub with MP3 audio playback & file attachments",
+          "durationMinutes": 25,
+          "presenterId": "user-basic-2",
+          "presenterName": "Maria Garcia",
+          "completed": false,
+          "notes": "Support for PDF, TXT, CSV, DOCX, and MP3 voice notes with in-browser preview."
+        }
+      ],
+      "notes": "### Sprint 14 Architecture Sync Notes\n**Objectives:**\n- Finalize the **Time Tracker** on all tasks with active timer and manual logging.\n- Ship the comprehensive **Meetings** system with full attachment support for `.pdf`, `.txt`, `.csv`, `.docx`, and `.mp3`.\n- Enforce the **Task Dot representation** standard across all views.\n\n**Decisions:**\n1. Default task cards and rows should display interactive status dots.\n2. Meeting files should support audio player for MP3 recordings and direct text/table inspection.\n3. Every task tracks cumulative time spent in seconds with breakdown history.",
+      "attachments": [
+        {
+          "id": "matt-1",
+          "name": "Sprint_14_Architectural_Spec.pdf",
+          "size": 524288,
+          "type": "application/pdf",
+          "url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+          "extension": "pdf",
+          "uploadedBy": "user-admin-1",
+          "uploadedByName": "Sarah Chen",
+          "uploadedAt": "2026-09-20T08:06:30.706Z"
+        },
+        {
+          "id": "matt-2",
+          "name": "kickoff_voice_memo.mp3",
+          "size": 1048576,
+          "type": "audio/mpeg",
+          "url": "https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg",
+          "extension": "mp3",
+          "uploadedBy": "user-admin-1",
+          "uploadedByName": "Sarah Chen",
+          "uploadedAt": "2026-09-20T08:06:30.706Z"
+        },
+        {
+          "id": "matt-3",
+          "name": "sprint_capacity_matrix.csv",
+          "size": 14200,
+          "type": "text/csv",
+          "url": "",
+          "extension": "csv",
+          "uploadedBy": "user-admin-2",
+          "uploadedByName": "David Kim",
+          "uploadedAt": "2026-09-20T07:06:30.706Z"
+        },
+        {
+          "id": "matt-4",
+          "name": "design_guidelines.docx",
+          "size": 284000,
+          "type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "url": "",
+          "extension": "docx",
+          "uploadedBy": "user-basic-3",
+          "uploadedByName": "Liam Taylor",
+          "uploadedAt": "2026-09-20T07:06:30.706Z"
+        },
+        {
+          "id": "matt-5",
+          "name": "release_checklist.txt",
+          "size": 4800,
+          "type": "text/plain",
+          "url": "",
+          "extension": "txt",
+          "uploadedBy": "user-basic-1",
+          "uploadedByName": "Alex Rivera",
+          "uploadedAt": "2026-09-20T07:06:30.706Z"
+        }
+      ],
+      "createdBy": "user-admin-1",
+      "createdByName": "Sarah Chen",
+      "createdAt": "2026-09-19T09:06:30.706Z",
+      "updatedAt": "2026-09-20T09:06:30.706Z",
+      "linkedProjectIds": [
+        "proj-1"
+      ],
+      "linkedTaskIds": [
+        "task-1",
+        "task-2"
+      ],
+      "logs": [
+        {
+          "id": "mlog-1-1",
+          "meetingId": "meet-1",
+          "userId": "user-admin-1",
+          "userName": "Sarah Chen",
+          "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+          "action": "created",
+          "details": "Scheduled meeting \"Sprint 14 Planning & Architecture Review\" (60 mins)",
+          "timestamp": "2026-09-19T09:06:30.706Z"
+        },
+        {
+          "id": "mlog-1-2",
+          "meetingId": "meet-1",
+          "userId": "user-admin-1",
+          "userName": "Sarah Chen",
+          "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+          "action": "attachment_uploaded",
+          "details": "Attached document \"Sprint_14_Architectural_Spec.pdf\" (512 KB)",
+          "timestamp": "2026-09-19T13:06:30.706Z"
+        },
+        {
+          "id": "mlog-1-3",
+          "meetingId": "meet-1",
+          "userId": "user-basic-1",
+          "userName": "Alex Rivera",
+          "userAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+          "action": "topic_added",
+          "details": "Added discussion topic \"Review RBAC Middleware & Token Verification\" (20 mins)",
+          "timestamp": "2026-09-19T19:06:30.706Z"
+        },
+        {
+          "id": "mlog-1-4",
+          "meetingId": "meet-1",
+          "userId": "user-admin-1",
+          "userName": "Sarah Chen",
+          "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+          "action": "notes_updated",
+          "details": "Drafted Sprint 14 Architecture Sync minutes and objectives",
+          "timestamp": "2026-09-20T04:06:30.706Z"
+        }
+      ]
+    },
+    {
+      "id": "meet-2",
+      "title": "Daily Engineering Standup & Blocker Triage",
+      "description": "15-minute quick sync to review active tasks, time logs, and open pull requests.",
+      "startTime": "2026-09-20T08:06:30.706Z",
+      "endTime": "2026-09-20T08:21:30.706Z",
+      "durationMinutes": 15,
+      "location": "Huddle Room Alpha",
+      "memberIds": [
+        "user-admin-1",
+        "user-basic-1",
+        "user-basic-2",
+        "user-basic-4"
+      ],
+      "status": "completed",
+      "topics": [
+        {
+          "id": "top-201",
+          "title": "Ticket backlog clearance",
+          "durationMinutes": 5,
+          "presenterId": "user-basic-4",
+          "presenterName": "Marcus Vance",
+          "completed": true
+        },
+        {
+          "id": "top-202",
+          "title": "Time tracker stopwatch accuracy verification",
+          "durationMinutes": 10,
+          "presenterId": "user-basic-1",
+          "presenterName": "Alex Rivera",
+          "completed": true
+        }
+      ],
+      "notes": "**Standup Summary:**\n- Alex Rivera logged 2h 45m on OAuth middleware testing.\n- Maria Garcia completed drag & drop UI tests.\n- Marcus Vance verified zero regressions in ticket queue.",
+      "attachments": [
+        {
+          "id": "matt-201",
+          "name": "standup_summary.txt",
+          "size": 2400,
+          "type": "text/plain",
+          "url": "",
+          "extension": "txt",
+          "uploadedBy": "user-basic-4",
+          "uploadedByName": "Marcus Vance",
+          "uploadedAt": "2026-09-20T08:06:30.706Z"
+        }
+      ],
+      "createdBy": "user-admin-1",
+      "createdByName": "Sarah Chen",
+      "createdAt": "2026-09-18T09:06:30.706Z",
+      "updatedAt": "2026-09-20T09:06:30.706Z",
+      "linkedProjectIds": [
+        "proj-1",
+        "proj-3"
+      ],
+      "logs": [
+        {
+          "id": "mlog-2-1",
+          "meetingId": "meet-2",
+          "userId": "user-admin-1",
+          "userName": "Sarah Chen",
+          "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+          "action": "created",
+          "details": "Scheduled daily standup (15 mins) with 4 engineers",
+          "timestamp": "2026-09-18T09:06:30.706Z"
+        },
+        {
+          "id": "mlog-2-2",
+          "meetingId": "meet-2",
+          "userId": "user-basic-4",
+          "userName": "Marcus Vance",
+          "userAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+          "action": "topic_completed",
+          "details": "Marked topic \"Ticket backlog clearance\" as concluded",
+          "timestamp": "2026-09-20T08:12:30.706Z"
+        },
+        {
+          "id": "mlog-2-3",
+          "meetingId": "meet-2",
+          "userId": "user-basic-1",
+          "userName": "Alex Rivera",
+          "userAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+          "action": "topic_completed",
+          "details": "Concluded \"Time tracker stopwatch accuracy verification\"",
+          "timestamp": "2026-09-20T08:18:30.706Z"
+        },
+        {
+          "id": "mlog-2-4",
+          "meetingId": "meet-2",
+          "userId": "user-admin-1",
+          "userName": "Sarah Chen",
+          "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+          "action": "status_changed",
+          "details": "Transitioned meeting status from scheduled to completed",
+          "timestamp": "2026-09-20T08:21:30.706Z"
+        }
+      ]
+    },
+    {
+      "id": "meet-3",
+      "title": "UI/UX Design System & Micro-Interactions Review",
+      "description": "Deep-dive into component states, status dots, interactive stopwatch widget, and high contrast accessibility.",
+      "startTime": "2026-09-21T11:06:30.706Z",
+      "endTime": "2026-09-21T12:06:30.706Z",
+      "durationMinutes": 45,
+      "location": "Design Studio & Figma Live",
+      "memberIds": [
+        "user-basic-3",
+        "user-basic-2",
+        "user-admin-1"
+      ],
+      "status": "scheduled",
+      "topics": [
+        {
+          "id": "top-301",
+          "title": "Color-coded task dot system & pulsating states",
+          "durationMinutes": 15,
+          "presenterId": "user-basic-3",
+          "presenterName": "Liam Taylor",
+          "completed": false
+        },
+        {
+          "id": "top-302",
+          "title": "Attachment file cards with audio waveform player",
+          "durationMinutes": 15,
+          "presenterId": "user-basic-2",
+          "presenterName": "Maria Garcia",
+          "completed": false
+        },
+        {
+          "id": "top-303",
+          "title": "Mobile responsiveness for meeting agenda checklists",
+          "durationMinutes": 15,
+          "presenterId": "user-admin-1",
+          "presenterName": "Sarah Chen",
+          "completed": false
+        }
+      ],
+      "notes": "### Agenda & Requirements:\n- Validate that all task cards use luminous dots for status identification.\n- Ensure audio attachments play seamlessly within the meeting modal without external plugins.",
+      "attachments": [
+        {
+          "id": "matt-301",
+          "name": "design_tokens_v2.csv",
+          "size": 18200,
+          "type": "text/csv",
+          "url": "",
+          "extension": "csv",
+          "uploadedBy": "user-basic-3",
+          "uploadedByName": "Liam Taylor",
+          "uploadedAt": "2026-09-19T21:06:30.706Z"
+        },
+        {
+          "id": "matt-302",
+          "name": "audio_briefing.mp3",
+          "size": 2097152,
+          "type": "audio/mpeg",
+          "url": "https://actions.google.com/sounds/v1/ambiences/office_room.ogg",
+          "extension": "mp3",
+          "uploadedBy": "user-basic-3",
+          "uploadedByName": "Liam Taylor",
+          "uploadedAt": "2026-09-19T21:06:30.706Z"
+        }
+      ],
+      "createdBy": "user-basic-3",
+      "createdByName": "Liam Taylor",
+      "createdAt": "2026-09-19T21:06:30.706Z",
+      "updatedAt": "2026-09-20T09:06:30.706Z",
+      "linkedProjectIds": [
+        "proj-2"
+      ],
+      "logs": [
+        {
+          "id": "mlog-3-1",
+          "meetingId": "meet-3",
+          "userId": "user-basic-3",
+          "userName": "Liam Taylor",
+          "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+          "action": "created",
+          "details": "Created meeting for UI/UX Design System review",
+          "timestamp": "2026-09-19T21:06:30.706Z"
+        },
+        {
+          "id": "mlog-3-2",
+          "meetingId": "meet-3",
+          "userId": "user-basic-3",
+          "userName": "Liam Taylor",
+          "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+          "action": "attachment_uploaded",
+          "details": "Uploaded audio recording \"audio_briefing.mp3\" (2.0 MB)",
+          "timestamp": "2026-09-19T23:06:30.706Z"
+        }
+      ]
+    }
+  ],
+  "channels": [
+    {
+      "id": "chan-general",
+      "name": "general",
+      "type": "channel",
+      "description": "Company-wide announcements, team updates, sprint milestones, and cross-team discussions.",
+      "topic": "Welcome to TaskFlow! Share team wins and release announcements.",
+      "color": "#3B82F6",
+      "isPrivate": false,
+      "isDefault": true,
+      "ownerId": "user-admin-1",
+      "memberIds": [
+        "user-admin-emixup",
+        "user-admin-1",
+        "user-admin-2",
+        "user-admin-3",
+        "user-basic-1",
+        "user-basic-2",
+        "user-basic-3",
+        "user-basic-4"
+      ],
+      "createdAt": "2026-09-06T09:06:30.706Z",
+      "updatedAt": "2026-09-20T08:56:30.706Z",
+      "pinnedMessageIds": [
+        "msg-gen-1"
+      ],
+      "lastMessage": {
+        "id": "msg-gen-3",
+        "senderName": "Elena Rostova",
+        "content": "The new theme studio palettes and graph visual nodes have been aligned with the 4.5:1 contrast standards. Let me know if you want any bespoke colorway presets!",
+        "createdAt": "2026-09-20T08:56:30.706Z"
+      }
+    },
+    {
+      "id": "chan-dev-eng",
+      "name": "dev-engineering",
+      "type": "channel",
+      "description": "Full-stack engineering discussions, API specs, PR reviews, CI/CD pipelines, and bug triage.",
+      "topic": "Sprint 14 Dev Focus: OAuth2 RBAC, D3 Graph optimizations, and real-time WebSockets.",
+      "color": "#10B981",
+      "isPrivate": false,
+      "isDefault": true,
+      "ownerId": "user-admin-1",
+      "memberIds": [
+        "user-admin-emixup",
+        "user-admin-1",
+        "user-admin-2",
+        "user-admin-3",
+        "user-basic-1",
+        "user-basic-2",
+        "user-basic-3",
+        "user-basic-4"
+      ],
+      "createdAt": "2026-09-06T09:06:30.706Z",
+      "updatedAt": "2026-09-20T09:01:30.706Z",
+      "pinnedMessageIds": [
+        "msg-dev-2"
+      ],
+      "lastMessage": {
+        "id": "msg-dev-3",
+        "senderName": "Priyanshu Sharma",
+        "content": "Automated test suite `npm run test:e2e` passed all 42 test specs including attachment upload boundaries and permission gates! 💯",
+        "createdAt": "2026-09-20T09:01:30.706Z"
+      }
+    },
+    {
+      "id": "chan-design-system",
+      "name": "design-system",
+      "type": "channel",
+      "description": "Design tokens, theme studio customization, responsive layouts, and UI micro-interactions.",
+      "topic": "Dark minimalism palette, 4.5:1 WCAG contrast ratios, and clean layout hierarchy.",
+      "color": "#8B5CF6",
+      "isPrivate": false,
+      "isDefault": true,
+      "ownerId": "user-basic-2",
+      "memberIds": [
+        "user-admin-emixup",
+        "user-admin-1",
+        "user-admin-2",
+        "user-admin-3",
+        "user-basic-1",
+        "user-basic-2",
+        "user-basic-3",
+        "user-basic-4"
+      ],
+      "createdAt": "2026-09-06T09:06:30.706Z",
+      "updatedAt": "2026-09-20T08:41:30.706Z",
+      "lastMessage": {
+        "id": "msg-des-2",
+        "senderName": "Marcus Vance",
+        "content": "The relationship graph look is much sharper now with the toggleable metric cards and user dropdown filter. Great improvement!",
+        "createdAt": "2026-09-20T08:41:30.706Z"
+      }
+    },
+    {
+      "id": "chan-security-ops",
+      "name": "security-ops",
+      "type": "channel",
+      "description": "Security audits, RBAC role permissions, token revocation, and attachment sanitization.",
+      "topic": "Private Security Ops • Zero Trust & Audit Compliance",
+      "color": "#EF4444",
+      "isPrivate": true,
+      "ownerId": "user-admin-1",
+      "memberIds": [
+        "user-admin-1",
+        "user-admin-2",
+        "user-basic-1",
+        "user-basic-4"
+      ],
+      "createdAt": "2026-09-10T09:06:30.706Z",
+      "updatedAt": "2026-09-20T08:21:30.706Z",
+      "lastMessage": {
+        "id": "msg-sec-2",
+        "senderName": "Sarah Chen",
+        "content": "Audit trail logging has been validated. All permission overrides and status modifications are strictly timestamped.",
+        "createdAt": "2026-09-20T08:21:30.706Z"
+      }
+    },
+    {
+      "id": "group-sprint-core",
+      "name": "Sprint 14 Core Squad",
+      "type": "group_dm",
+      "description": "Core leads group coordinating blocking issues and production readiness.",
+      "topic": "Cross-functional sprint coordination",
+      "color": "#F59E0B",
+      "isPrivate": true,
+      "ownerId": "user-admin-1",
+      "memberIds": [
+        "user-admin-1",
+        "user-basic-1",
+        "user-basic-2",
+        "user-basic-3"
+      ],
+      "createdAt": "2026-09-13T09:06:30.706Z",
+      "updatedAt": "2026-09-20T08:36:30.706Z",
+      "lastMessage": {
+        "id": "msg-core-2",
+        "senderName": "Alex Rivera",
+        "content": "I will have the chat and chat groups frontend fully wired and tested before the sync.",
+        "createdAt": "2026-09-20T08:36:30.706Z"
+      }
+    },
+    {
+      "id": "dm-sarah-alex",
+      "name": "Alex Rivera",
+      "type": "direct",
+      "description": "Direct Message conversation with Alex Rivera",
+      "topic": "Direct Message",
+      "color": "#3B82F6",
+      "isPrivate": true,
+      "ownerId": "user-admin-1",
+      "memberIds": [
+        "user-admin-1",
+        "user-basic-1"
+      ],
+      "createdAt": "2026-09-15T09:06:30.706Z",
+      "updatedAt": "2026-09-20T08:54:30.706Z",
+      "lastMessage": {
+        "id": "msg-dm-3",
+        "senderName": "Alex Rivera",
+        "content": "Sounds good, implementing now!",
+        "createdAt": "2026-09-20T08:54:30.706Z"
+      }
+    },
+    {
+      "id": "dm-sarah-elena",
+      "name": "Elena Rostova",
+      "type": "direct",
+      "description": "Direct Message conversation with Elena Rostova",
+      "topic": "Direct Message",
+      "color": "#EC4899",
+      "isPrivate": true,
+      "ownerId": "user-admin-1",
+      "memberIds": [
+        "user-admin-1",
+        "user-basic-2"
+      ],
+      "createdAt": "2026-09-16T09:06:30.706Z",
+      "updatedAt": "2026-09-20T08:31:30.706Z"
+    }
+  ],
+  "chatMessages": [
+    {
+      "id": "msg-gen-1",
+      "channelId": "chan-general",
+      "senderId": "user-admin-1",
+      "senderName": "Sarah Chen",
+      "senderAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "senderRole": "admin",
+      "senderTitle": "Lead Architect & Admin",
+      "content": "🚀 Welcome to the TaskFlow real-time collaboration workspace! We have kicked off Sprint 14 with high priority goals on RBAC security, Relationship Graphs, and Team Chat.",
+      "createdAt": "2026-09-20T05:06:30.706Z",
+      "isPinned": true,
+      "reactions": {
+        "🚀": [
+          "user-basic-1",
+          "user-basic-2",
+          "user-basic-3",
+          "user-basic-4"
+        ],
+        "🔥": [
+          "user-admin-2",
+          "user-basic-1"
+        ]
+      }
+    },
+    {
+      "id": "msg-gen-2",
+      "channelId": "chan-general",
+      "senderId": "user-basic-1",
+      "senderName": "Alex Rivera",
+      "senderAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+      "senderRole": "basic",
+      "senderTitle": "Senior Frontend Engineer",
+      "content": "All systems are performing smoothly! Looking forward to delivering the new interactive features today.",
+      "createdAt": "2026-09-20T06:06:30.706Z",
+      "reactions": {
+        "👍": [
+          "user-admin-1",
+          "user-basic-2"
+        ]
+      }
+    },
+    {
+      "id": "msg-gen-3",
+      "channelId": "chan-general",
+      "senderId": "user-basic-2",
+      "senderName": "Elena Rostova",
+      "senderAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "senderRole": "basic",
+      "senderTitle": "Product Designer",
+      "content": "The new theme studio palettes and graph visual nodes have been aligned with the 4.5:1 contrast standards. Let me know if you want any bespoke colorway presets!",
+      "createdAt": "2026-09-20T08:56:30.706Z",
+      "reactions": {
+        "❤️": [
+          "user-admin-1",
+          "user-basic-1"
+        ]
+      }
+    },
+    {
+      "id": "msg-dev-1",
+      "channelId": "chan-dev-eng",
+      "senderId": "user-basic-1",
+      "senderName": "Alex Rivera",
+      "senderAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+      "senderRole": "basic",
+      "senderTitle": "Senior Frontend Engineer",
+      "content": "Hey @Sarah Chen, I have integrated the OAuth token verification middleware and updated the task permissions logic.",
+      "createdAt": "2026-09-20T07:06:30.706Z",
+      "mentions": [
+        "user-admin-1"
+      ],
+      "linkedTaskId": "task-1",
+      "linkedTaskTitle": "Implement OAuth 2.0 and RBAC Middleware",
+      "linkedTaskPriority": "urgent",
+      "linkedTaskStatusId": "status-in-progress",
+      "linkedTaskStatusName": "In Progress",
+      "linkedTaskStatusColor": "#3B82F6",
+      "reactions": {
+        "👍": [
+          "user-admin-1",
+          "user-basic-4"
+        ]
+      }
+    },
+    {
+      "id": "msg-dev-2",
+      "channelId": "chan-dev-eng",
+      "senderId": "user-admin-1",
+      "senderName": "Sarah Chen",
+      "senderAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "senderRole": "admin",
+      "senderTitle": "Lead Architect & Admin",
+      "content": "Great work Alex! Make sure the SHA-256 checksum and executable file blacklist validation is covered in the unit tests before closing task-1.",
+      "createdAt": "2026-09-20T07:26:30.706Z",
+      "isPinned": true,
+      "replyTo": {
+        "id": "msg-dev-1",
+        "senderName": "Alex Rivera",
+        "content": "Hey @Sarah Chen, I have integrated the OAuth token verification middleware..."
+      },
+      "reactions": {
+        "✅": [
+          "user-basic-1"
+        ]
+      }
+    },
+    {
+      "id": "msg-dev-3",
+      "channelId": "chan-dev-eng",
+      "senderId": "user-basic-4",
+      "senderName": "Priyanshu Sharma",
+      "senderAvatar": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80",
+      "senderRole": "basic",
+      "senderTitle": "QA & Automation Engineer",
+      "content": "Automated test suite `npm run test:e2e` passed all 42 test specs including attachment upload boundaries and permission gates! 💯",
+      "createdAt": "2026-09-20T09:01:30.706Z",
+      "reactions": {
+        "🎉": [
+          "user-admin-1",
+          "user-basic-1",
+          "user-basic-2"
+        ]
+      }
+    },
+    {
+      "id": "msg-des-1",
+      "channelId": "chan-design-system",
+      "senderId": "user-basic-2",
+      "senderName": "Elena Rostova",
+      "senderAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "senderRole": "basic",
+      "senderTitle": "Product Designer",
+      "content": "We updated the typography scale step ratio to 1.25 and streamlined the button text labels with tooltips for a cleaner view.",
+      "createdAt": "2026-09-20T06:06:30.706Z",
+      "reactions": {
+        "💡": [
+          "user-admin-1",
+          "user-basic-3"
+        ]
+      }
+    },
+    {
+      "id": "msg-des-2",
+      "channelId": "chan-design-system",
+      "senderId": "user-basic-3",
+      "senderName": "Marcus Vance",
+      "senderAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+      "senderRole": "basic",
+      "senderTitle": "DevOps & Cloud Engineer",
+      "content": "The relationship graph look is much sharper now with the toggleable metric cards and user dropdown filter. Great improvement!",
+      "createdAt": "2026-09-20T08:41:30.706Z",
+      "linkedTaskId": "task-2",
+      "linkedTaskTitle": "Design Interactive Relationship & Dependency Graph",
+      "linkedTaskPriority": "high",
+      "linkedTaskStatusId": "status-review",
+      "linkedTaskStatusName": "In Review",
+      "linkedTaskStatusColor": "#8B5CF6",
+      "reactions": {
+        "🔥": [
+          "user-basic-2"
+        ]
+      }
+    },
+    {
+      "id": "msg-sec-1",
+      "channelId": "chan-security-ops",
+      "senderId": "user-admin-2",
+      "senderName": "David Kim",
+      "senderAvatar": "https://medosman.com/src/assets/images/mohamed-osman-pro-photo.jpg",
+      "senderRole": "admin",
+      "senderTitle": "Engineering Manager & Admin",
+      "content": "Reminder: All production certificate renewals and key rotations are tracked in task-8. Please verify rolling restart window.",
+      "createdAt": "2026-09-20T07:06:30.706Z",
+      "linkedTaskId": "task-8",
+      "linkedTaskTitle": "Rotate SSL Certificates & Update Secrets",
+      "linkedTaskPriority": "urgent",
+      "linkedTaskStatusId": "status-in-progress",
+      "linkedTaskStatusName": "In Progress",
+      "linkedTaskStatusColor": "#3B82F6",
+      "reactions": {
+        "👀": [
+          "user-admin-1",
+          "user-basic-1"
+        ]
+      }
+    },
+    {
+      "id": "msg-sec-2",
+      "channelId": "chan-security-ops",
+      "senderId": "user-admin-1",
+      "senderName": "Sarah Chen",
+      "senderAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "senderRole": "admin",
+      "senderTitle": "Lead Architect & Admin",
+      "content": "Audit trail logging has been validated. All permission overrides and status modifications are strictly timestamped.",
+      "createdAt": "2026-09-20T08:21:30.706Z",
+      "reactions": {
+        "🔒": [
+          "user-admin-2",
+          "user-basic-4"
+        ]
+      }
+    },
+    {
+      "id": "msg-core-1",
+      "channelId": "group-sprint-core",
+      "senderId": "user-admin-1",
+      "senderName": "Sarah Chen",
+      "senderAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "senderRole": "admin",
+      "senderTitle": "Lead Architect & Admin",
+      "content": "Team, let us sync on remaining blockers for Sprint 14 release candidate today at 3 PM.",
+      "createdAt": "2026-09-20T07:36:30.706Z",
+      "reactions": {
+        "👍": [
+          "user-basic-1",
+          "user-basic-2",
+          "user-basic-3"
+        ]
+      }
+    },
+    {
+      "id": "msg-core-2",
+      "channelId": "group-sprint-core",
+      "senderId": "user-basic-1",
+      "senderName": "Alex Rivera",
+      "senderAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+      "senderRole": "basic",
+      "senderTitle": "Senior Frontend Engineer",
+      "content": "I will have the chat and chat groups frontend fully wired and tested before the sync.",
+      "createdAt": "2026-09-20T08:36:30.706Z",
+      "reactions": {
+        "🚀": [
+          "user-admin-1"
+        ]
+      }
+    },
+    {
+      "id": "msg-dm-1",
+      "channelId": "dm-sarah-alex",
+      "senderId": "user-basic-1",
+      "senderName": "Alex Rivera",
+      "senderAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+      "senderRole": "basic",
+      "senderTitle": "Senior Frontend Engineer",
+      "content": "Hi Sarah, quick question on the audit log schema: should comment deletions log the snippet or just the ID?",
+      "createdAt": "2026-09-20T08:06:30.706Z",
+      "reactions": {}
+    },
+    {
+      "id": "msg-dm-2",
+      "channelId": "dm-sarah-alex",
+      "senderId": "user-admin-1",
+      "senderName": "Sarah Chen",
+      "senderAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "senderRole": "admin",
+      "senderTitle": "Lead Architect & Admin",
+      "content": "Just the task ID and author details is sufficient for privacy, but store the action as \"Deleted Comment\".",
+      "createdAt": "2026-09-20T08:26:30.706Z",
+      "reactions": {
+        "👍": [
+          "user-basic-1"
+        ]
+      }
+    },
+    {
+      "id": "msg-dm-3",
+      "channelId": "dm-sarah-alex",
+      "senderId": "user-basic-1",
+      "senderName": "Alex Rivera",
+      "senderAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+      "senderRole": "basic",
+      "senderTitle": "Senior Frontend Engineer",
+      "content": "Sounds good, implementing now!",
+      "createdAt": "2026-09-20T08:54:30.706Z",
+      "reactions": {
+        "🙌": [
+          "user-admin-1"
+        ]
+      }
+    }
+  ],
+  "dailyTasks": [
+    {
+      "id": "dt-sarah-1",
+      "userId": "user-admin-1",
+      "title": "Review Cloud Run compute capacity and budget alerts",
+      "description": "Audit monthly container compute usage, peak concurrency thresholds, and memory allocation.",
+      "date": "2026-09-20",
+      "timeBlock": "morning",
+      "timeSlot": "09:00 AM",
+      "estimatedMinutes": 30,
+      "priority": "urgent",
+      "category": "operations",
+      "completed": true,
+      "completedAt": "2026-09-20T06:06:30.704Z",
+      "completedBy": "Sarah Chen",
+      "linkedTaskId": "task-12",
+      "linkedTaskTitle": "Quarterly Infrastructure Capacity Planning",
+      "notes": "Reviewed metrics with DevOps team; within budget margin.",
+      "createdAt": "2026-09-20T03:06:30.705Z",
+      "updatedAt": "2026-09-20T06:06:30.705Z"
+    },
+    {
+      "id": "dt-sarah-2",
+      "userId": "user-admin-1",
+      "title": "Daily engineering standup & blocker triage",
+      "description": "Review cross-functional engineering deliverables, unblock backend OAuth integration, and align on Sprint 14.",
+      "date": "2026-09-20",
+      "timeBlock": "morning",
+      "timeSlot": "10:00 AM",
+      "estimatedMinutes": 30,
+      "priority": "high",
+      "category": "meeting",
+      "completed": true,
+      "completedAt": "2026-09-20T07:06:30.705Z",
+      "completedBy": "Sarah Chen",
+      "notes": "All 6 engineers attended. Alex unblocked on token authorization.",
+      "createdAt": "2026-09-20T03:06:30.705Z",
+      "updatedAt": "2026-09-20T07:06:30.705Z"
+    },
+    {
+      "id": "dt-sarah-3",
+      "userId": "user-admin-1",
+      "title": "Review PR #142: OAuth 2.0 RBAC middleware & route protection",
+      "description": "Verify role-based permission verification and server-side token enforcement.",
+      "date": "2026-09-20",
+      "timeBlock": "afternoon",
+      "timeSlot": "01:30 PM",
+      "estimatedMinutes": 45,
+      "priority": "urgent",
+      "category": "review",
+      "completed": false,
+      "linkedTaskId": "task-1",
+      "linkedTaskTitle": "Implement OAuth 2.0 and RBAC Middleware",
+      "notes": "Need to double check penetration test results with Chloe before merging.",
+      "createdAt": "2026-09-20T04:06:30.705Z",
+      "updatedAt": "2026-09-20T04:06:30.705Z"
+    },
+    {
+      "id": "dt-sarah-4",
+      "userId": "user-admin-1",
+      "title": "1-on-1 sprint sync with Marcus regarding sprint 14 deployment",
+      "description": "Align on release readiness and roll-back strategy for upcoming deployment.",
+      "date": "2026-09-20",
+      "timeBlock": "afternoon",
+      "timeSlot": "03:30 PM",
+      "estimatedMinutes": 30,
+      "priority": "medium",
+      "category": "meeting",
+      "completed": false,
+      "notes": "Focus on database compound index deployment.",
+      "createdAt": "2026-09-20T05:06:30.705Z",
+      "updatedAt": "2026-09-20T05:06:30.705Z"
+    },
+    {
+      "id": "dt-sarah-5",
+      "userId": "user-admin-1",
+      "title": "Finalize Q3 SOC-2 security compliance audit sign-off",
+      "description": "Review Chloe’s compliance report and sign off on audit trail data retention.",
+      "date": "2026-09-20",
+      "timeBlock": "evening",
+      "timeSlot": "05:00 PM",
+      "estimatedMinutes": 45,
+      "priority": "high",
+      "category": "security",
+      "completed": false,
+      "notes": "Requires sign-off from legal counsel.",
+      "createdAt": "2026-09-20T05:06:30.705Z",
+      "updatedAt": "2026-09-20T05:06:30.705Z"
+    },
+    {
+      "id": "dt-sarah-6",
+      "userId": "user-admin-1",
+      "title": "Inspect API error rate spikes on payment gateway",
+      "description": "Investigate 502 bad gateway errors reported in staging.",
+      "date": "2026-09-19",
+      "timeBlock": "morning",
+      "timeSlot": "11:00 AM",
+      "estimatedMinutes": 30,
+      "priority": "urgent",
+      "category": "operations",
+      "completed": true,
+      "completedAt": "2026-09-19T08:06:30.705Z",
+      "completedBy": "Sarah Chen",
+      "createdAt": "2026-09-19T05:06:30.705Z",
+      "updatedAt": "2026-09-19T08:06:30.705Z"
+    },
+    {
+      "id": "dt-sarah-7",
+      "userId": "user-admin-1",
+      "title": "Quarterly board meeting slide review & engineering OKRs",
+      "description": "Review engineering performance metrics and roadmap priorities with executive team.",
+      "date": "2026-09-21",
+      "timeBlock": "morning",
+      "timeSlot": "10:30 AM",
+      "estimatedMinutes": 60,
+      "priority": "high",
+      "category": "admin",
+      "completed": false,
+      "createdAt": "2026-09-20T07:06:30.705Z",
+      "updatedAt": "2026-09-20T07:06:30.705Z"
+    },
+    {
+      "id": "dt-marcus-1",
+      "userId": "user-admin-2",
+      "title": "Check CI/CD deployment pipelines & cluster health",
+      "description": "Inspect automated build runners, artifact cache latency, and Kubernetes node health.",
+      "date": "2026-09-20",
+      "timeBlock": "morning",
+      "timeSlot": "08:45 AM",
+      "estimatedMinutes": 30,
+      "priority": "high",
+      "category": "operations",
+      "completed": true,
+      "completedAt": "2026-09-20T05:36:30.705Z",
+      "completedBy": "Marcus Vance",
+      "notes": "All 12 nodes running nominal. 99.98% uptime.",
+      "createdAt": "2026-09-20T03:06:30.705Z",
+      "updatedAt": "2026-09-20T05:36:30.705Z"
+    },
+    {
+      "id": "dt-marcus-2",
+      "userId": "user-admin-2",
+      "title": "Daily engineering standup & blocker triage",
+      "description": "Track sprint tasks, address cross-team dependencies, and review blocker queue.",
+      "date": "2026-09-20",
+      "timeBlock": "morning",
+      "timeSlot": "10:00 AM",
+      "estimatedMinutes": 30,
+      "priority": "high",
+      "category": "meeting",
+      "completed": true,
+      "completedAt": "2026-09-20T07:06:30.705Z",
+      "completedBy": "Marcus Vance",
+      "createdAt": "2026-09-20T03:06:30.705Z",
+      "updatedAt": "2026-09-20T07:06:30.705Z"
+    },
+    {
+      "id": "dt-marcus-3",
+      "userId": "user-admin-2",
+      "title": "Coordinate SSL/TLS certificate rotation with Alex",
+      "description": "Rotate internal mutual TLS certs and update secrets manager vault before expiration.",
+      "date": "2026-09-20",
+      "timeBlock": "afternoon",
+      "timeSlot": "02:00 PM",
+      "estimatedMinutes": 60,
+      "priority": "urgent",
+      "category": "security",
+      "completed": false,
+      "linkedTaskId": "task-8",
+      "linkedTaskTitle": "Overdue Audit: Security Certificate Rotation",
+      "notes": "Stage 3 pending production rolling restart.",
+      "createdAt": "2026-09-20T04:06:30.705Z",
+      "updatedAt": "2026-09-20T04:06:30.705Z"
+    },
+    {
+      "id": "dt-marcus-4",
+      "userId": "user-admin-2",
+      "title": "Prepare Sprint 15 velocity forecast & milestone roadmap",
+      "description": "Analyze story point completion trends, backlog priority, and team capacity.",
+      "date": "2026-09-20",
+      "timeBlock": "afternoon",
+      "timeSlot": "04:00 PM",
+      "estimatedMinutes": 45,
+      "priority": "medium",
+      "category": "admin",
+      "completed": false,
+      "notes": "Capacity estimate adjusted for upcoming team days off.",
+      "createdAt": "2026-09-20T05:06:30.705Z",
+      "updatedAt": "2026-09-20T05:06:30.705Z"
+    },
+    {
+      "id": "dt-marcus-5",
+      "userId": "user-admin-2",
+      "title": "Audit SAML SSO XML integration parameters with Azure AD",
+      "description": "Verify SP metadata XML document and SCIM user mapping configuration.",
+      "date": "2026-09-20",
+      "timeBlock": "evening",
+      "timeSlot": "05:30 PM",
+      "estimatedMinutes": 30,
+      "priority": "high",
+      "category": "security",
+      "completed": false,
+      "linkedTaskId": "task-10",
+      "linkedTaskTitle": "SSO Integration with Okta & Azure AD",
+      "createdAt": "2026-09-20T05:06:30.705Z",
+      "updatedAt": "2026-09-20T05:06:30.705Z"
+    },
+    {
+      "id": "dt-alex-1",
+      "userId": "user-basic-1",
+      "title": "Verify compound database index performance in staging",
+      "description": "Benchmark query times with compound index on assignee + status to ensure sub-50ms response.",
+      "date": "2026-09-20",
+      "timeBlock": "morning",
+      "timeSlot": "09:15 AM",
+      "estimatedMinutes": 45,
+      "priority": "medium",
+      "category": "development",
+      "completed": true,
+      "completedAt": "2026-09-20T05:36:30.705Z",
+      "completedBy": "Alex Rivera",
+      "linkedTaskId": "task-6",
+      "linkedTaskTitle": "Database Schema Optimization & Indexing",
+      "notes": "Latency reduced from 140ms down to 8ms under load.",
+      "createdAt": "2026-09-20T03:06:30.705Z",
+      "updatedAt": "2026-09-20T05:36:30.705Z"
+    },
+    {
+      "id": "dt-alex-2",
+      "userId": "user-basic-1",
+      "title": "Daily engineering standup & blocker triage",
+      "description": "Report progress on OAuth 2.0 and give status update on VPN gateway log inspection.",
+      "date": "2026-09-20",
+      "timeBlock": "morning",
+      "timeSlot": "10:00 AM",
+      "estimatedMinutes": 30,
+      "priority": "high",
+      "category": "meeting",
+      "completed": true,
+      "completedAt": "2026-09-20T07:06:30.705Z",
+      "completedBy": "Alex Rivera",
+      "createdAt": "2026-09-20T03:06:30.705Z",
+      "updatedAt": "2026-09-20T07:06:30.705Z"
+    },
+    {
+      "id": "dt-alex-3",
+      "userId": "user-basic-1",
+      "title": "Debug VPN gateway SSL latency timeout spikes",
+      "description": "Inspect thread pool exhaustion and evaluate secondary standby node deployment.",
+      "date": "2026-09-20",
+      "timeBlock": "afternoon",
+      "timeSlot": "01:00 PM",
+      "estimatedMinutes": 60,
+      "priority": "urgent",
+      "category": "operations",
+      "completed": false,
+      "linkedTaskId": "task-9",
+      "linkedTaskTitle": "VPN Gateway SSL Handshake Latency Spike",
+      "notes": "Collected tcpdump packets from US-East gateway.",
+      "createdAt": "2026-09-20T04:06:30.705Z",
+      "updatedAt": "2026-09-20T04:06:30.705Z"
+    },
+    {
+      "id": "dt-alex-4",
+      "userId": "user-basic-1",
+      "title": "Code review: Maria’s Kanban touch gesture pull request",
+      "description": "Review PointerEvent handling, passive touch listeners, and mobile drag cancel logic.",
+      "date": "2026-09-20",
+      "timeBlock": "afternoon",
+      "timeSlot": "03:00 PM",
+      "estimatedMinutes": 30,
+      "priority": "medium",
+      "category": "review",
+      "completed": false,
+      "notes": "Will leave feedback on GitHub PR.",
+      "createdAt": "2026-09-20T05:06:30.705Z",
+      "updatedAt": "2026-09-20T05:06:30.705Z"
+    },
+    {
+      "id": "dt-alex-5",
+      "userId": "user-basic-1",
+      "title": "Write unit tests for token expiration edge cases",
+      "description": "Test clock skew tolerance and expired session eviction behavior.",
+      "date": "2026-09-20",
+      "timeBlock": "evening",
+      "timeSlot": "04:30 PM",
+      "estimatedMinutes": 45,
+      "priority": "high",
+      "category": "security",
+      "completed": false,
+      "linkedTaskId": "task-1",
+      "linkedTaskTitle": "Implement OAuth 2.0 and RBAC Middleware",
+      "createdAt": "2026-09-20T05:06:30.705Z",
+      "updatedAt": "2026-09-20T05:06:30.705Z"
+    },
+    {
+      "id": "dt-maria-1",
+      "userId": "user-basic-2",
+      "title": "Fix UTF-8 BOM encoding for CSV spreadsheet export",
+      "description": "Prepend byte order mark so Excel displays non-ASCII characters and accents properly.",
+      "date": "2026-09-20",
+      "timeBlock": "morning",
+      "timeSlot": "09:00 AM",
+      "estimatedMinutes": 45,
+      "priority": "medium",
+      "category": "development",
+      "completed": true,
+      "completedAt": "2026-09-20T06:06:30.705Z",
+      "completedBy": "Maria Garcia",
+      "linkedTaskId": "task-11",
+      "linkedTaskTitle": "Fix CSV Data Export Encoding for Non-ASCII Characters",
+      "notes": "Verified in Excel on Windows and macOS.",
+      "createdAt": "2026-09-20T03:06:30.705Z",
+      "updatedAt": "2026-09-20T06:06:30.705Z"
+    },
+    {
+      "id": "dt-maria-2",
+      "userId": "user-basic-2",
+      "title": "Daily engineering standup & blocker triage",
+      "description": "Share demo of mobile Kanban drag & drop touch listener prototype.",
+      "date": "2026-09-20",
+      "timeBlock": "morning",
+      "timeSlot": "10:00 AM",
+      "estimatedMinutes": 30,
+      "priority": "high",
+      "category": "meeting",
+      "completed": true,
+      "completedAt": "2026-09-20T07:06:30.705Z",
+      "completedBy": "Maria Garcia",
+      "createdAt": "2026-09-20T03:06:30.705Z",
+      "updatedAt": "2026-09-20T07:06:30.705Z"
+    },
+    {
+      "id": "dt-maria-3",
+      "userId": "user-basic-2",
+      "title": "Implement touch listener support for mobile Kanban drag & drop",
+      "description": "Add touch-action CSS rules and drag threshold to prevent unintended scrolling.",
+      "date": "2026-09-20",
+      "timeBlock": "afternoon",
+      "timeSlot": "01:30 PM",
+      "estimatedMinutes": 90,
+      "priority": "urgent",
+      "category": "development",
+      "completed": false,
+      "linkedTaskId": "task-2",
+      "linkedTaskTitle": "Responsive Kanban Drag & Drop Board UI",
+      "notes": "Added auto-scroll when dragging near viewport bounds.",
+      "createdAt": "2026-09-20T04:06:30.705Z",
+      "updatedAt": "2026-09-20T04:06:30.705Z"
+    },
+    {
+      "id": "dt-maria-4",
+      "userId": "user-basic-2",
+      "title": "Cross-browser testing on Safari & Firefox for dark theme contrast",
+      "description": "Ensure color contrast meets WCAG AA standards across all display engines.",
+      "date": "2026-09-20",
+      "timeBlock": "afternoon",
+      "timeSlot": "04:00 PM",
+      "estimatedMinutes": 45,
+      "priority": "medium",
+      "category": "design",
+      "completed": false,
+      "notes": "Checked on WebKit 17.4 and Gecko 125.",
+      "createdAt": "2026-09-20T05:06:30.705Z",
+      "updatedAt": "2026-09-20T05:06:30.705Z"
+    },
+    {
+      "id": "dt-maria-5",
+      "userId": "user-basic-2",
+      "title": "Update component documentation in Storybook",
+      "description": "Add usage examples for new Avatar and Badge components.",
+      "date": "2026-09-20",
+      "timeBlock": "evening",
+      "timeSlot": "05:30 PM",
+      "estimatedMinutes": 30,
+      "priority": "low",
+      "category": "general",
+      "completed": false,
+      "createdAt": "2026-09-20T05:06:30.705Z",
+      "updatedAt": "2026-09-20T05:06:30.705Z"
+    },
+    {
+      "id": "dt-liam-1",
+      "userId": "user-basic-3",
+      "title": "Audit WCAG AA contrast ratio on dark mode neutrals",
+      "description": "Verify all foreground and muted text styles exceed the 4.5:1 ratio on #141414 surface.",
+      "date": "2026-09-20",
+      "timeBlock": "morning",
+      "timeSlot": "09:30 AM",
+      "estimatedMinutes": 45,
+      "priority": "high",
+      "category": "design",
+      "completed": true,
+      "completedAt": "2026-09-20T06:36:30.705Z",
+      "completedBy": "Liam Taylor",
+      "linkedTaskId": "task-3",
+      "linkedTaskTitle": "Design System & Component Tokens Update",
+      "notes": "Adjusted neutral-400 to pass on dark background.",
+      "createdAt": "2026-09-20T03:06:30.705Z",
+      "updatedAt": "2026-09-20T06:36:30.705Z"
+    },
+    {
+      "id": "dt-liam-2",
+      "userId": "user-basic-3",
+      "title": "Daily engineering standup & blocker triage",
+      "description": "Present updated typography scale and Role Template color token specifications.",
+      "date": "2026-09-20",
+      "timeBlock": "morning",
+      "timeSlot": "10:00 AM",
+      "estimatedMinutes": 30,
+      "priority": "high",
+      "category": "meeting",
+      "completed": true,
+      "completedAt": "2026-09-20T07:06:30.705Z",
+      "completedBy": "Liam Taylor",
+      "createdAt": "2026-09-20T03:06:30.705Z",
+      "updatedAt": "2026-09-20T07:06:30.705Z"
+    },
+    {
+      "id": "dt-liam-3",
+      "userId": "user-basic-3",
+      "title": "Design high-fidelity wireframes for Direct Messaging & Daily Tasks",
+      "description": "Create responsive card layout, time block sections, and user switcher interface.",
+      "date": "2026-09-20",
+      "timeBlock": "afternoon",
+      "timeSlot": "01:00 PM",
+      "estimatedMinutes": 90,
+      "priority": "urgent",
+      "category": "design",
+      "completed": false,
+      "notes": "Created Figma frame with light and dark mode variants.",
+      "createdAt": "2026-09-20T04:06:30.705Z",
+      "updatedAt": "2026-09-20T04:06:30.705Z"
+    },
+    {
+      "id": "dt-liam-4",
+      "userId": "user-basic-3",
+      "title": "Update Figma token library for typography scale and spacing",
+      "description": "Sync design token values with Tailwind CSS configuration file.",
+      "date": "2026-09-20",
+      "timeBlock": "afternoon",
+      "timeSlot": "03:30 PM",
+      "estimatedMinutes": 60,
+      "priority": "medium",
+      "category": "design",
+      "completed": false,
+      "createdAt": "2026-09-20T05:06:30.705Z",
+      "updatedAt": "2026-09-20T05:06:30.705Z"
+    },
+    {
+      "id": "dt-liam-5",
+      "userId": "user-basic-3",
+      "title": "Review responsive mobile layout of Meeting agenda view",
+      "description": "Ensure agenda time blocks and speaker avatars align gracefully on 375px screens.",
+      "date": "2026-09-20",
+      "timeBlock": "evening",
+      "timeSlot": "05:00 PM",
+      "estimatedMinutes": 30,
+      "priority": "low",
+      "category": "review",
+      "completed": false,
+      "createdAt": "2026-09-20T05:06:30.705Z",
+      "updatedAt": "2026-09-20T05:06:30.705Z"
+    },
+    {
+      "id": "dt-chloe-1",
+      "userId": "user-basic-4",
+      "title": "Verify user privilege isolation between Admin and Contributor",
+      "description": "Perform boundary check on endpoint authorization and privilege bitmasks.",
+      "date": "2026-09-20",
+      "timeBlock": "morning",
+      "timeSlot": "09:00 AM",
+      "estimatedMinutes": 45,
+      "priority": "urgent",
+      "category": "security",
+      "completed": true,
+      "completedAt": "2026-09-20T06:06:30.705Z",
+      "completedBy": "Chloe Bennett",
+      "notes": "Passes all 18 security isolation test cases.",
+      "createdAt": "2026-09-20T03:06:30.705Z",
+      "updatedAt": "2026-09-20T06:06:30.705Z"
+    },
+    {
+      "id": "dt-chloe-2",
+      "userId": "user-basic-4",
+      "title": "Daily engineering standup & blocker triage",
+      "description": "Share security findings and update team on upcoming quarterly compliance audit.",
+      "date": "2026-09-20",
+      "timeBlock": "morning",
+      "timeSlot": "10:00 AM",
+      "estimatedMinutes": 30,
+      "priority": "high",
+      "category": "meeting",
+      "completed": true,
+      "completedAt": "2026-09-20T07:06:30.705Z",
+      "completedBy": "Chloe Bennett",
+      "createdAt": "2026-09-20T03:06:30.705Z",
+      "updatedAt": "2026-09-20T07:06:30.705Z"
+    },
+    {
+      "id": "dt-chloe-3",
+      "userId": "user-basic-4",
+      "title": "Inspect tamper-evident backup snapshot checksums",
+      "description": "Validate SHA-256 integrity hash on the latest system snapshot.",
+      "date": "2026-09-20",
+      "timeBlock": "afternoon",
+      "timeSlot": "01:30 PM",
+      "estimatedMinutes": 45,
+      "priority": "high",
+      "category": "security",
+      "completed": false,
+      "notes": "Baseline seed snapshot verified clean.",
+      "createdAt": "2026-09-20T04:06:30.705Z",
+      "updatedAt": "2026-09-20T04:06:30.705Z"
+    },
+    {
+      "id": "dt-chloe-4",
+      "userId": "user-basic-4",
+      "title": "Audit active user session tokens & expiration thresholds",
+      "description": "Ensure token expiration enforces 24-hour limit and invalidates revoked sessions.",
+      "date": "2026-09-20",
+      "timeBlock": "afternoon",
+      "timeSlot": "03:00 PM",
+      "estimatedMinutes": 60,
+      "priority": "urgent",
+      "category": "security",
+      "completed": false,
+      "createdAt": "2026-09-20T05:06:30.705Z",
+      "updatedAt": "2026-09-20T05:06:30.705Z"
+    },
+    {
+      "id": "dt-chloe-5",
+      "userId": "user-basic-4",
+      "title": "Compile weekly security incident & compliance report",
+      "description": "Collate security metrics, open alerts, and resolved vulnerability tickets for CTO review.",
+      "date": "2026-09-20",
+      "timeBlock": "evening",
+      "timeSlot": "04:30 PM",
+      "estimatedMinutes": 45,
+      "priority": "medium",
+      "category": "admin",
+      "completed": false,
+      "createdAt": "2026-09-20T05:06:30.705Z",
+      "updatedAt": "2026-09-20T05:06:30.705Z"
+    }
+  ],
+  "forms": [
+    {
+      "id": "form-seed-retro",
+      "title": "Sprint Retrospective & Team Feedback",
+      "description": "Help the engineering leads evaluate our last sprint rhythm, code reviews, velocity, and delivery blockers.",
+      "status": "published",
+      "targetAudience": "specific",
+      "assignedUserIds": [
+        "user-admin-2",
+        "user-admin-3",
+        "user-basic-1",
+        "user-admin-emixup"
+      ],
+      "dueDate": "2026-09-25",
+      "category": "Engineering",
+      "allowMultipleSubmissions": false,
+      "createdBy": "user-admin-emixup",
+      "createdByName": "Emixup (Lead Admin)",
+      "createdByAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "createdAt": "2026-09-18T09:06:30.705Z",
+      "updatedAt": "2026-09-18T09:06:30.705Z",
+      "fields": [
+        {
+          "id": "field-name",
+          "type": "text",
+          "label": "Your Primary Module / Feature Area",
+          "placeholder": "e.g. Auth Service, Kanban Drag & Drop, API Gateway",
+          "helpText": "Specify which sub-system you contributed to most this sprint.",
+          "required": true
+        },
+        {
+          "id": "field-satisfaction",
+          "type": "radio",
+          "label": "Overall Sprint Satisfaction",
+          "helpText": "Select the option that best summarizes your experience.",
+          "required": true,
+          "options": [
+            "Exceptional - Ahead of Schedule",
+            "Good - Met Most Targets",
+            "Challenging - Many Blockers",
+            "Frustrating - Scope Creep"
+          ]
+        },
+        {
+          "id": "field-blocker-hours",
+          "type": "number",
+          "label": "Hours Lost to Blockers or Stalled PRs",
+          "placeholder": "0",
+          "helpText": "Approximate total hours waiting on CI/CD, reviews, or requirements.",
+          "required": true,
+          "min": 0,
+          "max": 80,
+          "step": 1
+        },
+        {
+          "id": "field-review-date",
+          "type": "date",
+          "label": "Proposed Retrospective Discussion Date",
+          "helpText": "Select your preferred day for the synchronous team retro meeting.",
+          "required": true
+        },
+        {
+          "id": "field-review-time",
+          "type": "time",
+          "label": "Preferred Discussion Time Slot",
+          "helpText": "Pick your optimal window (e.g. 14:00).",
+          "required": false
+        },
+        {
+          "id": "field-discipline",
+          "type": "select",
+          "label": "Primary Engineering Discipline",
+          "helpText": "Choose your main functional specialty.",
+          "required": true,
+          "options": [
+            "Frontend (React / Tailwind)",
+            "Backend (Node / Express)",
+            "DevOps & Cloud Infrastructure",
+            "QA & Automation",
+            "UI/UX Design"
+          ]
+        },
+        {
+          "id": "field-highlights",
+          "type": "checkbox",
+          "label": "Sprint Highlights & Wins",
+          "helpText": "Select all items that went smoothly for the team.",
+          "required": false,
+          "options": [
+            "High test coverage on new endpoints",
+            "Zero critical production regressions",
+            "Fast code review turnaround",
+            "Great cross-discipline pairing",
+            "Clean, readable documentation"
+          ]
+        },
+        {
+          "id": "field-improvements",
+          "type": "textarea",
+          "label": "What could we improve for next sprint?",
+          "placeholder": "Share actionable suggestions on grooming, ticket scopes, testing, or communication...",
+          "helpText": "Constructive recommendations are warmly welcomed.",
+          "required": true
+        },
+        {
+          "id": "field-attachment",
+          "type": "file",
+          "label": "Supporting Metrics or Diagram (Optional)",
+          "helpText": "Upload a sprint burn-down screenshot, audit log, or benchmark file (PDF, TXT, CSV, PNG, JPG).",
+          "required": false,
+          "allowedExtensions": [
+            "pdf",
+            "txt",
+            "csv",
+            "png",
+            "jpg",
+            "jpeg"
+          ],
+          "maxFileSizeKb": 1024
+        }
+      ]
+    },
+    {
+      "id": "form-seed-hardware",
+      "title": "Hardware & Ergonomic Equipment Request",
+      "description": "Submit requisitions for developer peripherals, mechanical keyboards, 4K monitors, or laptop upgrades.",
+      "status": "published",
+      "targetAudience": "all",
+      "assignedUserIds": [],
+      "dueDate": "2026-10-04",
+      "category": "IT & Operations",
+      "allowMultipleSubmissions": true,
+      "createdBy": "user-admin-emixup",
+      "createdByName": "Emixup (Lead Admin)",
+      "createdByAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "createdAt": "2026-09-17T09:06:30.705Z",
+      "updatedAt": "2026-09-19T09:06:30.705Z",
+      "fields": [
+        {
+          "id": "hw-applicant-title",
+          "type": "text",
+          "label": "Item / Peripherals Requested",
+          "placeholder": "e.g. Ultra-wide Monitor 34\", Ergo Chair Armrest, USB-C Dock",
+          "required": true
+        },
+        {
+          "id": "hw-category",
+          "type": "select",
+          "label": "Hardware Category",
+          "required": true,
+          "options": [
+            "Display & Monitors",
+            "Input Devices (Mouse / Keyboard)",
+            "Audio / Headset",
+            "Power & Docking Stations",
+            "Ergonomic Furniture"
+          ]
+        },
+        {
+          "id": "hw-urgency",
+          "type": "radio",
+          "label": "Urgency Level",
+          "required": true,
+          "options": [
+            "Critical (Immediate blocker)",
+            "Standard (Within 2 weeks)",
+            "Nice-to-have (Quarterly budget)"
+          ]
+        },
+        {
+          "id": "hw-cost",
+          "type": "number",
+          "label": "Estimated Cost in USD",
+          "placeholder": "150",
+          "required": true,
+          "min": 10,
+          "max": 5000,
+          "step": 5
+        },
+        {
+          "id": "hw-needed-date",
+          "type": "date",
+          "label": "Needed By Date",
+          "required": true
+        },
+        {
+          "id": "hw-preferred-time",
+          "type": "time",
+          "label": "Preferred Delivery / IT Setup Time",
+          "required": false
+        },
+        {
+          "id": "hw-accessories",
+          "type": "checkbox",
+          "label": "Additional Accessories Needed",
+          "required": false,
+          "options": [
+            "HDMI / DisplayPort 1.4 Cable",
+            "USB-C Charging Cable 100W",
+            "Anti-glare Screen Filter",
+            "Desk Cable Management Raceway"
+          ]
+        },
+        {
+          "id": "hw-justification",
+          "type": "textarea",
+          "label": "Business Justification",
+          "placeholder": "Explain how this hardware improves daily workflow, engineering productivity, or ergonomics...",
+          "required": true
+        },
+        {
+          "id": "hw-spec-quote",
+          "type": "file",
+          "label": "Product Spec Sheet or Price Quote (PDF, PNG, JPG)",
+          "helpText": "Attach official vendor quote or screenshot of specifications.",
+          "required": false,
+          "allowedExtensions": [
+            "pdf",
+            "txt",
+            "csv",
+            "png",
+            "jpg"
+          ],
+          "maxFileSizeKb": 1024
+        }
+      ]
+    }
+  ],
+  "formResponses": [
+    {
+      "id": "resp-seed-1",
+      "formId": "form-seed-retro",
+      "userId": "user-admin-3",
+      "userName": "Marcus Vance",
+      "userAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "userEmail": "marcus.vance@techcorp.io",
+      "userRole": "manager",
+      "submittedAt": "2026-09-19T21:06:30.705Z",
+      "answers": {
+        "field-name": "Kanban Board Drag & Drop and Daily Task Synchronization",
+        "field-satisfaction": "Good - Met Most Targets",
+        "field-blocker-hours": 4,
+        "field-review-date": "2026-09-23",
+        "field-review-time": "15:30",
+        "field-discipline": "Frontend (React / Tailwind)",
+        "field-highlights": [
+          "Zero critical production regressions",
+          "Clean, readable documentation",
+          "High test coverage on new endpoints"
+        ],
+        "field-improvements": "The asynchronous task rollover worked really well, but we should make sure API contract changes are communicated before merging backend PRs to avoid local re-compiles.",
+        "field-attachment": {
+          "name": "kanban-benchmark-report.csv",
+          "size": 1420,
+          "type": "text/csv",
+          "url": "",
+          "base64Data": "data:text/csv;base64,TWV0cmljLFRhcmdldE1zLEFjdHVhbE1zLFN0YXR1cwpJbml0aWFsIFJlbmRlciwxNTAsOTUsUGFzc2VkCkNhcmQgRHJhZyBMYXRlbmN5LDE2LDExLFBhc3NlZApCYXRjaCBDb2x1bW4gVXBkYXRlLDMwMCwxODAsUGFzc2Vk"
+        }
+      }
+    }
+  ],
+  "notes": [
+    {
+      "id": "note-1",
+      "authorId": "user-admin-1",
+      "authorName": "Med Osman",
+      "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "authorRole": "admin",
+      "directoryId": "dir-architecture",
+      "title": "Sprint 14 Architecture & Security Checklist",
+      "content": "## Sprint 14 Focus Items\n\n- [x] Harden RBAC middleware against empty user tokens\n- [x] Add auto-reconnect backoff on frontend API client\n- [x] Implement user notepad space with private/shared flags\n- [ ] Review cross-team metrics before Friday release\n\n> Note: Coordinate with @Alex on test payload coverage before staging deploy.",
+      "color": "blue",
+      "isPinned": true,
+      "isPrivate": false,
+      "isSharedWithAll": true,
+      "sharedWithUserIds": [],
+      "allowCollaboration": true,
+      "tags": [
+        "Architecture",
+        "Sprint14",
+        "Security"
+      ],
+      "createdAt": "2026-09-18T09:06:30.706Z",
+      "updatedAt": "2026-09-20T08:06:30.706Z"
+    },
+    {
+      "id": "note-2",
+      "authorId": "user-admin-1",
+      "authorName": "Med Osman",
+      "authorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "authorRole": "admin",
+      "directoryId": "dir-standup",
+      "title": "Personal Standup Notes & Brainstorming",
+      "content": "### Today's Priorities (Private)\n\n1. Review direct message channel sync and WebSocket telemetry\n2. Verify meeting agenda attachments download flow\n3. Polish notepad typography, markdown preview, and search filters\n4. Prepare 1:1 talking points with engineering leads",
+      "color": "amber",
+      "isPinned": true,
+      "isPrivate": true,
+      "isSharedWithAll": false,
+      "sharedWithUserIds": [],
+      "allowCollaboration": false,
+      "tags": [
+        "Personal",
+        "Standup",
+        "Confidential"
+      ],
+      "createdAt": "2026-09-19T09:06:30.707Z",
+      "updatedAt": "2026-09-20T07:06:30.707Z"
+    },
+    {
+      "id": "note-3",
+      "authorId": "user-basic-1",
+      "authorName": "Alex Rivera",
+      "authorAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+      "authorRole": "lead",
+      "directoryId": "dir-engineering",
+      "title": "API Design Standards & Pagination Best Practices",
+      "content": "### Backend Guidelines for Engineers\n\n- **Consistent responses**: Always return structured errors `{ error: string }` with proper HTTP codes.\n- **Security**: Never expose password hashes or auth tokens in logs or generic serialization.\n- **Auditing**: Record user ID and human-readable action string in central activity logs.\n- **Idempotency**: GET endpoints should be safe for client-side auto-retries.",
+      "color": "emerald",
+      "isPinned": false,
+      "isPrivate": false,
+      "isSharedWithAll": true,
+      "sharedWithUserIds": [],
+      "allowCollaboration": false,
+      "tags": [
+        "Standards",
+        "Engineering",
+        "Backend"
+      ],
+      "createdAt": "2026-09-17T09:06:30.707Z",
+      "updatedAt": "2026-09-20T05:06:30.707Z"
+    },
+    {
+      "id": "note-4",
+      "authorId": "user-basic-2",
+      "authorName": "Maria Garcia",
+      "authorAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "authorRole": "member",
+      "directoryId": "dir-design",
+      "title": "Design Tokens & 4.5:1 WCAG Contrast Matrix",
+      "content": "### UI Audit Notes\n\nShared specifically with Med Osman and Alex Rivera for design system alignment:\n\n- Neutral 100 on dark background exceeds 12:1 contrast ratio.\n- Badge pills must keep text on one line with `white-space: nowrap`.\n- Interactive touch targets maintain minimum 44px on mobile viewport.",
+      "color": "purple",
+      "isPinned": false,
+      "isPrivate": false,
+      "isSharedWithAll": false,
+      "sharedWithUserIds": [
+        "user-admin-1",
+        "user-basic-1"
+      ],
+      "allowCollaboration": true,
+      "tags": [
+        "DesignSystem",
+        "Accessibility",
+        "WCAG"
+      ],
+      "createdAt": "2026-09-16T09:06:30.707Z",
+      "updatedAt": "2026-09-20T04:06:30.707Z"
+    },
+    {
+      "id": "note-5",
+      "authorId": "user-basic-1",
+      "authorName": "Alex Rivera",
+      "authorAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+      "authorRole": "lead",
+      "directoryId": null,
+      "title": "Alex's Private Engineering Scratchpad",
+      "content": "Personal draft thoughts on graph rendering performance:\n\n- Test D3 force simulation alpha target throttling\n- Check memory usage on nodes with heavy relationship links\n- Keep local scratchpad notes strictly private",
+      "color": "rose",
+      "isPinned": false,
+      "isPrivate": true,
+      "isSharedWithAll": false,
+      "sharedWithUserIds": [],
+      "allowCollaboration": false,
+      "tags": [
+        "Scratchpad",
+        "Ideas"
+      ],
+      "createdAt": "2026-09-15T09:06:30.707Z",
+      "updatedAt": "2026-09-20T03:06:30.707Z"
+    }
+  ],
+  "noteDirectories": [
+    {
+      "id": "dir-architecture",
+      "name": "Sprint Architecture",
+      "description": "Sprint checklists, system architectures, and security reviews",
+      "color": "blue",
+      "icon": "folder",
+      "authorId": "user-admin-1",
+      "authorName": "Med Osman",
+      "isPrivate": false,
+      "createdAt": "2026-09-17T09:06:30.706Z",
+      "updatedAt": "2026-09-17T09:06:30.706Z"
+    },
+    {
+      "id": "dir-standup",
+      "name": "Personal Standup",
+      "description": "Daily standup notes, personal drafts, and quick scratchpads",
+      "color": "amber",
+      "icon": "briefcase",
+      "authorId": "user-admin-1",
+      "authorName": "Med Osman",
+      "isPrivate": true,
+      "createdAt": "2026-09-18T09:06:30.706Z",
+      "updatedAt": "2026-09-18T09:06:30.706Z"
+    },
+    {
+      "id": "dir-engineering",
+      "name": "Engineering Standards",
+      "description": "Backend guidelines, API best practices, and code conventions",
+      "color": "emerald",
+      "icon": "code",
+      "authorId": "user-basic-1",
+      "authorName": "Alex Rivera",
+      "isPrivate": false,
+      "createdAt": "2026-09-16T09:06:30.706Z",
+      "updatedAt": "2026-09-16T09:06:30.706Z"
+    },
+    {
+      "id": "dir-design",
+      "name": "Design System & UI",
+      "description": "Design tokens, accessibility checklists, and UI audit notes",
+      "color": "purple",
+      "icon": "book",
+      "authorId": "user-basic-2",
+      "authorName": "Maria Garcia",
+      "isPrivate": false,
+      "createdAt": "2026-09-16T09:06:30.706Z",
+      "updatedAt": "2026-09-16T09:06:30.706Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif-seed-1",
+      "userId": "user-admin-1",
+      "type": "mention",
+      "title": "Mentioned in Chat",
+      "message": "Alex Rivera mentioned you in #general: \"@Sarah Chen can you review the production deployment pipeline?\"",
+      "senderId": "user-basic-1",
+      "senderName": "Alex Rivera",
+      "senderAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+      "channelId": "channel-general",
+      "channelName": "general",
+      "isRead": false,
+      "createdAt": "2026-09-20T08:41:30.706Z"
+    },
+    {
+      "id": "notif-seed-2",
+      "userId": "user-admin-1",
+      "type": "ticket_assign",
+      "title": "New Ticket Assigned",
+      "message": "Maria Garcia assigned you to ticket \"API Rate Limiting 429 Incident Under Peak Load\"",
+      "senderId": "user-basic-2",
+      "senderName": "Maria Garcia",
+      "senderAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "taskId": "task-1",
+      "taskTitle": "Implement OAuth 2.0 and RBAC Middleware",
+      "isRead": false,
+      "createdAt": "2026-09-20T07:06:30.706Z"
+    },
+    {
+      "id": "notif-seed-3",
+      "userId": "user-admin-1",
+      "type": "project_assign",
+      "title": "Added to Project",
+      "message": "Alex Rivera added you as lead of project \"Enterprise AI Core Platform\"",
+      "senderId": "user-basic-1",
+      "senderName": "Alex Rivera",
+      "senderAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+      "projectId": "proj-1",
+      "projectName": "Cloud Infrastructure & Platform",
+      "isRead": false,
+      "createdAt": "2026-09-20T04:06:30.706Z"
+    },
+    {
+      "id": "notif-seed-4",
+      "userId": "user-basic-1",
+      "type": "task_assign",
+      "title": "New Task Assigned",
+      "message": "Sarah Chen assigned you to task \"Build Container Metrics Ingress Exporter\"",
+      "senderId": "user-admin-1",
+      "senderName": "Sarah Chen",
+      "senderAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "taskId": "task-2",
+      "taskTitle": "Responsive Kanban Drag & Drop Board UI",
+      "isRead": false,
+      "createdAt": "2026-09-20T06:06:30.706Z"
+    },
+    {
+      "id": "notif-seed-5",
+      "userId": "user-basic-1",
+      "type": "mention",
+      "title": "Mentioned in Task Comment",
+      "message": "Maria Garcia mentioned you on \"Setup Automated E2E Cypress Tests\": \"Hey @Alex Rivera check the mock headers\"",
+      "senderId": "user-basic-2",
+      "senderName": "Maria Garcia",
+      "senderAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "taskId": "task-1",
+      "taskTitle": "Implement OAuth 2.0 and RBAC Middleware",
+      "isRead": false,
+      "createdAt": "2026-09-20T05:06:30.706Z"
+    }
+  ],
+  "activityLogs": [
+    {
+      "id": "log-1789895217863-ojlbo",
+      "taskId": "task-1789895199165",
+      "taskTitle": "Verify Persistent Disk Storage",
+      "userId": "user-admin-emixup",
+      "userName": "Emixup (Lead Admin)",
+      "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "action": "Deleted Task",
+      "details": "Deleted task \"Verify Persistent Disk Storage\"",
+      "timestamp": "2026-09-20T09:06:57.863Z"
+    },
+    {
+      "id": "log-1789895199165-9gz7g",
+      "taskId": "task-1789895199165",
+      "taskTitle": "Verify Persistent Disk Storage",
+      "userId": "user-admin-emixup",
+      "userName": "Emixup (Lead Admin)",
+      "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "action": "Created Task",
+      "details": "Created task \"Verify Persistent Disk Storage\" with priority URGENT",
+      "timestamp": "2026-09-20T09:06:39.165Z"
+    },
+    {
+      "id": "log-1",
+      "taskId": "task-1",
+      "taskTitle": "Implement OAuth 2.0 and RBAC Middleware",
+      "userId": "user-admin-1",
+      "userName": "Sarah Chen",
+      "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      "action": "Created Task",
+      "details": "Created task and assigned to Alex Rivera and Sarah Chen",
+      "timestamp": "2026-09-18T09:06:30.705Z"
+    },
+    {
+      "id": "log-2",
+      "taskId": "task-1",
+      "taskTitle": "Implement OAuth 2.0 and RBAC Middleware",
+      "userId": "user-basic-1",
+      "userName": "Alex Rivera",
+      "userAvatar": "https://media.istockphoto.com/id/2162937006/photo/studio-portrait-of-decision-making-businesswoman-in-businesswear.jpg",
+      "action": "Status Changed",
+      "details": "Changed status from Created assigned to In progress",
+      "fieldChanged": "status",
+      "oldValue": "Created assigned",
+      "newValue": "In progress",
+      "timestamp": "2026-09-19T09:06:30.705Z"
+    },
+    {
+      "id": "log-3",
+      "taskId": "task-2",
+      "taskTitle": "Responsive Kanban Drag & Drop Board UI",
+      "userId": "user-basic-2",
+      "userName": "Maria Garcia",
+      "userAvatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
+      "action": "Completed Subtask",
+      "details": "Marked \"Add touch listener support for mobile viewports\" as completed",
+      "timestamp": "2026-09-19T21:06:30.705Z"
+    },
+    {
+      "id": "log-4",
+      "taskId": "task-3",
+      "taskTitle": "Design System & Component Tokens Update",
+      "userId": "user-basic-3",
+      "userName": "Liam Taylor",
+      "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+      "action": "Added Comment",
+      "details": "Uploaded updated Figma tokens and color contrast specifications",
+      "timestamp": "2026-09-20T03:06:30.705Z"
+    }
+  ],
+  "files": []
+}

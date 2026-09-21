@@ -7,7 +7,6 @@ import {
   UserCheck,
   X,
   Plus,
-  PanelLeftClose,
   Briefcase,
   FolderPlus,
   Settings,
@@ -35,6 +34,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
 import { useChat } from '../context/ChatContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useFeatures } from '../context/FeatureContext';
 import { ViewMode, Project } from '../types';
 import { Logo } from './Logo';
 import { UserAvatar } from './UserAvatar';
@@ -63,6 +64,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
     tasks
   } = useTasks();
   const { totalUnreadCount } = useChat();
+  const { t } = useLanguage();
+  const { isFeatureVisible } = useFeatures();
 
   const isOpen = propIsOpen !== undefined ? propIsOpen : isSidebarOpen;
   const onClose = propOnClose || (() => setIsSidebarOpen(false));
@@ -118,21 +121,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
     adminBadge?: boolean;
     unreadCount?: number;
   }[] = [
-    { mode: 'kanban', label: 'Workflow', icon: <WorkflowIcon className="w-4 h-4" />, colorDot: 'bg-blue-400', isAllowed: true },
-    { mode: 'daily', label: 'Daily Tasks', icon: <DailyTasksIcon className="w-4 h-4" />, colorDot: 'bg-teal-400', isAllowed: true },
-    { mode: 'tickets', label: 'Ticket System', icon: <TicketSystemIcon className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
-    { mode: 'list', label: 'Bulk tasks', icon: <BulkTasksIcon className="w-4 h-4" />, colorDot: 'bg-sky-400', isAllowed: isAdmin, adminBadge: true },
-    { mode: 'timeline', label: 'Timeline', icon: <TimelineIcon className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
-    { mode: 'graph', label: 'Graph', icon: <GraphIcon className="w-4 h-4" />, colorDot: 'bg-indigo-400', isAllowed: true },
-    { mode: 'chat', label: 'Chat', icon: <ChatIcon className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: true, unreadCount: totalUnreadCount },
-    { mode: 'meetings', label: 'Meetings', icon: <MeetingsIcon className="w-4 h-4" />, colorDot: 'bg-violet-400', isAllowed: true },
-    { mode: 'forms', label: 'Forms', icon: <FormsIcon className="w-4 h-4" />, colorDot: 'bg-indigo-400', isAllowed: true },
-    { mode: 'notes', label: 'Notepad', icon: <StickyNote className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
-    { mode: 'rewards', label: 'Rewards', icon: <RewardsIcon className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
-    { mode: 'dashboard', label: 'Dashboard', icon: <DashboardIcon className="w-4 h-4" />, colorDot: 'bg-blue-400', isAllowed: isAdmin || canManageUsers, adminBadge: true }
+    { mode: 'kanban', label: t('nav.workflow', 'Workflow'), icon: <WorkflowIcon className="w-4 h-4" />, colorDot: 'bg-blue-400', isAllowed: true },
+    { mode: 'daily', label: t('nav.dailyTasks', 'Daily Tasks'), icon: <DailyTasksIcon className="w-4 h-4" />, colorDot: 'bg-teal-400', isAllowed: true },
+    { mode: 'tickets', label: t('nav.tickets', 'Ticket System'), icon: <TicketSystemIcon className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
+    { mode: 'list', label: t('nav.bulkTasks', 'Bulk tasks'), icon: <BulkTasksIcon className="w-4 h-4" />, colorDot: 'bg-sky-400', isAllowed: isAdmin, adminBadge: true },
+    { mode: 'timeline', label: t('nav.timeline', 'Timeline'), icon: <TimelineIcon className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
+    { mode: 'graph', label: t('nav.graph', 'Graph'), icon: <GraphIcon className="w-4 h-4" />, colorDot: 'bg-indigo-400', isAllowed: true },
+    { mode: 'chat', label: t('nav.chat', 'Chat'), icon: <ChatIcon className="w-4 h-4" />, colorDot: 'bg-emerald-400', isAllowed: true, unreadCount: totalUnreadCount },
+    { mode: 'meetings', label: t('nav.meetings', 'Meetings'), icon: <MeetingsIcon className="w-4 h-4" />, colorDot: 'bg-violet-400', isAllowed: true },
+    { mode: 'forms', label: t('nav.forms', 'Forms'), icon: <FormsIcon className="w-4 h-4" />, colorDot: 'bg-indigo-400', isAllowed: true },
+    { mode: 'notes', label: t('nav.notes', 'Notepad'), icon: <StickyNote className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
+    { mode: 'rewards', label: t('nav.rewards', 'Rewards'), icon: <RewardsIcon className="w-4 h-4" />, colorDot: 'bg-amber-400', isAllowed: true },
+    { mode: 'dashboard', label: t('nav.dashboard', 'Dashboard'), icon: <DashboardIcon className="w-4 h-4" />, colorDot: 'bg-blue-400', isAllowed: isAdmin || canManageUsers, adminBadge: true }
   ];
 
-  const visibleNavItems = allNavItems.filter((item) => item.isAllowed);
+  const visibleNavItems = allNavItems.filter(
+    (item) => item.isAllowed && isFeatureVisible(item.mode)
+  );
 
   const handleNavClick = (mode: ViewMode) => {
     setViewMode(mode);
@@ -196,17 +201,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
           </div>
 
           {/* Collapse/Close Sidebar Button */}
-          <button
-            type="button"
-            id="sidebar-btn-collapse"
-            onClick={onClose}
-            aria-label="Collapse sidebar"
-            title="Collapse sidebar (Ctrl+B)"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-neutral-300 hover:text-white bg-[#1e1e1e] hover:bg-[#282828] border border-neutral-700/80 transition-colors cursor-pointer shrink-0 active:scale-95 text-xs font-semibold"
-          >
-            <PanelLeftClose className="w-4.5 h-4.5 text-blue-400" />
-            <span className="lg:hidden text-neutral-300">Collapse</span>
-          </button>
         </div>
 
         {/* Navigation Body */}
@@ -215,7 +209,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
           {/* Main Workspace Views Section */}
           <div className="space-y-1">
             <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider px-3 py-1.5">
-              Workspace Views
+              {t('nav.workspaceViews', 'Workspace Views')}
             </div>
 
             {visibleNavItems.map((item) => {
@@ -280,7 +274,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
                 />
                 <Briefcase className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                 <span className="text-[10px] font-bold text-neutral-300 group-hover:text-white uppercase tracking-wider">
-                  Projects ({projects.length})
+                  {t('nav.projects', 'Projects')} ({projects.length})
                 </span>
                 {!isProjectsExpanded && activeProjectId !== 'all' && (
                   (() => {
@@ -331,7 +325,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="w-2 h-2 rounded-full bg-neutral-400 shrink-0" />
-                    <span className="truncate">All Workspace Tasks</span>
+                    <span className="truncate">{t('nav.allWorkspaceTasks', 'All Workspace Tasks')}</span>
                   </div>
                   <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/40 font-mono text-neutral-400">
                     {tasks.length}
@@ -606,26 +600,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen: propIsOpen, onClose: p
                   className="w-full flex items-center gap-2 p-2 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-xs font-semibold text-rose-300 transition-colors cursor-pointer border border-rose-800/40"
                 >
                   <LogOut className="w-3.5 h-3.5 text-rose-400" />
-                  <span className="flex-1 text-left">Sign Out / Lock Session</span>
+                  <span className="flex-1 text-left">{t('common.logout', 'Sign Out')} / Lock Session</span>
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Dedicated Mobile Bottom Collapse Button */}
-        <div className="p-3 border-t border-neutral-800 lg:hidden bg-[#111111]">
-          <button
-            type="button"
-            id="sidebar-btn-collapse-mobile-bottom"
-            onClick={onClose}
-            aria-label="Collapse sidebar"
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 text-neutral-200 text-xs font-semibold border border-neutral-700 transition-colors cursor-pointer active:scale-98"
-          >
-            <PanelLeftClose className="w-4 h-4 text-blue-400" />
-            <span>Collapse Sidebar</span>
-          </button>
-        </div>
+
 
       </aside>
     </>

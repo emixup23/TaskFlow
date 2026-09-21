@@ -136,13 +136,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setMessages(msgs);
 
-        // Mark channel as read
-        api.markChannelAsRead(targetId).catch(() => {});
-
-        // Optimistically update channel unread count in local state
-        setChannels((prev) =>
-          prev.map((c) => (c.id === targetId ? { ...c, unreadCount: 0 } : c))
-        );
+        // Mark channel as read only if it has unread messages
+        setChannels((prev) => {
+          const target = prev.find((c) => c.id === targetId);
+          if (target && (target.unreadCount || 0) > 0) {
+            api.markChannelAsRead(targetId).catch(() => {});
+            return prev.map((c) => (c.id === targetId ? { ...c, unreadCount: 0 } : c));
+          }
+          return prev;
+        });
       } catch (err: any) {
         if (!silent) {
           console.warn('Initial fetch for channel messages failed, attempting automatic recovery...', err);
@@ -152,10 +154,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const retryMsgs = await api.getChatMessages(targetId);
             setMessages(retryMsgs);
             setMessagesError(null);
-            api.markChannelAsRead(targetId).catch(() => {});
-            setChannels((prev) =>
-              prev.map((c) => (c.id === targetId ? { ...c, unreadCount: 0 } : c))
-            );
+            setChannels((prev) => {
+              const target = prev.find((c) => c.id === targetId);
+              if (target && (target.unreadCount || 0) > 0) {
+                api.markChannelAsRead(targetId).catch(() => {});
+                return prev.map((c) => (c.id === targetId ? { ...c, unreadCount: 0 } : c));
+              }
+              return prev;
+            });
           } catch (retryErr: any) {
             console.error('Failed to fetch channel messages after retry:', retryErr);
             setMessagesError(retryErr?.message || 'Failed to load messages');

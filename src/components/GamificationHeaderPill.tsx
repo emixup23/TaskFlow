@@ -43,75 +43,26 @@ export const GamificationHeaderPill: React.FC = () => {
 
   return (
     <div className="relative" ref={pillRef}>
-      {/* The Gamification Badge Pill Button */}
+      {/* The Gamification Badge Button */}
       <button
         type="button"
         id="btn-gamification-badge"
         onClick={() => setIsOpen(!isOpen)}
         title={`Level ${levelInfo.level}: ${levelInfo.levelTitle} (${levelInfo.currentXp} XP) - Click for Gamification & Rewards`}
-        className={`h-8 px-2 sm:px-2.5 rounded flex items-center gap-1.5 sm:gap-2 border text-xs font-medium transition-all cursor-pointer select-none active:scale-95 group ${
+        className={`h-8 w-8 rounded flex items-center justify-center border text-xs font-medium transition-all cursor-pointer select-none active:scale-95 group ${
           isOpen
             ? 'bg-amber-500/20 border-amber-500/50 text-white shadow-md shadow-amber-500/10'
             : 'bg-gradient-to-r from-amber-950/30 via-[#1a1a1a] to-[#171717] hover:bg-[#222222] text-neutral-200 hover:text-white border-amber-500/30 hover:border-amber-400/60 shadow-xs'
         }`}
       >
         {/* Level Icon / Avatar */}
-        <div className="flex items-center gap-1">
-          <span className="text-sm leading-none filter drop-shadow-xs group-hover:scale-110 transition-transform">
-            {levelInfo.levelIcon?.startsWith('/') || levelInfo.levelIcon?.endsWith('.svg') || levelInfo.levelIcon?.endsWith('.png') ? (
-              <img src={levelInfo.levelIcon} alt="level icon" className="w-4 h-4 object-contain inline-block" />
-            ) : (
-              levelInfo.levelIcon || '🏆'
-            )}
-          </span>
-          <span className="font-extrabold text-amber-400 text-xs tracking-tight">
-            Lv.{levelInfo.level}
-          </span>
-        </div>
-
-        {/* Level Title or XP (visible on medium screens and above) */}
-        <div className="hidden md:flex items-center gap-1.5 border-l border-[#333333] pl-1.5 text-[11px]">
-          <span className="font-semibold text-neutral-200 truncate max-w-[90px] lg:max-w-[110px]">
-            {levelInfo.levelTitle}
-          </span>
-          <span className="text-[10px] text-amber-400 font-mono bg-amber-950/50 px-1 py-0.2 rounded border border-amber-800/40">
-            {levelInfo.currentXp} XP
-          </span>
-        </div>
-
-        {/* Mini Level Progress Track (visible on sm screens and above) */}
-        <div
-          className="hidden sm:flex flex-col justify-center w-8 lg:w-10 h-1.5 bg-[#262626] rounded-full overflow-hidden border border-[#383838]"
-          title={`${levelInfo.progressPercent}% to Level ${levelInfo.nextLevel.level}`}
-        >
-          <div
-            className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all duration-300"
-            style={{ width: `${levelInfo.progressPercent}%` }}
-          />
-        </div>
-
-        {/* Kudos Balance Badge (shown on sm+ screens to preserve mobile header space) */}
-        <div
-          className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-amber-950/70 hover:bg-amber-900/60 px-2 py-0.5 rounded border border-amber-500/50 shrink-0 transition-colors shadow-xs"
-          title={`Kudos Balance: ${wallet.balance} / ${wallet.cap} Kudos available`}
-        >
-          <Coins className="w-3.5 h-3.5 text-amber-400" />
-          <span className="font-extrabold text-amber-300">{wallet.balance}</span>
-          <span className="text-[9px] text-amber-400/90 font-bold uppercase tracking-wider hidden sm:inline">
-            Kudos
-          </span>
-        </div>
-
-        {/* Streak Flame (shown on md+ screens to preserve mobile header space) */}
-        {(userGamification.currentStreak || 0) > 0 && (
-          <div
-            className="hidden md:flex items-center gap-0.5 text-[10px] font-bold text-orange-400 bg-orange-950/40 px-1 sm:px-1.5 py-0.5 rounded border border-orange-800/30 shrink-0"
-            title={`${userGamification.currentStreak} day contribution streak!`}
-          >
-            <Flame className="w-3 h-3 fill-orange-500 text-orange-400 animate-pulse" />
-            <span>{userGamification.currentStreak}d</span>
-          </div>
-        )}
+        <span className="text-base leading-none filter drop-shadow-xs group-hover:scale-110 transition-transform">
+          {levelInfo.levelIcon?.startsWith('/') || levelInfo.levelIcon?.endsWith('.svg') || levelInfo.levelIcon?.endsWith('.png') ? (
+            <img src={levelInfo.levelIcon} alt="level icon" className="w-4 h-4 object-contain inline-block" />
+          ) : (
+            levelInfo.levelIcon || '🏆'
+          )}
+        </span>
       </button>
 
       {/* Mobile backdrop overlay */}

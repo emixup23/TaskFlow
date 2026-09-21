@@ -30,12 +30,18 @@ import {
   VolumeX,
   Play,
   Bell,
-  MessageSquare
+  MessageSquare,
+  Globe,
+  Mic,
+  HardDrive
 } from 'lucide-react';
+import { VoiceAssistantSettingsPanel } from './voice/VoiceAssistantSettingsPanel';
+import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
 import { useTheme, FONT_FAMILY_MAP, RADIUS_MAP, PRESET_THEMES } from '../context/ThemeContext';
-import { SettingsTab, FontFamilyOption, RadiusOption, User } from '../types';
+import { useLanguage } from '../context/LanguageContext';
+import { SettingsTab, FontFamilyOption, RadiusOption, User, AppLanguage } from '../types';
 import { UserAvatar } from './UserAvatar';
 import { RemoveDemoDataModal } from './RemoveDemoDataModal';
 import { formatDateTimeDDMMYYYYHHMM } from '../utils/dateUtils';
@@ -93,11 +99,56 @@ export const SettingsModal: React.FC = () => {
     updateThemeConfig
   } = useTheme();
 
+  const {
+    language,
+    setLanguage,
+    languages,
+    currentLanguageConfig,
+    t,
+    formatDate
+  } = useLanguage();
+
   // Local state for modals & search
   const [isRemoveDemoModalOpen, setIsRemoveDemoModalOpen] = useState(false);
   const [isResettingSeed, setIsResettingSeed] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [teamSearch, setTeamSearch] = useState('');
+
+  // Local state for database disk persistence
+  const [persistenceStatus, setPersistenceStatus] = useState<{
+    persisted: boolean;
+    filePath: string;
+    fileSizeBytes: number;
+    lastSavedAt: string;
+    counts: Record<string, number>;
+  } | null>(null);
+  const [isSavingPersistence, setIsSavingPersistence] = useState(false);
+  const [savePersistenceSuccess, setSavePersistenceSuccess] = useState(false);
+
+  useEffect(() => {
+    if (isSettingsModalOpen && settingsTab === 'data') {
+      api.getPersistenceStatus()
+        .then((res) => setPersistenceStatus(res))
+        .catch((err) => console.error('Error fetching persistence status:', err));
+    }
+  }, [isSettingsModalOpen, settingsTab]);
+
+  const handleManualSavePersistence = async () => {
+    try {
+      setIsSavingPersistence(true);
+      const res = await api.savePersistenceNow();
+      setSavePersistenceSuccess(true);
+      addToast('success', res.message || 'Workspace state saved to disk.');
+      const updated = await api.getPersistenceStatus();
+      setPersistenceStatus(updated);
+      setTimeout(() => setSavePersistenceSuccess(false), 3000);
+    } catch (err: any) {
+      console.error(err);
+      addToast('error', err?.message || 'Failed to save to disk.');
+    } finally {
+      setIsSavingPersistence(false);
+    }
+  };
 
   // Audio preference states
   const [soundEnabled, setSoundEnabled] = useState(soundManager.isSoundEnabled());
@@ -265,6 +316,18 @@ export const SettingsModal: React.FC = () => {
       label: 'Appearance',
       sublabel: 'Theme Mode & Studio',
       icon: <Palette className="w-4 h-4" />
+    },
+    {
+      id: 'language',
+      label: t('settings.language', 'Language & Region'),
+      sublabel: `${currentLanguageConfig.flag} ${currentLanguageConfig.nativeName}`,
+      icon: <Globe className="w-4 h-4 text-blue-400" />
+    },
+    {
+      id: 'voice',
+      label: t('voice.title', 'Voice Assistant'),
+      sublabel: 'Commands & speech feedback',
+      icon: <Mic className="w-4 h-4 text-blue-400" />
     },
     {
       id: 'team',
@@ -1051,6 +1114,90 @@ export const SettingsModal: React.FC = () => {
                   </div>
                 )}
 
+                {/* Database Persistence Engine Status Card */}
+                <div className="p-4 sm:p-5 rounded-xl bg-[#14181f] border border-emerald-900/50 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-800/60 text-emerald-400 shrink-0">
+                        <HardDrive className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-bold text-white">Database Persistence Engine</h4>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            DISK PERSISTED
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
+                          All workspace tasks, projects, comments, users, attachments, and settings are saved to disk and automatically reload across server and browser restarts.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      id="btn-settings-save-persistence"
+                      onClick={handleManualSavePersistence}
+                      disabled={isSavingPersistence}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                        savePersistenceSuccess
+                          ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                          : 'bg-[#1f2937] hover:bg-[#374151] border border-neutral-700 text-neutral-200'
+                      }`}
+                    >
+                      {isSavingPersistence ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : savePersistenceSuccess ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Saved to Disk!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Database className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Save to Disk Now</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                    <div className="p-2.5 rounded-lg bg-[#0e1217] border border-[#1e2733] text-left">
+                      <span className="text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold">Storage File</span>
+                      <span className="text-xs font-mono text-emerald-300 truncate block mt-0.5" title={persistenceStatus?.filePath || 'data/taskflow-db.json'}>
+                        {persistenceStatus?.filePath || 'data/taskflow-db.json'}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-[#0e1217] border border-[#1e2733] text-left">
+                      <span className="text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold">File Size</span>
+                      <span className="text-xs font-mono text-white block mt-0.5">
+                        {persistenceStatus?.fileSizeBytes
+                          ? `${(persistenceStatus.fileSizeBytes / 1024).toFixed(1)} KB`
+                          : 'Active (Synced)'}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-[#0e1217] border border-[#1e2733] text-left">
+                      <span className="text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold">Persisted Tasks</span>
+                      <span className="text-xs font-semibold text-white block mt-0.5">
+                        {persistenceStatus?.counts?.tasks ?? tasks.length} tasks
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-[#0e1217] border border-[#1e2733] text-left">
+                      <span className="text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold">Persisted Entities</span>
+                      <span className="text-xs font-semibold text-white block mt-0.5">
+                        {(persistenceStatus?.counts?.projects ?? projects.length)} projects • {(persistenceStatus?.counts?.users ?? users.length)} users
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Option 1: Remove Demo Data */}
                 <div className="p-4 sm:p-5 rounded-xl bg-[#161616] border border-rose-900/40 space-y-3">
                   <div className="flex items-start justify-between gap-3">
@@ -1158,6 +1305,157 @@ export const SettingsModal: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* 7. LANGUAGE & REGION TAB */}
+            {settingsTab === 'language' && (
+              <div className="space-y-6 animate-in fade-in duration-150">
+                <div>
+                  <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-blue-400" />
+                    <span>{t('settings.language', 'Language & Region')}</span>
+                  </h3>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    Select your preferred interface language and locale formatting. Settings persist across sessions with support for bidirectional text (LTR &amp; RTL).
+                  </p>
+                </div>
+
+                {/* Active Language Spotlight Card */}
+                <div className="p-4 rounded-xl bg-[#181818] border border-[#2a2a2a] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <span className="text-3xl select-none" role="img" aria-label={currentLanguageConfig.name}>
+                      {currentLanguageConfig.flag}
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-white">{currentLanguageConfig.nativeName}</span>
+                        <span className="text-xs text-neutral-400 font-medium">({currentLanguageConfig.name})</span>
+                        <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded font-mono font-bold uppercase">
+                          {currentLanguageConfig.code}
+                        </span>
+                        {currentLanguageConfig.dir === 'rtl' && (
+                          <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-bold uppercase">
+                            RTL Mode
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-neutral-400 mt-0.5">
+                        Region: <strong className="text-neutral-300">{currentLanguageConfig.region}</strong> • Direction: <strong className="text-neutral-300 uppercase">{currentLanguageConfig.dir}</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0 border-t sm:border-t-0 sm:border-l border-[#262626] pt-2 sm:pt-0 sm:pl-4 w-full sm:w-auto">
+                    <div className="text-[10px] uppercase font-bold text-neutral-400">Localized Date Sample</div>
+                    <div className="text-xs font-semibold text-blue-400 mt-0.5 font-mono">
+                      {formatDate(new Date(), { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Available Languages Grid */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-neutral-300 uppercase tracking-wider">
+                      Supported Languages ({languages.length})
+                    </label>
+                    <span className="text-[11px] text-neutral-400">
+                      Changes apply instantly across all screens
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {languages.map((lang) => {
+                      const isSelected = language === lang.code;
+                      return (
+                        <button
+                          key={lang.code}
+                          type="button"
+                          id={`btn-select-lang-${lang.code}`}
+                          onClick={() => {
+                            setLanguage(lang.code);
+                            addToast('success', `Language changed to ${lang.nativeName} (${lang.name})`);
+                          }}
+                          className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between group ${
+                            isSelected
+                              ? 'bg-blue-600/15 border-blue-500/60 ring-1 ring-blue-500/30 shadow-xs'
+                              : 'bg-[#181818] border-[#2a2a2a] hover:bg-[#202020] hover:border-[#383838]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <span className="text-2xl select-none shrink-0" role="img" aria-label={lang.name}>
+                              {lang.flag}
+                            </span>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs sm:text-sm font-bold truncate ${isSelected ? 'text-white' : 'text-neutral-200'}`}>
+                                  {lang.nativeName}
+                                </span>
+                                <span className="text-[10px] text-neutral-400 font-mono uppercase bg-[#262626] px-1.5 py-0.2 rounded shrink-0">
+                                  {lang.code}
+                                </span>
+                                {lang.dir === 'rtl' && (
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0 font-bold">
+                                    RTL
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-neutral-400 truncate">
+                                {lang.name} • {lang.region}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 ml-3">
+                            {isSelected ? (
+                              <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-xs">
+                                <Check className="w-3.5 h-3.5" />
+                              </div>
+                            ) : (
+                              <div className="w-6 h-6 rounded-full border border-neutral-700 group-hover:border-neutral-500" />
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Live Translation Preview Playground */}
+                <div className="p-4 rounded-xl bg-[#161616] border border-[#282828] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Live Translation Verification</span>
+                    </span>
+                    <span className="text-[10px] text-neutral-400 font-mono">
+                      Active: {currentLanguageConfig.name} ({currentLanguageConfig.code})
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div className="p-2.5 rounded-lg bg-[#1c1c1c] border border-[#2a2a2a]">
+                      <div className="text-[10px] text-neutral-400 uppercase font-mono">nav.workflow</div>
+                      <div className="font-semibold text-white mt-1 truncate">{t('nav.workflow')}</div>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-[#1c1c1c] border border-[#2a2a2a]">
+                      <div className="text-[10px] text-neutral-400 uppercase font-mono">tasks.newTask</div>
+                      <div className="font-semibold text-white mt-1 truncate">{t('tasks.newTask')}</div>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-[#1c1c1c] border border-[#2a2a2a]">
+                      <div className="text-[10px] text-neutral-400 uppercase font-mono">status.inProgress</div>
+                      <div className="font-semibold text-amber-400 mt-1 truncate">{t('status.inProgress')}</div>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-[#1c1c1c] border border-[#2a2a2a]">
+                      <div className="text-[10px] text-neutral-400 uppercase font-mono">priority.urgent</div>
+                      <div className="font-semibold text-rose-400 mt-1 truncate">{t('priority.urgent')}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* VOICE ASSISTANT TAB */}
+            {settingsTab === 'voice' && <VoiceAssistantSettingsPanel />}
 
           </div>
         </div>

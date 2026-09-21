@@ -127,6 +127,66 @@ table,
 }
 
 /* =========================================================================
+   Border On / Off Dynamic Adaptation
+   ========================================================================= */
+[data-theme-borders="off"] {
+  --app-border: transparent !important;
+}
+
+[data-theme-borders="off"] .border,
+[data-theme-borders="off"] .border-t,
+[data-theme-borders="off"] .border-b,
+[data-theme-borders="off"] .border-l,
+[data-theme-borders="off"] .border-r,
+[data-theme-borders="off"] .border-x,
+[data-theme-borders="off"] .border-y,
+[data-theme-borders="off"] [class*="border-[#"],
+[data-theme-borders="off"] [class*="border-neutral-"],
+[data-theme-borders="off"] [class*="border-zinc-"],
+[data-theme-borders="off"] [class*="border-slate-"],
+[data-theme-borders="off"] [class*="border-gray-"],
+[data-theme-borders="off"] [class*="divide-"] > :not([hidden]) ~ :not([hidden]) {
+  border-color: transparent !important;
+}
+
+/* Retain high-contrast focus rings and active colored indicators */
+[data-theme-borders="off"] .border-blue-500,
+[data-theme-borders="off"] .border-blue-600,
+[data-theme-borders="off"] .border-rose-500,
+[data-theme-borders="off"] .border-emerald-500,
+[data-theme-borders="off"] .border-amber-500 {
+  border-color: var(--app-primary) !important;
+}
+
+/* =========================================================================
+   Default Text Size Typography Scale
+   ========================================================================= */
+[data-theme-text-size="small"] {
+  font-size: 87.5%;
+}
+[data-theme-text-size="small"] .text-\[9px\] { font-size: 8px !important; }
+[data-theme-text-size="small"] .text-\[10px\] { font-size: 9px !important; }
+[data-theme-text-size="small"] .text-\[11px\] { font-size: 10px !important; }
+
+[data-theme-text-size="default"] {
+  font-size: 100%;
+}
+
+[data-theme-text-size="large"] {
+  font-size: 112.5%;
+}
+[data-theme-text-size="large"] .text-\[9px\] { font-size: 10.5px !important; }
+[data-theme-text-size="large"] .text-\[10px\] { font-size: 11.5px !important; }
+[data-theme-text-size="large"] .text-\[11px\] { font-size: 12.5px !important; }
+
+[data-theme-text-size="xl"] {
+  font-size: 125%;
+}
+[data-theme-text-size="xl"] .text-\[9px\] { font-size: 12px !important; }
+[data-theme-text-size="xl"] .text-\[10px\] { font-size: 13px !important; }
+[data-theme-text-size="xl"] .text-\[11px\] { font-size: 14px !important; }
+
+/* =========================================================================
    Dynamic Primary Accent Color, Buttons & Badges
    ========================================================================= */
 .bg-blue-600,

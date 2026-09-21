@@ -20,8 +20,10 @@ import { useKudos } from '../context/KudosContext';
 import { TagBadge } from './TagBadge';
 import { UserAvatar } from './UserAvatar';
 import { VoiceToTextButton } from './VoiceToTextButton';
+import { useLanguage } from '../context/LanguageContext';
 
 export const CreateTaskModal: React.FC = () => {
+  const { t } = useLanguage();
   const {
     isCreateModalOpen,
     setIsCreateModalOpen,
@@ -158,8 +160,8 @@ export const CreateTaskModal: React.FC = () => {
               <Plus className="w-5 h-5 stroke-[2.5]" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm sm:text-base font-bold text-white leading-tight truncate">Create New Task</h2>
-              <p className="text-xs text-neutral-400 truncate hidden xs:block">Add an action item to the team workflow</p>
+              <h2 className="text-sm sm:text-base font-bold text-white leading-tight truncate">{t('tasks.newTask', 'Create New Task')}</h2>
+              <p className="text-xs text-neutral-400 truncate hidden xs:block">{t('tasks.taskDescription', 'Add an action item to the team workflow')}</p>
             </div>
           </div>
 
@@ -171,7 +173,7 @@ export const CreateTaskModal: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 sm:p-1.5 text-neutral-200 hover:text-white rounded-lg bg-[#222222] sm:bg-transparent border border-[#333333] sm:border-transparent hover:bg-[#2a2a2a] transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0"
           >
             <X className="w-4.5 h-4.5 text-neutral-300" />
-            <span className="sm:hidden">Close</span>
+            <span className="sm:hidden">{t('common.close', 'Close')}</span>
           </button>
         </div>
 
@@ -181,7 +183,7 @@ export const CreateTaskModal: React.FC = () => {
           {/* Title Input */}
           <div className="space-y-1">
             <label className="block text-xs font-bold uppercase tracking-wider text-neutral-300">
-              Task Title <span className="text-rose-500">*</span>
+              {t('common.title', 'Task Title')} <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -199,7 +201,7 @@ export const CreateTaskModal: React.FC = () => {
             <div className="space-y-1">
               <label className="block text-xs font-bold uppercase tracking-wider text-neutral-300 flex items-center gap-1">
                 <Briefcase className="w-3.5 h-3.5 text-blue-400" />
-                <span>Assigned Project</span>
+                <span>{t('nav.projects', 'Assigned Project')}</span>
               </label>
               <select
                 id="create-task-project"
@@ -218,7 +220,7 @@ export const CreateTaskModal: React.FC = () => {
 
             <div className="space-y-1">
               <label className="block text-xs font-bold uppercase tracking-wider text-neutral-300">
-                Initial Status
+                {t('common.status', 'Initial Status')}
               </label>
               <select
                 id="create-task-status"
@@ -236,7 +238,7 @@ export const CreateTaskModal: React.FC = () => {
 
             <div className="space-y-1">
               <label className="block text-xs font-bold uppercase tracking-wider text-neutral-300">
-                Priority
+                {t('common.priority', 'Priority')}
               </label>
               <select
                 id="create-task-priority"
@@ -244,10 +246,10 @@ export const CreateTaskModal: React.FC = () => {
                 onChange={(e) => setPriority(e.target.value as Priority)}
                 className="w-full px-3 py-2 text-xs bg-[#1f1f1f] border border-[#333333] rounded focus:ring-1 focus:ring-blue-500 text-neutral-200 font-medium cursor-pointer"
               >
-                <option value="urgent">🔴 Urgent Priority</option>
-                <option value="high">🟠 High Priority</option>
-                <option value="medium">🔵 Medium Priority</option>
-                <option value="low">⚪ Low Priority</option>
+                <option value="urgent">🔴 {t('priority.urgent', 'Urgent')}</option>
+                <option value="high">🟠 {t('priority.high', 'High')}</option>
+                <option value="medium">🔵 {t('priority.medium', 'Medium')}</option>
+                <option value="low">⚪ {t('priority.low', 'Low')}</option>
               </select>
             </div>
           </div>
@@ -489,7 +491,7 @@ export const CreateTaskModal: React.FC = () => {
               className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-neutral-300 hover:text-white hover:bg-[#222222] border border-[#333333] sm:border-transparent rounded-lg transition-colors cursor-pointer"
             >
               <X className="w-3.5 h-3.5 sm:hidden" />
-              <span>Cancel / Close</span>
+              <span>{t('common.cancel', 'Cancel')}</span>
             </button>
 
             {(() => {
@@ -508,10 +510,10 @@ export const CreateTaskModal: React.FC = () => {
                   }`}
                 >
                   {isSubmitting
-                    ? 'Creating...'
+                    ? t('common.loading', 'Creating...')
                     : cannotAfford
                     ? `Insufficient Kudos (${delegationCost} Required)`
-                    : 'Create Task'}
+                    : t('tasks.newTask', 'Create Task')}
                 </button>
               );
             })()}
