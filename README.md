@@ -32,18 +32,6 @@ A collaborative task management platform with gamification, role-based access co
 **Tooling**
 - TypeScript, ESBuild, Autoprefixer
 
-## Screenshots
-
-
-<img width="1868" height="954" alt="Screenshot_20261004_075758" src="https://github.com/user-attachments/assets/948fb7fc-b6e4-47a6-ad4d-c17cf20b8eab" />
-<img width="1868" height="954" alt="Screenshot_20261004_075709-1" src="https://github.com/user-attachments/assets/f973497c-8250-47b2-9682-39a46218080a" />
-<img width="1868" height="954" alt="Screenshot_20261004_075709" src="https://github.com/user-attachments/assets/c1684b09-7a1b-41d1-913e-bab5e01fdcf3" />
-<img width="1868" height="954" alt="Screenshot_20261004_075648" src="https://github.com/user-attachments/assets/a9c2965f-f378-44f5-b590-851942b3e7af" />
-<img width="1868" height="954" alt="Screenshot_20261004_075617-1" src="https://github.com/user-attachments/assets/0563d058-99fd-43b8-9cbd-9d45b9cc9238" />
-<img width="1865" height="955" alt="Screenshot_20261004_075538" src="https://github.com/user-attachments/assets/6646e686-1e3b-466d-ab7c-67fbe2591e64" />
-<img width="1871" height="953" alt="Screenshot_20261004_075419-1" src="https://github.com/user-attachments/assets/91484e51-bdd0-4b1c-8f99-94abcab5aac0" />
-<img width="1868" height="955" alt="Screenshot_20261004_075327-1" src="https://github.com/user-attachments/assets/d5797de4-8bc2-441e-922a-cb7f2e603484" />
-
 
 ## Project Structure
 
