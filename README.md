@@ -34,7 +34,7 @@ A collaborative task management platform with gamification, role-based access co
 
 ## Screenshots
 
-```
+
 <img width="1868" height="954" alt="Screenshot_20261004_075758" src="https://github.com/user-attachments/assets/948fb7fc-b6e4-47a6-ad4d-c17cf20b8eab" />
 <img width="1868" height="954" alt="Screenshot_20261004_075709-1" src="https://github.com/user-attachments/assets/f973497c-8250-47b2-9682-39a46218080a" />
 <img width="1868" height="954" alt="Screenshot_20261004_075709" src="https://github.com/user-attachments/assets/c1684b09-7a1b-41d1-913e-bab5e01fdcf3" />
